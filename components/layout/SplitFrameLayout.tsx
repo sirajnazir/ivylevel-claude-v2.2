@@ -23,8 +23,11 @@ interface SplitFrameLayoutProps {
   /** Left panel content (input cards) */
   children: React.ReactNode;
 
-  /** Right panel: IV animation component */
+  /** Right panel: IV animation component (centered in container) */
   ivAnimation?: React.ReactNode;
+
+  /** Right panel: Full-width custom content (no centering wrapper) */
+  rightPanel?: React.ReactNode;
 
   /** Right panel: Code box content (single message or array of messages) */
   codeBoxContent?: string | string[];
@@ -84,6 +87,7 @@ const IV_ANIMATION_STYLES = {
 export function SplitFrameLayout({
   children,
   ivAnimation,
+  rightPanel,
   codeBoxContent,
   leftWidth = '40%',
   rightWidth = '60%',
@@ -93,8 +97,9 @@ export function SplitFrameLayout({
 }: SplitFrameLayoutProps) {
   // Determine if we should show right panel sections
   const showIVAnimation = ivAnimation && !hideIVAnimation;
+  const showRightPanel = !!rightPanel;
   const showCodeBox = codeBoxContent && !hideCodeBox;
-  const hasRightPanelContent = showIVAnimation || showCodeBox;
+  const hasRightPanelContent = showIVAnimation || showRightPanel || showCodeBox;
 
   // Convert codeBoxContent to array for consistent rendering
   const codeMessages = codeBoxContent
@@ -118,10 +123,13 @@ export function SplitFrameLayout({
           {children}
         </div>
 
-        {/* RIGHT PANEL: IV Animation + Code Box */}
+        {/* RIGHT PANEL: Custom Panel / IV Animation / Code Box */}
         {hasRightPanelContent && (
           <div className="space-y-6">
-            {/* IV Animation Section */}
+            {/* Custom Right Panel (full-width, no wrapper) */}
+            {showRightPanel && rightPanel}
+
+            {/* IV Animation Section (centered) */}
             {showIVAnimation && (
               <div style={IV_ANIMATION_STYLES.container}>
                 {ivAnimation}

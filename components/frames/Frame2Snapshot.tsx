@@ -6,7 +6,9 @@
  * STYLING: Uses BRAND_COLORS constants for consistent Ivylevel branding.
  * Never use dark-mode Tailwind classes (text-text-primary, bg-background-secondary, etc.)
  *
- * INSIGHTS: Uses SplitFrameLayout to display real-time insights panel
+ * LAYOUT: Uses SplitFrameLayout with:
+ * - Left: Input cards (GPA, Tests, Rigor, Awards)
+ * - Right: PillarCards (4 animated pillar icons) + InsightsPanel
  */
 
 import { useState, useCallback } from 'react';
@@ -16,6 +18,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Slider } from '@/components/ui/Slider';
 import { FrameWrapper, CardNavigation } from '@/components/layout/AssessmentLayout';
 import { SplitFrameLayout } from '@/components/layout/SplitFrameLayout';
+import { PillarCards } from '@/components/rings/PillarCards';
 import { InsightsPanel } from '@/components/insights';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import {
@@ -59,6 +62,13 @@ export function Frame2Snapshot({ onComplete }: Frame2Props) {
     }
   }, [currentCard]);
 
+  // Get current scores for pillar visualization
+  const profile = useStudentStore((s) => s.profile);
+
+  // Calculate preliminary scores for real-time visualization
+  // These are simplified estimates - actual scoring happens in Frame 5
+  const aptitudeScore = calculateAptitudePreview(profile);
+
   return (
     <FrameWrapper
       title="Academic Snapshot"
@@ -66,13 +76,20 @@ export function Frame2Snapshot({ onComplete }: Frame2Props) {
     >
       <SplitFrameLayout
         ivAnimation={
+          <PillarCards
+            aptitude={aptitudeScore}
+            passion={0}
+            community={0}
+            narrative={0}
+          />
+        }
+        rightPanel={
           <InsightsPanel
-            maxInsights={4}
+            maxInsights={3}
             categories={['APTITUDE', 'HYPER_LOCAL', 'INSTITUTIONAL']}
             title="Academic Insights"
           />
         }
-        hideCodeBox={true}
       >
         <AnimatePresence mode="wait">
           {CARDS[currentCard] === 'gpa' && <GPACard key="gpa" />}
@@ -91,6 +108,41 @@ export function Frame2Snapshot({ onComplete }: Frame2Props) {
       </SplitFrameLayout>
     </FrameWrapper>
   );
+}
+
+/**
+ * Calculate a preview aptitude score based on current profile data
+ * This is a simplified estimate for real-time visualization
+ */
+function calculateAptitudePreview(profile: ReturnType<typeof useStudentStore.getState>['profile']): number {
+  let score = 0;
+
+  // GPA contribution (max 30 points)
+  const gpa = profile.aptitude?.gpa_weighted;
+  if (gpa) {
+    score += Math.min(30, (gpa / 5.0) * 30);
+  }
+
+  // SAT/ACT contribution (max 30 points)
+  const sat = profile.aptitude?.sat_total;
+  const act = profile.aptitude?.act_total;
+  if (sat) {
+    score += Math.min(30, ((sat - 1000) / 600) * 30);
+  } else if (act) {
+    score += Math.min(30, ((act - 20) / 16) * 30);
+  }
+
+  // AP courses contribution (max 20 points)
+  const apCount = profile.aptitude?.ap_count;
+  if (apCount) {
+    score += Math.min(20, (apCount / 12) * 20);
+  }
+
+  // Awards contribution (max 20 points)
+  const awards = profile.aptitude?.academic_awards?.length ?? 0;
+  score += Math.min(20, awards * 5);
+
+  return Math.round(Math.min(100, score));
 }
 
 // GPA Input Card
