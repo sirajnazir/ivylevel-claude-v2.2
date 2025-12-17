@@ -320,6 +320,33 @@ function ScoreReveal({ ivyScore }: { ivyScore: IvyReadyScore }) {
         </CardContent>
       </Card>
 
+      {/* Phoenix Rings Visualization */}
+      <Card padding="lg">
+        <CardContent>
+          <div className="text-center mb-4">
+            <h3
+              className="text-lg font-semibold"
+              style={{ color: BRAND_COLORS.textHeading }}
+            >
+              Your Profile Pillars
+            </h3>
+            <p className="text-sm" style={{ color: BRAND_COLORS.textMuted }}>
+              Five dimensions of your college application
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <CircularProgress
+              aptitude={ivyScore.category_scores.aptitude}
+              passion={ivyScore.category_scores.passion}
+              community={ivyScore.category_scores.community}
+              narrative={ivyScore.category_scores.narrative}
+              totalScore={ivyScore.total_score}
+              size={350}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Category breakdown */}
       <AnimatePresence>
         {showCategories && (
