@@ -17,6 +17,9 @@ import { motion } from 'framer-motion';
  */
 
 // Ring configuration - matches Gemini Phoenix exactly
+// Phoenix uses SVG sizes: 895, 1090, 1287, 1482, 1750 scaled by 0.22
+// This gives effective diameters: ~197, 240, 283, 326, 385 px
+// We use radii that produce similar visual proportions in a 400px viewBox
 const RING_CONFIG = {
   // Colors from Gemini Phoenix (outer to inner order)
   colors: {
@@ -27,18 +30,19 @@ const RING_CONFIG = {
     narrative: '#979797',        // Gray (Identity)
     background: '#FFFFFF',       // White background rings
   },
-  // Ring radii (inner to outer) - scaled from Gemini Phoenix
+  // Ring radii (inner to outer) - scaled to match Gemini Phoenix proportions
+  // Innermost ring leaves ~70px radius clear for center circle
   radii: {
-    narrative: 55,   // Ring 1 - innermost (Identity)
-    community: 80,   // Ring 2 (Service)
-    passion: 105,    // Ring 3
-    aptitude: 130,   // Ring 4
-    total: 160,      // Ring 5 - outermost (Ivy+ Score)
+    narrative: 78,   // Ring 1 - innermost (Identity) ~156px diameter
+    community: 98,   // Ring 2 (Service) ~196px diameter
+    passion: 118,    // Ring 3 ~236px diameter
+    aptitude: 138,   // Ring 4 ~276px diameter
+    total: 162,      // Ring 5 - outermost (Ivy+ Score) ~324px diameter
   },
-  // Stroke widths
+  // Stroke widths - Phoenix uses 55 scaled by 0.22 = ~12px for inner, 80*0.22=~18 for outer
   strokeWidth: {
-    default: 18,
-    total: 26,       // Thicker for Ivy+ Score ring
+    default: 12,
+    total: 18,       // Thicker for Ivy+ Score ring
   },
   // Animation timing
   animation: {
@@ -170,20 +174,33 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
     <div
       style={{
         position: 'relative',
-        width: size,
-        height: size,
+        width: '100%',
+        maxWidth: size,
+        aspectRatio: '1',
         margin: '0 auto',
       }}
     >
-      {/* SVG Rings Container */}
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
+      {/* SVG Container - matches Phoenix structure */}
+      <div
         style={{
-          transform: 'rotate(-90deg)', // Start rings from top (12 o'clock)
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
+        <svg
+          width="100%"
+          height="100%"
+          viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
+          style={{
+            transform: 'rotate(-90deg)', // Start rings from top (12 o'clock)
+          }}
+        >
         {/* Gradient definition for Ivy+ Score ring - matches Gemini Phoenix */}
         <defs>
           <linearGradient id="ivyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -234,7 +251,8 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
             </g>
           );
         })}
-      </svg>
+        </svg>
+      </div>
 
       {/* Center Profile Circle - matches Gemini Phoenix exactly */}
       <motion.div
@@ -282,11 +300,11 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
         </motion.span>
       </motion.div>
 
-      {/* Bottom Score Label - matches Gemini Phoenix exactly */}
+      {/* Bottom Score Label - positioned just below the outer ring */}
       <motion.div
         style={{
           position: 'absolute',
-          bottom: '10%',  // Fixed 10% like Phoenix
+          bottom: '5%',  // Closer to rings (outer ring ends at ~7% from bottom)
           left: '50%',
           transform: 'translateX(-50%)',
           background: 'linear-gradient(135deg, #FF5733 0%, #FF7043 100%)',

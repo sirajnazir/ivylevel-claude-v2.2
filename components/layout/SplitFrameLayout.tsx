@@ -123,18 +123,18 @@ export function SplitFrameLayout({
           {children}
         </div>
 
-        {/* RIGHT PANEL: Custom Panel / IV Animation / Code Box */}
+        {/* RIGHT PANEL: IV Animation / Custom Panel / Code Box */}
         {hasRightPanelContent && (
           <div className="space-y-6">
-            {/* Custom Right Panel (full-width, no wrapper) */}
-            {showRightPanel && rightPanel}
-
-            {/* IV Animation Section (centered) */}
+            {/* IV Animation Section (centered) - renders first */}
             {showIVAnimation && (
               <div style={IV_ANIMATION_STYLES.container}>
                 {ivAnimation}
               </div>
             )}
+
+            {/* Custom Right Panel (full-width, no wrapper) */}
+            {showRightPanel && rightPanel}
 
             {/* Code Box Section */}
             {showCodeBox && (

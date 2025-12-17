@@ -5,6 +5,10 @@
  *
  * STYLING: Uses BRAND_COLORS constants for consistent Ivylevel branding.
  * Never use dark-mode Tailwind classes (text-text-primary, bg-background-secondary, etc.)
+ *
+ * LAYOUT: Uses SplitFrameLayout with:
+ * - Left: Input cards (spike, leadership, projects, research, etc.)
+ * - Right: PillarCards + InsightsPanel
  */
 
 import { useState, useCallback } from 'react';
@@ -16,6 +20,9 @@ import { Input } from '@/components/ui/Input';
 import { Slider } from '@/components/ui/Slider';
 import { Button } from '@/components/ui/Button';
 import { FrameWrapper, CardNavigation } from '@/components/layout/AssessmentLayout';
+import { SplitFrameLayout } from '@/components/layout/SplitFrameLayout';
+import { PillarCards } from '@/components/rings/PillarCards';
+import { InsightsPanel } from '@/components/insights';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { Check, Loader2 } from 'lucide-react';
 import {
@@ -70,32 +77,141 @@ export function Frame3Building({ onComplete }: Frame3Props) {
     }
   }, [currentCard]);
 
+  // Get current profile for pillar visualization
+  const profile = useStudentStore((s) => s.profile);
+
+  // Calculate preliminary scores for real-time visualization
+  const passionScore = calculatePassionPreview(profile);
+  const communityScore = calculateCommunityPreview(profile);
+
   return (
     <FrameWrapper
       title="Building Your Profile"
       subtitle="Tell us about your passions and impact"
     >
-      <AnimatePresence mode="wait">
-        {CARDS[currentCard] === 'spike' && <SpikeCard key="spike" />}
-        {CARDS[currentCard] === 'leadership' && <LeadershipCard key="leadership" />}
-        {CARDS[currentCard] === 'commitment' && <CommitmentCard key="commitment" />}
-        {CARDS[currentCard] === 'projects' && <ProjectsCard key="projects" />}
-        {CARDS[currentCard] === 'bragText' && <BragTextCard key="bragText" />}
-        {CARDS[currentCard] === 'research' && <ResearchCard key="research" />}
-        {CARDS[currentCard] === 'ecAwards' && <ECAwardsCard key="ecAwards" />}
-        {CARDS[currentCard] === 'community' && <CommunityCard key="community" />}
-        {CARDS[currentCard] === 'highSchool' && <HighSchoolCard key="highSchool" />}
-      </AnimatePresence>
+      <SplitFrameLayout
+        ivAnimation={
+          <PillarCards
+            aptitude={0}
+            passion={passionScore}
+            community={communityScore}
+            narrative={0}
+          />
+        }
+        rightPanel={
+          <InsightsPanel
+            maxInsights={3}
+            categories={['PASSION', 'TEMPORAL', 'CONTEXT', 'HYPER_LOCAL']}
+            title="Profile Insights"
+          />
+        }
+      >
+        <AnimatePresence mode="wait">
+          {CARDS[currentCard] === 'spike' && <SpikeCard key="spike" />}
+          {CARDS[currentCard] === 'leadership' && <LeadershipCard key="leadership" />}
+          {CARDS[currentCard] === 'commitment' && <CommitmentCard key="commitment" />}
+          {CARDS[currentCard] === 'projects' && <ProjectsCard key="projects" />}
+          {CARDS[currentCard] === 'bragText' && <BragTextCard key="bragText" />}
+          {CARDS[currentCard] === 'research' && <ResearchCard key="research" />}
+          {CARDS[currentCard] === 'ecAwards' && <ECAwardsCard key="ecAwards" />}
+          {CARDS[currentCard] === 'community' && <CommunityCard key="community" />}
+          {CARDS[currentCard] === 'highSchool' && <HighSchoolCard key="highSchool" />}
+        </AnimatePresence>
 
-      <CardNavigation
-        currentCard={currentCard}
-        totalCards={CARDS.length}
-        onNext={handleNext}
-        onPrev={handlePrev}
-        canProgress={true}
-      />
+        <CardNavigation
+          currentCard={currentCard}
+          totalCards={CARDS.length}
+          onNext={handleNext}
+          onPrev={handlePrev}
+          canProgress={true}
+        />
+      </SplitFrameLayout>
     </FrameWrapper>
   );
+}
+
+/**
+ * Calculate a preview passion score based on current profile data
+ */
+function calculatePassionPreview(profile: ReturnType<typeof useStudentStore.getState>['profile']): number {
+  let score = 0;
+  const passion = profile.passion;
+
+  // Leadership contribution (max 35 points)
+  if (passion?.leadership_level) {
+    const leadershipScores: Record<string, number> = {
+      'FOUNDER_NATIONAL': 35,
+      'FOUNDER_STATE': 28,
+      'STATE_PRES': 21,
+      'SCHOOL_PRES': 17,
+      'OFFICER': 12,
+      'PARTICIPANT': 7,
+    };
+    score += leadershipScores[passion.leadership_level] || 0;
+  }
+
+  // Project impact contribution (max 25 points)
+  const impact = passion?.project_impact ?? 0;
+  if (impact >= 10000) score += 25;
+  else if (impact >= 1000) score += 20;
+  else if (impact >= 500) score += 15;
+  else if (impact >= 100) score += 10;
+  else if (impact > 0) score += 5;
+
+  // Research contribution (max 20 points)
+  if (passion?.research_level) {
+    const researchScores: Record<string, number> = {
+      'NATIONAL': 20,
+      'STATE': 15,
+      'SCHOOL': 10,
+      'INDEPENDENT': 5,
+      'NONE': 0,
+    };
+    score += researchScores[passion.research_level] || 0;
+  }
+
+  // EC awards contribution (max 20 points)
+  const ecAwards = passion?.ec_awards?.length ?? 0;
+  score += Math.min(20, ecAwards * 5);
+
+  return Math.round(Math.min(100, score));
+}
+
+/**
+ * Calculate a preview community score based on current profile data
+ */
+function calculateCommunityPreview(profile: ReturnType<typeof useStudentStore.getState>['profile']): number {
+  let score = 0;
+  const community = profile.community;
+
+  // Service leadership contribution (max 35 points)
+  if (community?.service_leadership) {
+    const leadershipScores: Record<string, number> = {
+      'NATIONAL': 35,
+      'REGIONAL': 25,
+      'LOCAL': 15,
+      'PARTICIPANT': 8,
+    };
+    score += leadershipScores[community.service_leadership] || 0;
+  }
+
+  // Service hours contribution (max 35 points)
+  const hours = community?.service_hours ?? 0;
+  if (hours >= 300) score += 35;
+  else if (hours >= 200) score += 28;
+  else if (hours >= 100) score += 20;
+  else if (hours >= 50) score += 12;
+  else if (hours > 0) score += 5;
+
+  // Community impact contribution (max 30 points)
+  const impact = community?.community_impact ?? 0;
+  if (impact >= 5000) score += 30;
+  else if (impact >= 1000) score += 22;
+  else if (impact >= 500) score += 15;
+  else if (impact >= 100) score += 8;
+  else if (impact > 0) score += 3;
+
+  return Math.round(Math.min(100, score));
 }
 
 // Spike Category Card

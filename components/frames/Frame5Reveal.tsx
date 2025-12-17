@@ -15,6 +15,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ScoreRing, ScoreBadge } from '@/components/ui/ScoreRing';
 import { CircularProgress } from '@/components/rings/CircularProgress';
+import { PillarCards } from '@/components/rings/PillarCards';
 import { Progress } from '@/components/ui/Progress';
 import { FrameWrapper, CardNavigation } from '@/components/layout/AssessmentLayout';
 import { SCHOOL_DATABASE } from '@/lib/data/schools';
@@ -282,13 +283,6 @@ function ScoreReveal({ ivyScore }: { ivyScore: IvyReadyScore }) {
     return () => clearTimeout(timer);
   }, []);
 
-  const categories = [
-    { label: 'Aptitude', score: ivyScore.category_scores.aptitude, color: BRAND_COLORS.primary },
-    { label: 'Passion', score: ivyScore.category_scores.passion, color: BRAND_COLORS.warning },
-    { label: 'Community', score: ivyScore.category_scores.community, color: BRAND_COLORS.error },
-    { label: 'Narrative', score: ivyScore.category_scores.narrative, color: BRAND_COLORS.success },
-  ];
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -298,7 +292,8 @@ function ScoreReveal({ ivyScore }: { ivyScore: IvyReadyScore }) {
     >
       {/* Phoenix Rings Visualization - REPLACES ScoreRing */}
       <div className="flex flex-col items-center">
-        <div className="w-full max-w-[420px] aspect-square relative flex items-center justify-center">
+        {/* Container for CircularProgress - let the component handle its own layout */}
+        <div className="w-full max-w-[400px]">
           <CircularProgress
             aptitude={ivyScore.category_scores.aptitude}
             passion={ivyScore.category_scores.passion}
@@ -321,53 +316,19 @@ function ScoreReveal({ ivyScore }: { ivyScore: IvyReadyScore }) {
         </div>
       </div>
 
-      {/* Category breakdown */}
+      {/* Pillar Cards - Phoenix-style animated wave cards */}
       <AnimatePresence>
         {showCategories && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className="grid grid-cols-2 gap-4"
           >
-            {categories.map((cat, idx) => (
-              <motion.div
-                key={cat.label}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.1 }}
-              >
-                <Card padding="md">
-                  <CardContent>
-                    <div className="flex items-center justify-between mb-2">
-                      <span
-                        className="text-sm font-medium"
-                        style={{ color: BRAND_COLORS.textSecondary }}
-                      >
-                        {cat.label}
-                      </span>
-                      <span
-                        className="text-lg font-bold"
-                        style={{ color: BRAND_COLORS.textHeading }}
-                      >
-                        {cat.score}%
-                      </span>
-                    </div>
-                    <div
-                      className="h-2 rounded-full overflow-hidden"
-                      style={{ backgroundColor: BRAND_COLORS.borderLight }}
-                    >
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${cat.score}%` }}
-                        transition={{ delay: 0.5 + idx * 0.1, duration: 0.5 }}
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: cat.color }}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+            <PillarCards
+              aptitude={ivyScore.category_scores.aptitude}
+              passion={ivyScore.category_scores.passion}
+              community={ivyScore.category_scores.community}
+              narrative={ivyScore.category_scores.narrative}
+            />
           </motion.div>
         )}
       </AnimatePresence>
