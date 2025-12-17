@@ -323,9 +323,9 @@ function ScoreReveal({ ivyScore }: { ivyScore: IvyReadyScore }) {
       {/* Phoenix Rings Visualization */}
       <Card padding="lg">
         <CardContent>
-          <div className="text-center mb-4">
+          <div className="text-center mb-6">
             <h3
-              className="text-lg font-semibold"
+              className="text-lg font-semibold mb-1"
               style={{ color: BRAND_COLORS.textHeading }}
             >
               Your Profile Pillars
@@ -334,15 +334,18 @@ function ScoreReveal({ ivyScore }: { ivyScore: IvyReadyScore }) {
               Five dimensions of your college application
             </p>
           </div>
-          <div className="flex justify-center">
-            <CircularProgress
-              aptitude={ivyScore.category_scores.aptitude}
-              passion={ivyScore.category_scores.passion}
-              community={ivyScore.category_scores.community}
-              narrative={ivyScore.category_scores.narrative}
-              totalScore={ivyScore.total_score}
-              size={350}
-            />
+          <div className="flex justify-center px-4">
+            {/* Responsive: 300px on mobile, 380px on larger screens */}
+            <div className="w-[300px] sm:w-[380px]">
+              <CircularProgress
+                aptitude={ivyScore.category_scores.aptitude}
+                passion={ivyScore.category_scores.passion}
+                community={ivyScore.category_scores.community}
+                narrative={ivyScore.category_scores.narrative}
+                totalScore={ivyScore.total_score}
+                size={380}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
