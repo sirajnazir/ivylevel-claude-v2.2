@@ -16,34 +16,34 @@ import { motion } from 'framer-motion';
  * 5. Total Score
  */
 
-// Ring configuration - centralized constants
+// Ring configuration - matches Gemini Phoenix exactly
 const RING_CONFIG = {
-  // Colors from Claude brand spec
+  // Colors from Gemini Phoenix (outer to inner order)
   colors: {
-    aptitude: '#FF4A23',    // Ivylevel orange
-    passion: '#FF6E6D',     // Coral
-    community: '#55AAAA',   // Teal (Service)
-    narrative: '#641432',   // Ivylevel maroon (Identity)
-    total: '#020202',       // Near black
-    background: '#E5E7EB',  // Gray background rings
+    total: 'url(#ivyGradient)',  // Gradient for Ivy+ Score ring (outer)
+    aptitude: '#FFBB6D',         // Golden
+    passion: '#FF6E6D',          // Coral
+    community: '#55AAAA',        // Teal (Service)
+    narrative: '#979797',        // Gray (Identity)
+    background: '#FFFFFF',       // White background rings
   },
-  // Ring radii (inner to outer)
+  // Ring radii (inner to outer) - scaled from Gemini Phoenix
   radii: {
-    narrative: 60,   // Ring 1 - innermost
-    community: 90,   // Ring 2
-    passion: 120,    // Ring 3
-    aptitude: 150,   // Ring 4
-    total: 180,      // Ring 5 - outermost
+    narrative: 55,   // Ring 1 - innermost (Identity)
+    community: 80,   // Ring 2 (Service)
+    passion: 105,    // Ring 3
+    aptitude: 130,   // Ring 4
+    total: 160,      // Ring 5 - outermost (Ivy+ Score)
   },
   // Stroke widths
   strokeWidth: {
-    default: 20,
-    total: 30,       // Thicker for total score ring
+    default: 18,
+    total: 26,       // Thicker for Ivy+ Score ring
   },
   // Animation timing
   animation: {
     duration: 1.5,   // seconds per ring
-    stagger: 0.2,    // seconds between rings
+    stagger: 0.15,   // seconds between rings
     easing: 'easeOut',
   },
 } as const;
@@ -184,6 +184,17 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
           transform: 'rotate(-90deg)', // Start rings from top (12 o'clock)
         }}
       >
+        {/* Gradient definition for Ivy+ Score ring - matches Gemini Phoenix */}
+        <defs>
+          <linearGradient id="ivyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#641432" />
+            <stop offset="30%" stopColor="#8A1D45" />
+            <stop offset="50%" stopColor="#FE4A22" />
+            <stop offset="70%" stopColor="#FF7224" />
+            <stop offset="100%" stopColor="#FFBB6D" />
+          </linearGradient>
+        </defs>
+
         {rings.map((ring) => {
           const circumference = getCircumference(ring.radius);
           const path = getCirclePath(ring.radius, center, center);
@@ -225,18 +236,23 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
         })}
       </svg>
 
-      {/* Center Score Display */}
+      {/* Center Profile Circle - matches Gemini Phoenix */}
       <motion.div
         style={{
           position: 'absolute',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          textAlign: 'center',
+          width: size * 0.2,
+          height: size * 0.2,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #FF4A23 0%, #FF7043 100%)',
+          border: '3px solid white',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          zIndex: 10,
         }}
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -246,14 +262,13 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
           ease: 'easeOut',
         }}
       >
-        {/* Score Number */}
         <motion.span
           style={{
-            fontSize: size * 0.15, // Responsive font size (~60px at 400px)
-            fontWeight: 700,
-            color: colors.total,
-            lineHeight: 1,
+            color: 'white',
             fontFamily: 'Inter, system-ui, sans-serif',
+            fontSize: size * 0.06,
+            fontWeight: 700,
+            textAlign: 'center',
           }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -262,27 +277,39 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
             delay: centerScoreDelay + 0.2,
           }}
         >
-          {clampScore(totalScore)}
+          {clampScore(totalScore)}%
         </motion.span>
+      </motion.div>
 
-        {/* Label */}
-        <motion.span
-          style={{
-            fontSize: size * 0.035, // Responsive font size (~14px at 400px)
-            color: '#9ca3af', // text-gray-400
-            marginTop: size * 0.01,
-            fontFamily: 'Inter, system-ui, sans-serif',
-            fontWeight: 500,
-          }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{
-            duration: 0.3,
-            delay: centerScoreDelay + 0.3,
-          }}
-        >
-          IvyReady Score
-        </motion.span>
+      {/* Bottom Score Label - matches Gemini Phoenix */}
+      <motion.div
+        style={{
+          position: 'absolute',
+          bottom: '8%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'linear-gradient(135deg, #FF5733 0%, #FF7043 100%)',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: '12px',
+          textAlign: 'center',
+          zIndex: 10,
+          boxShadow: '0 4px 20px rgba(255, 87, 51, 0.2)',
+        }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: 0.5,
+          delay: centerScoreDelay + 0.3,
+          ease: 'easeOut',
+        }}
+      >
+        <div style={{ fontSize: size * 0.08, fontWeight: 700, lineHeight: 1 }}>
+          {clampScore(totalScore)}%
+        </div>
+        <div style={{ fontSize: size * 0.028, opacity: 0.9, textTransform: 'uppercase', letterSpacing: '1px' }}>
+          Ivy+ Ready Score
+        </div>
       </motion.div>
     </div>
   );

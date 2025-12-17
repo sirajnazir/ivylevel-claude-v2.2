@@ -296,59 +296,30 @@ function ScoreReveal({ ivyScore }: { ivyScore: IvyReadyScore }) {
       exit={{ opacity: 0, y: -20 }}
       className="space-y-8"
     >
-      {/* Main score */}
-      <Card padding="lg" className="text-center">
-        <CardContent>
-          <div className="flex flex-col items-center gap-6">
-            <ScoreRing score={ivyScore.total_score} size="xl" />
+      {/* Phoenix Rings Visualization - REPLACES ScoreRing */}
+      <div className="flex flex-col items-center">
+        <div className="w-full max-w-[420px] aspect-square relative flex items-center justify-center">
+          <CircularProgress
+            aptitude={ivyScore.category_scores.aptitude}
+            passion={ivyScore.category_scores.passion}
+            community={ivyScore.category_scores.community}
+            narrative={ivyScore.category_scores.narrative}
+            totalScore={ivyScore.total_score}
+            size={400}
+          />
+        </div>
 
-            <div className="space-y-2">
-              <p style={{ color: BRAND_COLORS.textSecondary }}>
-                Your Ivy+ Ready Score
-              </p>
-              <div className="flex items-center justify-center gap-2">
-                <Trophy className="w-5 h-5" style={{ color: BRAND_COLORS.warning }} />
-                <span
-                  className="text-lg font-semibold"
-                  style={{ color: BRAND_COLORS.textHeading }}
-                >
-                  Top {(100 - ivyScore.percentile_rank).toFixed(0)}% of applicants
-                </span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Phoenix Rings Visualization */}
-      <Card padding="lg">
-        <CardContent>
-          <div className="text-center mb-6">
-            <h3
-              className="text-lg font-semibold mb-1"
-              style={{ color: BRAND_COLORS.textHeading }}
-            >
-              Your Profile Pillars
-            </h3>
-            <p className="text-sm" style={{ color: BRAND_COLORS.textMuted }}>
-              Five dimensions of your college application
-            </p>
-          </div>
-          <div className="flex justify-center px-4">
-            {/* Responsive: 300px on mobile, 380px on larger screens */}
-            <div className="w-[300px] sm:w-[380px]">
-              <CircularProgress
-                aptitude={ivyScore.category_scores.aptitude}
-                passion={ivyScore.category_scores.passion}
-                community={ivyScore.category_scores.community}
-                narrative={ivyScore.category_scores.narrative}
-                totalScore={ivyScore.total_score}
-                size={380}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Percentile badge below rings */}
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <Trophy className="w-5 h-5" style={{ color: BRAND_COLORS.warning }} />
+          <span
+            className="text-lg font-semibold"
+            style={{ color: BRAND_COLORS.textHeading }}
+          >
+            Top {(100 - ivyScore.percentile_rank).toFixed(0)}% of applicants
+          </span>
+        </div>
+      </div>
 
       {/* Category breakdown */}
       <AnimatePresence>
