@@ -14,6 +14,7 @@ import { useResultsStore, useSessionStore, useStudentStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ScoreRing, ScoreBadge } from '@/components/ui/ScoreRing';
+import { CircularProgress } from '@/components/rings/CircularProgress';
 import { Progress } from '@/components/ui/Progress';
 import { FrameWrapper, CardNavigation } from '@/components/layout/AssessmentLayout';
 import { SCHOOL_DATABASE } from '@/lib/data/schools';
