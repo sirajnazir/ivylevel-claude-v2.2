@@ -3,6 +3,17 @@
  */
 
 export { useStudentStore } from './useStudentStore';
+export {
+  useInsightsStore,
+  initializeInsightSubscription,
+  cleanupInsightSubscription,
+  useInsights,
+  useInsightsByCategory,
+  useCriticalInsights,
+  usePositiveInsights,
+  useIsGeneratingInsights,
+  useInsightCounts,
+} from './useInsightsStore';
 export { useSessionStore, type FrameId, type FrameProgress, type QuizAnswer } from './useSessionStore';
 export { useResultsStore } from './useResultsStore';
 export { useUIStore, type Toast, type Modal } from './useUIStore';
