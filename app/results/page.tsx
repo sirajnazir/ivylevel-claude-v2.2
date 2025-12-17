@@ -13,7 +13,7 @@ export default function ResultsPage() {
   const router = useRouter();
   const results = useResultsStore((s) => s.results);
   const studentName = useStudentStore((s) => s.profile.identity.name);
-  const resetResults = useResultsStore((s) => s.resetResults);
+  const clearResults = useResultsStore((s) => s.clearResults);
 
   // If no results, redirect to start
   useEffect(() => {
@@ -123,7 +123,7 @@ export default function ResultsPage() {
 
           <button
             onClick={() => {
-              resetResults();
+              clearResults();
               router.push('/quest');
             }}
             className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all"
