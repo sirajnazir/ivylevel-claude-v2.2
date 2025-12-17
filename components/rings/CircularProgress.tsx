@@ -236,16 +236,17 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
         })}
       </svg>
 
-      {/* Center Profile Circle - matches Gemini Phoenix */}
+      {/* Center Profile Circle - matches Gemini Phoenix exactly */}
       <motion.div
         style={{
           position: 'absolute',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: size * 0.2,
-          height: size * 0.2,
+          width: 80,  // Fixed 80px like Phoenix
+          height: 80, // Fixed 80px like Phoenix
           borderRadius: '50%',
+          overflow: 'hidden',
           background: 'linear-gradient(135deg, #FF4A23 0%, #FF7043 100%)',
           border: '3px solid white',
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
@@ -266,7 +267,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
           style={{
             color: 'white',
             fontFamily: 'Inter, system-ui, sans-serif',
-            fontSize: size * 0.06,
+            fontSize: 24,  // Fixed 24px like Phoenix
             fontWeight: 700,
             textAlign: 'center',
           }}
@@ -281,17 +282,17 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
         </motion.span>
       </motion.div>
 
-      {/* Bottom Score Label - matches Gemini Phoenix */}
+      {/* Bottom Score Label - matches Gemini Phoenix exactly */}
       <motion.div
         style={{
           position: 'absolute',
-          bottom: '8%',
+          bottom: '10%',  // Fixed 10% like Phoenix
           left: '50%',
           transform: 'translateX(-50%)',
           background: 'linear-gradient(135deg, #FF5733 0%, #FF7043 100%)',
           color: 'white',
           padding: '12px 24px',
-          borderRadius: '12px',
+          borderRadius: 12,
           textAlign: 'center',
           zIndex: 10,
           boxShadow: '0 4px 20px rgba(255, 87, 51, 0.2)',
@@ -304,10 +305,10 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
           ease: 'easeOut',
         }}
       >
-        <div style={{ fontSize: size * 0.08, fontWeight: 700, lineHeight: 1 }}>
+        <div style={{ fontSize: 32, fontWeight: 700, lineHeight: 1 }}>
           {clampScore(totalScore)}%
         </div>
-        <div style={{ fontSize: size * 0.028, opacity: 0.9, textTransform: 'uppercase', letterSpacing: '1px' }}>
+        <div style={{ fontSize: 11, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1 }}>
           Ivy+ Ready Score
         </div>
       </motion.div>
