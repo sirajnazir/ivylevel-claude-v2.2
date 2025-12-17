@@ -117,6 +117,8 @@ components/
 │   └── TwinCharacter.tsx       # Individual twin character mesh
 ├── rings/
 │   └── CircularProgress.tsx    # 5-ring circular progress visualization (IvyReady score)
+├── layout/
+│   └── SplitFrameLayout.tsx    # 2-column responsive layout (40% left | 60% right)
 ├── ui/
 │   ├── CollegeLogo.tsx         # Normalized college logo component
 │   └── [15 shadcn components]  # button, card, input, etc.
