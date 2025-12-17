@@ -5,15 +5,18 @@
  *
  * STYLING: Uses BRAND_COLORS constants for consistent Ivylevel branding.
  * Never use dark-mode Tailwind classes (text-text-primary, bg-background-secondary, etc.)
+ *
+ * INSIGHTS: Uses SplitFrameLayout to display real-time insights panel
  */
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils/cn';
 import { useStudentStore, useSessionStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Slider } from '@/components/ui/Slider';
 import { FrameWrapper, CardNavigation } from '@/components/layout/AssessmentLayout';
+import { SplitFrameLayout } from '@/components/layout/SplitFrameLayout';
+import { InsightsPanel } from '@/components/insights';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import {
   BookOpen,
@@ -61,20 +64,31 @@ export function Frame2Snapshot({ onComplete }: Frame2Props) {
       title="Academic Snapshot"
       subtitle="Let's capture your academic foundation"
     >
-      <AnimatePresence mode="wait">
-        {CARDS[currentCard] === 'gpa' && <GPACard key="gpa" />}
-        {CARDS[currentCard] === 'tests' && <TestsCard key="tests" />}
-        {CARDS[currentCard] === 'rigor' && <RigorCard key="rigor" />}
-        {CARDS[currentCard] === 'awards' && <AwardsCard key="awards" />}
-      </AnimatePresence>
+      <SplitFrameLayout
+        ivAnimation={
+          <InsightsPanel
+            maxInsights={4}
+            categories={['APTITUDE', 'HYPER_LOCAL', 'INSTITUTIONAL']}
+            title="Academic Insights"
+          />
+        }
+        hideCodeBox={true}
+      >
+        <AnimatePresence mode="wait">
+          {CARDS[currentCard] === 'gpa' && <GPACard key="gpa" />}
+          {CARDS[currentCard] === 'tests' && <TestsCard key="tests" />}
+          {CARDS[currentCard] === 'rigor' && <RigorCard key="rigor" />}
+          {CARDS[currentCard] === 'awards' && <AwardsCard key="awards" />}
+        </AnimatePresence>
 
-      <CardNavigation
-        currentCard={currentCard}
-        totalCards={CARDS.length}
-        onNext={handleNext}
-        onPrev={handlePrev}
-        canProgress={true}
-      />
+        <CardNavigation
+          currentCard={currentCard}
+          totalCards={CARDS.length}
+          onNext={handleNext}
+          onPrev={handlePrev}
+          canProgress={true}
+        />
+      </SplitFrameLayout>
     </FrameWrapper>
   );
 }

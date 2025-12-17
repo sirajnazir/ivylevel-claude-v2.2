@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import { AnalyticsProvider } from '@/lib/analytics';
 import { FeedbackProvider, ToastContainer } from '@/lib/feedback';
+import { InsightsProvider } from '@/components/insights';
 import './globals.css';
 
 const inter = Inter({
@@ -42,10 +43,12 @@ export default function RootLayout({
               maxToasts: 5,
             }}
           >
-            {/* Main Content - No dark wrapper */}
-            <div className="relative min-h-screen">
-              {children}
-            </div>
+            <InsightsProvider>
+              {/* Main Content - No dark wrapper */}
+              <div className="relative min-h-screen">
+                {children}
+              </div>
+            </InsightsProvider>
 
             {/* Global toast container */}
             <ToastContainer />
