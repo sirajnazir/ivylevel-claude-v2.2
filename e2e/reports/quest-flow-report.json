@@ -1,0 +1,110 @@
+{
+  "timestamp": "2025-12-16T03:31:52.283Z",
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0
+  },
+  "results": [
+    {
+      "profileId": "paly-senior-stem",
+      "studentName": "Kevin Chen",
+      "school": "Palo Alto High School",
+      "grade": "12",
+      "frameReached": 6,
+      "passed": true,
+      "errors": [],
+      "duration": 14501
+    },
+    {
+      "profileId": "lowell-junior-humanities",
+      "studentName": "Maya Rodriguez",
+      "school": "Lowell High School",
+      "grade": "11",
+      "frameReached": 6,
+      "passed": true,
+      "errors": [],
+      "duration": 14090
+    },
+    {
+      "profileId": "msj-sophomore-rising",
+      "studentName": "Arjun Patel",
+      "school": "Mission San Jose High School",
+      "grade": "10",
+      "frameReached": 6,
+      "passed": true,
+      "errors": [],
+      "duration": 14405
+    },
+    {
+      "profileId": "gunn-senior-arts",
+      "studentName": "Sofia Kim",
+      "school": "Gunn High School",
+      "grade": "12",
+      "frameReached": 6,
+      "passed": true,
+      "errors": [],
+      "duration": 15614
+    },
+    {
+      "profileId": "mv-freshman-early",
+      "studentName": "Emily Wang",
+      "school": "Monta Vista High School",
+      "grade": "9",
+      "frameReached": 6,
+      "passed": true,
+      "errors": [],
+      "duration": 13758
+    },
+    {
+      "profileId": "lynbrook-junior-business",
+      "studentName": "Jason Liu",
+      "school": "Lynbrook High School",
+      "grade": "11",
+      "frameReached": 6,
+      "passed": true,
+      "errors": [],
+      "duration": 14538
+    },
+    {
+      "profileId": "oakland-senior-firstgen",
+      "studentName": "Marcus Johnson",
+      "school": "Oakland Technical High School",
+      "grade": "12",
+      "frameReached": 6,
+      "passed": true,
+      "errors": [],
+      "duration": 13756
+    },
+    {
+      "profileId": "lahs-sophomore-rounded",
+      "studentName": "Sarah Martinez",
+      "school": "Los Altos High School",
+      "grade": "10",
+      "frameReached": 6,
+      "passed": true,
+      "errors": [],
+      "duration": 13758
+    },
+    {
+      "profileId": "saratoga-senior-music",
+      "studentName": "Daniel Park",
+      "school": "Saratoga High School",
+      "grade": "12",
+      "frameReached": 6,
+      "passed": true,
+      "errors": [],
+      "duration": 15829
+    },
+    {
+      "profileId": "carlmont-junior-average",
+      "studentName": "Tyler Wilson",
+      "school": "Carlmont High School",
+      "grade": "11",
+      "frameReached": 6,
+      "passed": true,
+      "errors": [],
+      "duration": 14455
+    }
+  ]
+}

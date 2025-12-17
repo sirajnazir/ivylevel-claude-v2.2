@@ -1,0 +1,121 @@
+{
+  "profile": {
+    "session_id": "test_123",
+    "timestamp": "2025-12-11T00:00:00Z",
+    "identity": {
+      "role": "STUDENT",
+      "name": "Test Student",
+      "grade": 11
+    },
+    "target_schools": ["MIT", "STANFORD", "HARVARD"],
+    "intended_major": "Computer Science",
+    "major_certainty": "LIKELY",
+    "aptitude": {
+      "gpa_weighted": 4.0,
+      "gpa_normalized": null,
+      "gpa_unweighted": 3.95,
+      "sat_total": 1520,
+      "sat_normalized": null,
+      "act_total": null,
+      "act_normalized": null,
+      "test_optional": false,
+      "ap_count": 9,
+      "ap_avg_score": 4.5,
+      "rigor_normalized": null,
+      "ib_diploma": false,
+      "academic_awards": ["AP Scholar"],
+      "awards_normalized": null
+    },
+    "passion": {
+      "spike_category": "LEADER",
+      "leadership_level": "SCHOOL_PRES",
+      "leadership_normalized": null,
+      "ec_commitment_years": 4,
+      "ec_hours_weekly": 12,
+      "commitment_normalized": null,
+      "project_impact": 200,
+      "project_normalized": null,
+      "project_description": "Led robotics team",
+      "research_level": "SCHOOL",
+      "research_normalized": null,
+      "ec_awards": ["STATE"],
+      "ec_awards_normalized": null,
+      "brag_text": "Led robotics team",
+      "brag_nlp_extracted": null
+    },
+    "community": {
+      "service_leadership": "LOCAL",
+      "service_normalized": null,
+      "service_hours": 150,
+      "hours_normalized": null,
+      "community_impact": 200,
+      "impact_normalized": null
+    },
+    "high_school": {
+      "hs_name": "Monta Vista High School",
+      "hs_code": "CA_MVHS",
+      "hs_type": "PUBLIC",
+      "region": "BAY_AREA",
+      "saturation_level": "ULTRA",
+      "ivy_applicants_per_year": 250,
+      "saturation_adjustment": -0.08
+    },
+    "demographics": {
+      "ethnicity": "ASIAN",
+      "ethnicity_multiplier": 0.85,
+      "first_gen": false,
+      "first_gen_multiplier": 1.0,
+      "legacy": false,
+      "legacy_schools": [],
+      "income_band": "150K_300K",
+      "income_top_1_percent": false,
+      "income_multiplier": 1.0,
+      "recruited_athlete": false,
+      "athlete_multiplier": 1.0
+    },
+    "major_context": {
+      "intended_major": "Computer Science",
+      "major_certainty": "LIKELY",
+      "major_multiplier": 0.70
+    },
+    "assessment_intelligence": {
+      "psychometrics": {
+        "grit_resilience": 0.85,
+        "introversion_extroversion": -0.3,
+        "coachability": "HIGH",
+        "coachability_score": 0.85,
+        "vision_clarity": 0.75,
+        "identity_comfort": 0.80,
+        "maturity_level": 0.70,
+        "articulation_ability": 0.75,
+        "openness": 0.75,
+        "conscientiousness": 0.80,
+        "extraversion": 0.60,
+        "agreeableness": 0.70,
+        "neuroticism": 0.40
+      },
+      "time_management": {
+        "homework_hours_daily": 4,
+        "social_media_hours_daily": 2,
+        "ec_hours_weekly": 12,
+        "sleep_hours_daily": 7,
+        "committed_hours_weekly": 98,
+        "reclaimable_hours_weekly": 14,
+        "burnout_risk": "MEDIUM"
+      },
+      "hidden_capabilities": {
+        "hidden_technical_projects": [],
+        "hobby_passions": [],
+        "unconventional_interests": []
+      },
+      "family_context": {
+        "parent_archetype": "BALANCED",
+        "academic_expectations": "IVY_ONLY"
+      },
+      "academic_intelligence": {
+        "grade_pattern_trajectory": "STABLE",
+        "test_anxiety_indicator": 0.2
+      }
+    }
+  }
+}

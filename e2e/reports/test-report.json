@@ -1,0 +1,271 @@
+{
+  "timestamp": "2025-12-16T03:11:21.571Z",
+  "summary": {
+    "total": 10,
+    "passed": 0,
+    "failed": 10,
+    "passRate": "0.0%"
+  },
+  "results": [
+    {
+      "profileId": "paly-senior-stem",
+      "studentName": "Kevin Chen",
+      "school": "Palo Alto High School",
+      "grade": "12",
+      "expectedTier": "exceptional",
+      "expectedRange": [
+        88,
+        98
+      ],
+      "actualScore": null,
+      "actualTier": null,
+      "passed": false,
+      "errors": [
+        "Error: locator.isVisible: Unsupported token \"{\" while parsing css selector \"[data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\". Did you mean to CSS.escape it?\nCall log:\n\u001b[2m    - checking visibility of [data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\u001b[22m\n"
+      ],
+      "timestamps": {
+        "start": 1765854485798,
+        "frame0Complete": 1765854491929,
+        "frame1Complete": 1765854493467,
+        "frame2Complete": 1765854496550,
+        "frame3Complete": 1765854502152,
+        "frame4Complete": 0,
+        "end": 1765854505162
+      }
+    },
+    {
+      "profileId": "lowell-junior-humanities",
+      "studentName": "Maya Rodriguez",
+      "school": "Lowell High School",
+      "grade": "11",
+      "expectedTier": "competitive",
+      "expectedRange": [
+        78,
+        88
+      ],
+      "actualScore": null,
+      "actualTier": null,
+      "passed": false,
+      "errors": [
+        "Error: locator.isVisible: Unsupported token \"{\" while parsing css selector \"[data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\". Did you mean to CSS.escape it?\nCall log:\n\u001b[2m    - checking visibility of [data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\u001b[22m\n"
+      ],
+      "timestamps": {
+        "start": 1765854505735,
+        "frame0Complete": 1765854511714,
+        "frame1Complete": 1765854513259,
+        "frame2Complete": 1765854516342,
+        "frame3Complete": 1765854521924,
+        "frame4Complete": 0,
+        "end": 1765854524939
+      }
+    },
+    {
+      "profileId": "msj-sophomore-rising",
+      "studentName": "Arjun Patel",
+      "school": "Mission San Jose High School",
+      "grade": "10",
+      "expectedTier": "competitive",
+      "expectedRange": [
+        70,
+        82
+      ],
+      "actualScore": null,
+      "actualTier": null,
+      "passed": false,
+      "errors": [
+        "Error: locator.isVisible: Unsupported token \"{\" while parsing css selector \"[data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\". Did you mean to CSS.escape it?\nCall log:\n\u001b[2m    - checking visibility of [data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\u001b[22m\n"
+      ],
+      "timestamps": {
+        "start": 1765854525466,
+        "frame0Complete": 1765854531452,
+        "frame1Complete": 1765854532987,
+        "frame2Complete": 1765854536064,
+        "frame3Complete": 1765854541651,
+        "frame4Complete": 0,
+        "end": 1765854544658
+      }
+    },
+    {
+      "profileId": "gunn-senior-arts",
+      "studentName": "Sofia Kim",
+      "school": "Gunn High School",
+      "grade": "12",
+      "expectedTier": "competitive",
+      "expectedRange": [
+        75,
+        85
+      ],
+      "actualScore": null,
+      "actualTier": null,
+      "passed": false,
+      "errors": [
+        "Error: locator.isVisible: Unsupported token \"{\" while parsing css selector \"[data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\". Did you mean to CSS.escape it?\nCall log:\n\u001b[2m    - checking visibility of [data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\u001b[22m\n"
+      ],
+      "timestamps": {
+        "start": 1765854545166,
+        "frame0Complete": 1765854551195,
+        "frame1Complete": 1765854552733,
+        "frame2Complete": 1765854555840,
+        "frame3Complete": 1765854561439,
+        "frame4Complete": 0,
+        "end": 1765854564448
+      }
+    },
+    {
+      "profileId": "mv-freshman-early",
+      "studentName": "Emily Wang",
+      "school": "Monta Vista High School",
+      "grade": "9",
+      "expectedTier": "developing",
+      "expectedRange": [
+        45,
+        60
+      ],
+      "actualScore": null,
+      "actualTier": null,
+      "passed": false,
+      "errors": [
+        "Error: locator.isVisible: Unsupported token \"{\" while parsing css selector \"[data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\". Did you mean to CSS.escape it?\nCall log:\n\u001b[2m    - checking visibility of [data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\u001b[22m\n"
+      ],
+      "timestamps": {
+        "start": 1765854564975,
+        "frame0Complete": 1765854570785,
+        "frame1Complete": 1765854572336,
+        "frame2Complete": 1765854575449,
+        "frame3Complete": 1765854581042,
+        "frame4Complete": 0,
+        "end": 1765854584058
+      }
+    },
+    {
+      "profileId": "lynbrook-junior-business",
+      "studentName": "Jason Liu",
+      "school": "Lynbrook High School",
+      "grade": "11",
+      "expectedTier": "competitive",
+      "expectedRange": [
+        72,
+        82
+      ],
+      "actualScore": null,
+      "actualTier": null,
+      "passed": false,
+      "errors": [
+        "Error: locator.isVisible: Unsupported token \"{\" while parsing css selector \"[data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\". Did you mean to CSS.escape it?\nCall log:\n\u001b[2m    - checking visibility of [data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\u001b[22m\n"
+      ],
+      "timestamps": {
+        "start": 1765854584594,
+        "frame0Complete": 1765854590404,
+        "frame1Complete": 1765854591935,
+        "frame2Complete": 1765854595016,
+        "frame3Complete": 1765854600610,
+        "frame4Complete": 0,
+        "end": 1765854603618
+      }
+    },
+    {
+      "profileId": "oakland-senior-firstgen",
+      "studentName": "Marcus Johnson",
+      "school": "Oakland Technical High School",
+      "grade": "12",
+      "expectedTier": "competitive",
+      "expectedRange": [
+        68,
+        78
+      ],
+      "actualScore": null,
+      "actualTier": null,
+      "passed": false,
+      "errors": [
+        "Error: locator.isVisible: Unsupported token \"{\" while parsing css selector \"[data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\". Did you mean to CSS.escape it?\nCall log:\n\u001b[2m    - checking visibility of [data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\u001b[22m\n"
+      ],
+      "timestamps": {
+        "start": 1765854604108,
+        "frame0Complete": 1765854609864,
+        "frame1Complete": 1765854611410,
+        "frame2Complete": 1765854614511,
+        "frame3Complete": 1765854620132,
+        "frame4Complete": 0,
+        "end": 1765854623137
+      }
+    },
+    {
+      "profileId": "lahs-sophomore-rounded",
+      "studentName": "Sarah Martinez",
+      "school": "Los Altos High School",
+      "grade": "10",
+      "expectedTier": "average",
+      "expectedRange": [
+        55,
+        68
+      ],
+      "actualScore": null,
+      "actualTier": null,
+      "passed": false,
+      "errors": [
+        "Error: locator.isVisible: Unsupported token \"{\" while parsing css selector \"[data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\". Did you mean to CSS.escape it?\nCall log:\n\u001b[2m    - checking visibility of [data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\u001b[22m\n"
+      ],
+      "timestamps": {
+        "start": 1765854623657,
+        "frame0Complete": 1765854629439,
+        "frame1Complete": 1765854630981,
+        "frame2Complete": 1765854634082,
+        "frame3Complete": 1765854639688,
+        "frame4Complete": 0,
+        "end": 1765854642698
+      }
+    },
+    {
+      "profileId": "saratoga-senior-music",
+      "studentName": "Daniel Park",
+      "school": "Saratoga High School",
+      "grade": "12",
+      "expectedTier": "exceptional",
+      "expectedRange": [
+        85,
+        95
+      ],
+      "actualScore": null,
+      "actualTier": null,
+      "passed": false,
+      "errors": [
+        "Error: locator.isVisible: Unsupported token \"{\" while parsing css selector \"[data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\". Did you mean to CSS.escape it?\nCall log:\n\u001b[2m    - checking visibility of [data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\u001b[22m\n"
+      ],
+      "timestamps": {
+        "start": 1765854643244,
+        "frame0Complete": 1765854649184,
+        "frame1Complete": 1765854650731,
+        "frame2Complete": 1765854653822,
+        "frame3Complete": 1765854659406,
+        "frame4Complete": 0,
+        "end": 1765854662415
+      }
+    },
+    {
+      "profileId": "carlmont-junior-average",
+      "studentName": "Tyler Wilson",
+      "school": "Carlmont High School",
+      "grade": "11",
+      "expectedTier": "average",
+      "expectedRange": [
+        42,
+        55
+      ],
+      "actualScore": null,
+      "actualTier": null,
+      "passed": false,
+      "errors": [
+        "Error: locator.isVisible: Unsupported token \"{\" while parsing css selector \"[data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\". Did you mean to CSS.escape it?\nCall log:\n\u001b[2m    - checking visibility of [data-testid=\"ivy-ready-score\"], .score-display, text=/\\d{1,3}(?=\\s*$)/\u001b[22m\n"
+      ],
+      "timestamps": {
+        "start": 1765854662898,
+        "frame0Complete": 1765854668592,
+        "frame1Complete": 1765854670140,
+        "frame2Complete": 1765854672700,
+        "frame3Complete": 1765854678300,
+        "frame4Complete": 0,
+        "end": 1765854681312
+      }
+    }
+  ]
+}
