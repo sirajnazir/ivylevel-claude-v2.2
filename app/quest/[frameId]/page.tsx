@@ -13,8 +13,7 @@ import Frame1Warmup from '@/components/frames/Frame1Warmup';
 import Frame2Snapshot from '@/components/frames/Frame2Snapshot';
 import Frame3Building from '@/components/frames/Frame3Building';
 import { Frame4Context } from '@/components/frames/Frame4Context';
-import Frame5Reveal from '@/components/frames/Frame5Reveal';
-import Frame6PowerUps from '@/components/frames/Frame6PowerUps';
+import { Frame6ProfileReveal } from '@/components/frames/Frame6ProfileReveal';
 import { Frame5GamePlan } from '@/components/frames/Frame5GamePlan';
 
 // ============================================
@@ -34,10 +33,8 @@ const FRAME_COMPONENTS: Record<number, React.ComponentType<{ onComplete: () => v
   2: Frame2Snapshot,
   3: Frame3Building,
   4: Frame4Context,
-  5: Frame5GamePlan,
-  6: Frame5Reveal,
-  // Note: Frame6PowerUps is available but not currently in the flow
-  // The flow now includes Game Plan generation before final reveal
+  5: Frame6ProfileReveal, // Profile overview before detailed game plan
+  6: Frame5GamePlan,      // Detailed game plan (final frame before results)
 };
 
 // ============================================

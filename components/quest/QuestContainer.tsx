@@ -39,8 +39,8 @@ export const FRAME_CONFIG = [
   { id: 2, name: 'Snapshot', iconComponent: IconChart, color: BRAND_COLORS.success, description: 'Academic metrics' },
   { id: 3, name: 'Building', iconComponent: IconLayers, color: BRAND_COLORS.warning, description: 'Activities & achievements' },
   { id: 4, name: 'Context', iconComponent: IconSettings, color: BRAND_COLORS.secondary, description: 'Your situation & capacity' },
-  { id: 5, name: 'Game Plan', iconComponent: IconTarget, color: BRAND_COLORS.primary, description: 'Your personalized roadmap' },
-  { id: 6, name: 'Reveal', iconComponent: IconEnergy, color: BRAND_COLORS.primaryLight, description: 'Your admission chances' },
+  { id: 5, name: 'Overview', iconComponent: IconTarget, color: BRAND_COLORS.primary, description: 'Your profile summary' },
+  { id: 6, name: 'Game Plan', iconComponent: IconEnergy, color: BRAND_COLORS.primaryLight, description: 'Your personalized roadmap' },
 ];
 
 // ============================================
