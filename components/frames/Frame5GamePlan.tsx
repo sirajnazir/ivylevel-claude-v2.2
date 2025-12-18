@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStudentStore } from '@/lib/store/useStudentStore';
 import { useSessionStore } from '@/lib/store/useSessionStore';
@@ -37,7 +38,19 @@ import {
   ArrowRight,
   Trophy,
   Sparkles,
+  Download,
+  Loader2,
 } from 'lucide-react';
+
+// Dynamically import PDF components to avoid SSR issues
+const PDFDownloadLink = dynamic(
+  () => import('@react-pdf/renderer').then((mod) => mod.PDFDownloadLink),
+  { ssr: false, loading: () => <span>Loading PDF...</span> }
+);
+const GamePlanPDF = dynamic(
+  () => import('@/lib/pdf/GamePlanPDF').then((mod) => mod.GamePlanPDF),
+  { ssr: false }
+);
 
 // ============================================================================
 // CONSTANTS
@@ -852,7 +865,7 @@ export function Frame5GamePlan({ onComplete }: Frame5GamePlanProps) {
         </motion.div>
       )}
 
-      {/* Complete Button */}
+      {/* Action Buttons */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -860,9 +873,58 @@ export function Frame5GamePlan({ onComplete }: Frame5GamePlanProps) {
         style={{
           marginTop: 32,
           display: 'flex',
-          justifyContent: 'center',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 16,
         }}
       >
+        {/* PDF Download Button */}
+        {typeof window !== 'undefined' && (
+          <PDFDownloadLink
+            document={
+              <GamePlanPDF
+                gamePlan={gamePlan}
+                studentName={profile.identity?.name || 'Student'}
+                studentGrade={typeof profile.identity?.grade === 'number' ? profile.identity.grade : 9}
+              />
+            }
+            fileName={`${(profile.identity?.name || 'Student').replace(/\s+/g, '_')}_GamePlan.pdf`}
+          >
+            {({ loading, error }) => (
+              <button
+                disabled={loading}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '12px 24px',
+                  backgroundColor: 'white',
+                  border: `2px solid ${BRAND_COLORS.primary}`,
+                  borderRadius: 10,
+                  color: BRAND_COLORS.primary,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.7 : 1,
+                }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                    Preparing PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download size={18} />
+                    Download Game Plan (PDF)
+                  </>
+                )}
+              </button>
+            )}
+          </PDFDownloadLink>
+        )}
+
+        {/* Complete Button */}
         <button
           onClick={handleComplete}
           style={{
