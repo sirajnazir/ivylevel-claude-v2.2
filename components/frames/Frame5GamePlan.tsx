@@ -51,6 +51,7 @@ const GamePlanPDF = dynamic(
   () => import('@/lib/pdf/GamePlanPDF').then((mod) => mod.GamePlanPDF),
   { ssr: false }
 );
+const CoachBooking = dynamic(() => import('@/components/booking/CoachBooking'), { ssr: false });
 
 // ============================================================================
 // CONSTANTS
@@ -947,11 +948,21 @@ export function Frame5GamePlan({ onComplete }: Frame5GamePlanProps) {
         </button>
       </motion.div>
 
+      {/* Coach Booking Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        style={{ marginTop: 32 }}
+      >
+        <CoachBooking compact />
+      </motion.div>
+
       {/* Encouragement Footer */}
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
+        transition={{ delay: 0.5 }}
         style={{
           textAlign: 'center',
           fontSize: 14,
