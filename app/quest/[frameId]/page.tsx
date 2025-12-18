@@ -12,9 +12,10 @@ import { AssessmentLayout } from '@/components/layout/AssessmentLayout';
 import Frame1Warmup from '@/components/frames/Frame1Warmup';
 import Frame2Snapshot from '@/components/frames/Frame2Snapshot';
 import Frame3Building from '@/components/frames/Frame3Building';
-import Frame4Operating from '@/components/frames/Frame4Operating';
+import { Frame4Context } from '@/components/frames/Frame4Context';
 import Frame5Reveal from '@/components/frames/Frame5Reveal';
 import Frame6PowerUps from '@/components/frames/Frame6PowerUps';
+import { Frame5GamePlan } from '@/components/frames/Frame5GamePlan';
 
 // ============================================
 // Types
@@ -32,9 +33,11 @@ const FRAME_COMPONENTS: Record<number, React.ComponentType<{ onComplete: () => v
   1: Frame1Warmup,
   2: Frame2Snapshot,
   3: Frame3Building,
-  4: Frame4Operating,
-  5: Frame5Reveal,
-  6: Frame6PowerUps,
+  4: Frame4Context,
+  5: Frame5GamePlan,
+  6: Frame5Reveal,
+  // Note: Frame6PowerUps is available but not currently in the flow
+  // The flow now includes Game Plan generation before final reveal
 };
 
 // ============================================

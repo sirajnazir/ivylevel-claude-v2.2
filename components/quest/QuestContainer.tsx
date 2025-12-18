@@ -38,9 +38,9 @@ export const FRAME_CONFIG = [
   { id: 1, name: 'Warmup', iconComponent: IconRocket, color: BRAND_COLORS.primary, description: 'Basic profile setup' },
   { id: 2, name: 'Snapshot', iconComponent: IconChart, color: BRAND_COLORS.success, description: 'Academic metrics' },
   { id: 3, name: 'Building', iconComponent: IconLayers, color: BRAND_COLORS.warning, description: 'Activities & achievements' },
-  { id: 4, name: 'Operating', iconComponent: IconSettings, color: BRAND_COLORS.secondary, description: 'Watch your twins evolve' },
-  { id: 5, name: 'Reveal', iconComponent: IconTarget, color: BRAND_COLORS.primary, description: 'Your admission chances' },
-  { id: 6, name: 'Power-Ups', iconComponent: IconEnergy, color: BRAND_COLORS.primaryLight, description: 'Strategic boosters' },
+  { id: 4, name: 'Context', iconComponent: IconSettings, color: BRAND_COLORS.secondary, description: 'Your situation & capacity' },
+  { id: 5, name: 'Game Plan', iconComponent: IconTarget, color: BRAND_COLORS.primary, description: 'Your personalized roadmap' },
+  { id: 6, name: 'Reveal', iconComponent: IconEnergy, color: BRAND_COLORS.primaryLight, description: 'Your admission chances' },
 ];
 
 // ============================================
