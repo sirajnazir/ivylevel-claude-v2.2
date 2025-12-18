@@ -468,3 +468,103 @@ Review status:
 5. ✅ ~~Phase 5: Data-Backed Messages~~
 6. 🔲 Future: "View All Insights" modal
 7. 🔲 Future: A/B testing framework
+
+---
+
+## Part 9: Game Plan System (NEW)
+
+### Overview
+
+The Game Plan system generates personalized action recommendations based on student profile analysis. It integrates with the assessment flow between data collection (Frame 4) and results reveal (Frame 6).
+
+### Implementation Status
+
+| Component | Status | Commit |
+|-----------|--------|--------|
+| Operating Data Types | ✅ Complete | `89066fc` |
+| Store Actions | ✅ Complete | `6872f30` |
+| Skip Logic Utilities | ✅ Complete | `d0c708b` |
+| Frame4Context Component | ✅ Complete | `bc4617e` |
+| Game Plan Engine | ✅ Complete | `ba46dd2` |
+| Frame5GamePlan Component | ✅ Complete | `d2d8172` |
+| Routing Integration | ✅ Complete | `679b50c` |
+
+### New Files Created
+
+```
+/lib/gamePlan/
+  └── gamePlanEngine.ts       # ✅ Core game plan generation logic
+
+/lib/utils/
+  └── skipLogic.ts            # ✅ Graceful handling of missing data
+
+/components/frames/
+  ├── Frame4Context.tsx       # ✅ Operating data collection
+  └── Frame5GamePlan.tsx      # ✅ Game plan display
+```
+
+### Frame Flow Update
+
+```
+Before:
+Frame 1 → Frame 2 → Frame 3 → Frame 4 (Operating) → Frame 5 (Reveal) → Frame 6 (PowerUps)
+
+After:
+Frame 1 → Frame 2 → Frame 3 → Frame 4 (Context) → Frame 5 (Game Plan) → Frame 6 (Reveal)
+```
+
+### Game Plan Engine Features
+
+1. **Profile Tier Classification**
+   - `fresh-start`: Students with <30% profile completeness
+   - `emerging`: Students with 30-60% completeness
+   - `optimization`: Students with >60% completeness
+
+2. **Action Generation**
+   - Academic actions (GPA, testing, AP courses)
+   - Activity actions (start, deepen, passion projects)
+   - Leadership and service recommendations
+   - Summer program and research suggestions
+   - Narrative building guidance
+
+3. **Priority System**
+   - `critical`: Must address immediately
+   - `high`: Important for competitiveness
+   - `medium`: Beneficial but not urgent
+   - `low`: Nice-to-have improvements
+
+4. **Time-Based Filtering**
+   - Filters actions based on available hours
+   - Calculates burnout risk
+   - Provides realistic weekly commitment estimates
+
+### Frame4Context Data Collection
+
+1. **Interests Section** (Optional)
+   - Favorite subject
+   - Career direction
+   - Career exclusions
+
+2. **Strengths Section** (Optional)
+   - Self-identified strengths (2-3 selections)
+   - Strength-based activity recommendations
+
+3. **Context Section** (Mandatory)
+   - Parent occupations
+   - First-generation status
+   - Work hours
+   - Transportation availability
+
+4. **Time Section** (Mandatory)
+   - Homework hours per day
+   - Available hours per week
+   - Burnout risk calculation
+
+### Frame5GamePlan Display
+
+- Tier-specific messaging and encouragement
+- Phase-based action organization
+- Expandable action cards with tips and resources
+- Strength-based activity recommendations
+- Quick wins section
+- Progress summary with strengths/improvement areas
