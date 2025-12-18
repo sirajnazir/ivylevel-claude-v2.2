@@ -294,6 +294,67 @@ export interface AssessmentIntelligence {
 }
 
 // ============================================================================
+// FRAME 4: OPERATING DATA (NEW)
+// ============================================================================
+
+export type CareerDirection = 'yes' | 'exploring' | 'no-idea';
+export type TransportationType = 'drive-self' | 'parent-drives' | 'public-transit' | 'limited';
+export type ProfileTier = 'fresh-start' | 'emerging' | 'optimization';
+export type ProfilePhase = 'foundation' | 'direction-setting' | 'refinement';
+export type ClarityLevel = 'low' | 'medium' | 'high';
+
+/**
+ * Frame 4 Operating Data - Understanding the student's context and capacity
+ */
+export interface OperatingData {
+  // Interests (all optional)
+  favoriteSubject?: string | null;
+  favoriteSubjectReason?: string | null;
+  careerDirection?: CareerDirection;
+  careerInterest?: string | null;
+  careerExclusions?: string[]; // ['cs', 'law', 'medicine']
+
+  // Strengths (all optional)
+  strengths?: string[]; // Selected from predefined list
+  strengthExample?: string | null;
+  naturalTalent?: string | null;
+
+  // Context (mandatory)
+  parent1Occupation?: string;
+  parent2Occupation?: string;
+  firstGeneration?: boolean | null;
+  workHours?: number; // per week
+  familyResponsibilities?: string | null;
+  transportation?: TransportationType;
+
+  // Time capacity (mandatory)
+  availableHoursPerWeek?: number; // 0-20
+  homeworkHoursPerDay?: number; // 0-6
+  burnoutRisk?: 'low' | 'moderate' | 'high';
+}
+
+/**
+ * Profile Completeness Tracking
+ */
+export interface ProfileCompleteness {
+  score: number; // 0-100
+  hasAcademics: boolean;
+  hasActivities: boolean;
+  hasContext: boolean;
+  hasOperating: boolean;
+}
+
+/**
+ * Profile Classification for Game Plan generation
+ */
+export interface ProfileClassification {
+  tier: ProfileTier; // Based on completeness
+  phase: ProfilePhase;
+  clarityLevel: ClarityLevel;
+  archetype?: string; // e.g., "explorer", "academic-grinder", "maker"
+}
+
+// ============================================================================
 // COMPLETE STUDENT PROFILE
 // ============================================================================
 
@@ -322,6 +383,13 @@ export interface StudentProfile {
 
   // Layer 4: Assessment Intelligence
   assessment_intelligence: AssessmentIntelligence;
+
+  // Frame 4: Operating Data (NEW)
+  operating?: OperatingData;
+
+  // Profile Analysis (NEW)
+  completeness?: ProfileCompleteness;
+  classification?: ProfileClassification;
 }
 
 // ============================================================================
