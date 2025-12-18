@@ -8,6 +8,7 @@
 import { useState, useCallback } from 'react';
 import type { StudentProfile } from '@/lib/types/student';
 import type { GamePlan } from '@/lib/gamePlan/gamePlanEngine';
+import { getProfileTier } from '@/lib/utils/skipLogic';
 
 interface PersistenceState {
   isLoading: boolean;
@@ -80,8 +81,8 @@ export function usePersistence() {
             game_plan: options.gamePlan,
             scores: options.scores,
             completeness: options.completeness ?? profile.completeness?.score ?? 0,
-            tier: options.tier ?? profile.classification?.tier,
-            archetype: options.archetype ?? profile.classification?.archetype,
+            tier: options.tier ?? getProfileTier(profile),
+            archetype: options.archetype ?? profile.classification?.archetype ?? 'Explorer',
           }),
         });
 

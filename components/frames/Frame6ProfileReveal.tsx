@@ -18,6 +18,7 @@ import { motion } from 'framer-motion';
 import { useStudentStore } from '@/lib/store/useStudentStore';
 import { useSessionStore } from '@/lib/store/useSessionStore';
 import { BRAND_COLORS } from '@/lib/constants/brand';
+import { getProfileTier } from '@/lib/utils/skipLogic';
 import {
   TrendingUp,
   Target,
@@ -145,7 +146,7 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
   );
 
   const completeness = profile.completeness?.score || 0;
-  const tier = profile.classification?.tier || 'fresh-start';
+  const tier = getProfileTier(profile);
   const archetype = profile.classification?.archetype || 'Explorer';
 
   // Extract strengths
