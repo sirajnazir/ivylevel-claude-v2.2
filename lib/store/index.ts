@@ -13,6 +13,8 @@ export {
   usePositiveInsights,
   useIsGeneratingInsights,
   useInsightCounts,
+  useRealtimeInsights,
+  useAddRealtimeInsight,
 } from './useInsightsStore';
 export { useSessionStore, type FrameId, type FrameProgress, type QuizAnswer } from './useSessionStore';
 export { useResultsStore } from './useResultsStore';

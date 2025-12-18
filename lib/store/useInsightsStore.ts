@@ -21,6 +21,7 @@ import type {
   StudentProfile as InsightStudentProfile,
   GradeLevel,
 } from '../insights/types';
+import type { RealtimeInsight } from '../insights/realtimeInsights';
 import { useStudentStore } from './useStudentStore';
 import type { StudentProfile } from '../types/student';
 
@@ -166,9 +167,17 @@ interface InsightsStoreState {
   lastGeneratedAt: string | null;
   lastTrigger: string | null;
 
+  // Real-time insights state
+  realtimeInsights: RealtimeInsight[];
+
   // Actions
   generateInsights: (attributeTrigger?: string) => void;
   clearInsights: () => void;
+
+  // Real-time insight actions
+  addRealtimeInsight: (insight: RealtimeInsight) => void;
+  clearRealtimeInsights: () => void;
+  removeRealtimeInsight: (id: string) => void;
 
   // Filtering & Utilities
   getFilteredInsights: (options: InsightFilterOptions) => Insight[];
@@ -190,6 +199,9 @@ export const useInsightsStore = create<InsightsStoreState>()(
       isGenerating: false,
       lastGeneratedAt: null,
       lastTrigger: null,
+
+      // Real-time insights initial state
+      realtimeInsights: [],
 
       // Generate insights from current student profile
       generateInsights: (attributeTrigger?: string) => {
@@ -223,6 +235,29 @@ export const useInsightsStore = create<InsightsStoreState>()(
           state.insights = [];
           state.lastGeneratedAt = null;
           state.lastTrigger = null;
+        }),
+
+      // Add a real-time insight (deduplicates by metricType to prevent stacking)
+      addRealtimeInsight: (insight: RealtimeInsight) =>
+        set((state) => {
+          // Remove any existing insight with the same metricType (update instead of stack)
+          const filtered = state.realtimeInsights.filter(
+            (i) => i.metricType !== insight.metricType
+          );
+          // Add new insight at the front and keep only the last 15
+          state.realtimeInsights = [insight, ...filtered].slice(0, 15);
+        }),
+
+      // Clear all real-time insights
+      clearRealtimeInsights: () =>
+        set((state) => {
+          state.realtimeInsights = [];
+        }),
+
+      // Remove a specific real-time insight
+      removeRealtimeInsight: (id: string) =>
+        set((state) => {
+          state.realtimeInsights = state.realtimeInsights.filter((i) => i.id !== id);
         }),
 
       // Get filtered insights
@@ -357,4 +392,22 @@ export function useInsightCounts(): Record<InsightSeverity, number> {
     positive: state.insights.filter((i) => i.severity === 'positive').length,
     neutral: state.insights.filter((i) => i.severity === 'neutral').length,
   }));
+}
+
+// ============================================================================
+// REAL-TIME INSIGHT HOOKS
+// ============================================================================
+
+/**
+ * Hook to get all real-time insights
+ */
+export function useRealtimeInsights(): RealtimeInsight[] {
+  return useInsightsStore((state) => state.realtimeInsights);
+}
+
+/**
+ * Hook to get the addRealtimeInsight action
+ */
+export function useAddRealtimeInsight(): (insight: RealtimeInsight) => void {
+  return useInsightsStore((state) => state.addRealtimeInsight);
 }

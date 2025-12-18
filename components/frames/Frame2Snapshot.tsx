@@ -8,18 +8,19 @@
  *
  * LAYOUT: Uses SplitFrameLayout with:
  * - Left: Input cards (GPA, Tests, Rigor, Awards)
- * - Right: PillarCards (4 animated pillar icons) + InsightsPanel
+ * - Right: InsightsPanel for real-time feedback
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useStudentStore, useSessionStore } from '@/lib/store';
+import { useStudentStore, useSessionStore, useAddRealtimeInsight } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Slider } from '@/components/ui/Slider';
 import { FrameWrapper, CardNavigation } from '@/components/layout/AssessmentLayout';
 import { SplitFrameLayout } from '@/components/layout/SplitFrameLayout';
-import { PillarCards } from '@/components/rings/PillarCards';
 import { InsightsPanel } from '@/components/insights';
+import { RealtimeInsightGenerator } from '@/lib/insights/realtimeInsights';
+import { useNotificationStore } from '@/lib/hooks/useInsightNotifications';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import {
   BookOpen,
@@ -62,33 +63,20 @@ export function Frame2Snapshot({ onComplete }: Frame2Props) {
     }
   }, [currentCard]);
 
-  // Get current scores for pillar visualization
-  const profile = useStudentStore((s) => s.profile);
-
-  // Calculate preliminary scores for real-time visualization
-  // These are simplified estimates - actual scoring happens in Frame 5
-  const aptitudeScore = calculateAptitudePreview(profile);
-
   return (
     <FrameWrapper
       title="Academic Snapshot"
       subtitle="Let's capture your academic foundation"
     >
       <SplitFrameLayout
-        ivAnimation={
-          <PillarCards
-            aptitude={aptitudeScore}
-            passion={0}
-            community={0}
-            narrative={0}
-          />
-        }
         rightPanel={
-          <InsightsPanel
-            maxInsights={3}
-            categories={['APTITUDE', 'HYPER_LOCAL', 'INSTITUTIONAL']}
-            title="Academic Insights"
-          />
+          <div className="sticky top-24">
+            <InsightsPanel
+              maxInsights={3}
+              categories={['APTITUDE', 'HYPER_LOCAL', 'INSTITUTIONAL']}
+              title="Academic Insights"
+            />
+          </div>
         }
       >
         <AnimatePresence mode="wait">
@@ -110,59 +98,47 @@ export function Frame2Snapshot({ onComplete }: Frame2Props) {
   );
 }
 
-/**
- * Calculate a preview aptitude score based on current profile data
- * This is a simplified estimate for real-time visualization
- */
-function calculateAptitudePreview(profile: ReturnType<typeof useStudentStore.getState>['profile']): number {
-  let score = 0;
-
-  // GPA contribution (max 30 points)
-  const gpa = profile.aptitude?.gpa_weighted;
-  if (gpa) {
-    score += Math.min(30, (gpa / 5.0) * 30);
-  }
-
-  // SAT/ACT contribution (max 30 points)
-  const sat = profile.aptitude?.sat_total;
-  const act = profile.aptitude?.act_total;
-  if (sat) {
-    score += Math.min(30, ((sat - 1000) / 600) * 30);
-  } else if (act) {
-    score += Math.min(30, ((act - 20) / 16) * 30);
-  }
-
-  // AP courses contribution (max 20 points)
-  const apCount = profile.aptitude?.ap_count;
-  if (apCount) {
-    score += Math.min(20, (apCount / 12) * 20);
-  }
-
-  // Awards contribution (max 20 points)
-  const awards = profile.aptitude?.academic_awards?.length ?? 0;
-  score += Math.min(20, awards * 5);
-
-  return Math.round(Math.min(100, score));
-}
-
 // GPA Input Card
 function GPACard() {
+  const profile = useStudentStore((s) => s.profile);
   const gpaWeighted = useStudentStore((s) => s.profile.aptitude.gpa_weighted);
   const gpaUnweighted = useStudentStore((s) => s.profile.aptitude.gpa_unweighted);
   const setGPA = useStudentStore((s) => s.setGPA);
+  const addRealtimeInsight = useAddRealtimeInsight();
 
   const [weighted, setWeighted] = useState(gpaWeighted ?? 4.0);
   const [unweighted, setUnweighted] = useState(gpaUnweighted ?? 3.9);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleWeightedChange = (value: number) => {
     setWeighted(value);
     setGPA(value, unweighted);
+
+    // Debounce insight generation
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const updatedProfile = { ...profile, aptitude: { ...profile.aptitude, gpa_weighted: value } };
+      const insight = RealtimeInsightGenerator.generateGPAInsight(updatedProfile);
+      if (insight) {
+        // Add to floating notification queue
+        useNotificationStore.getState().addNotification(insight);
+        // Also add to panel for history
+        addRealtimeInsight(insight);
+      }
+    }, 500);
   };
 
   const handleUnweightedChange = (value: number) => {
     setUnweighted(value);
     setGPA(weighted, value);
   };
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const getGPAFeedback = (gpa: number, type: 'weighted' | 'unweighted') => {
     if (type === 'weighted') {
@@ -247,12 +223,14 @@ function GPACard() {
 
 // Tests Card (SAT/ACT)
 function TestsCard() {
+  const profile = useStudentStore((s) => s.profile);
   const satTotal = useStudentStore((s) => s.profile.aptitude.sat_total);
   const actTotal = useStudentStore((s) => s.profile.aptitude.act_total);
   const testOptional = useStudentStore((s) => s.profile.aptitude.test_optional);
   const setSAT = useStudentStore((s) => s.setSAT);
   const setACT = useStudentStore((s) => s.setACT);
   const setTestOptional = useStudentStore((s) => s.setTestOptional);
+  const addRealtimeInsight = useAddRealtimeInsight();
 
   const [testType, setTestType] = useState<'SAT' | 'ACT' | 'NONE'>(
     testOptional ? 'NONE' : satTotal ? 'SAT' : actTotal ? 'ACT' : 'SAT'
@@ -260,21 +238,41 @@ function TestsCard() {
 
   const [sat, setSatValue] = useState(satTotal ?? 1400);
   const [act, setActValue] = useState(actTotal ?? 32);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const generateTestInsight = useCallback((updatedProfile: typeof profile) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const insight = RealtimeInsightGenerator.generateTestScoreInsight(updatedProfile);
+      if (insight) {
+        // Add to floating notification queue
+        useNotificationStore.getState().addNotification(insight);
+        // Also add to panel for history
+        addRealtimeInsight(insight);
+      }
+    }, 500);
+  }, [addRealtimeInsight]);
 
   const handleSATChange = (value: number) => {
     setSatValue(value);
     setSAT(value);
+    const updatedProfile = { ...profile, aptitude: { ...profile.aptitude, sat_total: value, test_optional: false } };
+    generateTestInsight(updatedProfile);
   };
 
   const handleACTChange = (value: number) => {
     setActValue(value);
     setACT(value);
+    const updatedProfile = { ...profile, aptitude: { ...profile.aptitude, act_total: value, test_optional: false } };
+    generateTestInsight(updatedProfile);
   };
 
   const handleTestTypeChange = (type: 'SAT' | 'ACT' | 'NONE') => {
     setTestType(type);
     if (type === 'NONE') {
       setTestOptional(true);
+      const updatedProfile = { ...profile, aptitude: { ...profile.aptitude, test_optional: true } };
+      generateTestInsight(updatedProfile);
     } else if (type === 'SAT') {
       setTestOptional(false);
       setSAT(sat);
@@ -283,6 +281,13 @@ function TestsCard() {
       setACT(act);
     }
   };
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const getSATPercentile = (score: number) => {
     if (score >= 1550) return '99th';
@@ -418,24 +423,58 @@ function TestsCard() {
 
 // Rigor Card (AP courses)
 function RigorCard() {
+  const profile = useStudentStore((s) => s.profile);
   const apCount = useStudentStore((s) => s.profile.aptitude.ap_count);
   const apAvgScore = useStudentStore((s) => s.profile.aptitude.ap_avg_score);
   const ibDiploma = useStudentStore((s) => s.profile.aptitude.ib_diploma);
   const setAPCourses = useStudentStore((s) => s.setAPCourses);
   const setAptitude = useStudentStore((s) => s.setAptitude);
+  const addRealtimeInsight = useAddRealtimeInsight();
 
   const [count, setCount] = useState(apCount ?? 6);
   const [avgScore, setAvgScore] = useState(apAvgScore ?? 4.0);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const generateRigorInsight = useCallback((updatedProfile: typeof profile) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const insight = RealtimeInsightGenerator.generateRigorInsight(updatedProfile);
+      if (insight) {
+        // Add to floating notification queue
+        useNotificationStore.getState().addNotification(insight);
+        // Also add to panel for history
+        addRealtimeInsight(insight);
+      }
+    }, 500);
+  }, [addRealtimeInsight]);
 
   const handleCountChange = (value: number) => {
     setCount(value);
     setAPCourses(value, avgScore);
+    const updatedProfile = { ...profile, aptitude: { ...profile.aptitude, ap_count: value } };
+    generateRigorInsight(updatedProfile);
   };
 
   const handleAvgScoreChange = (value: number) => {
     setAvgScore(value);
     setAPCourses(count, value);
   };
+
+  const handleIBToggle = () => {
+    const newIBDiploma = !ibDiploma;
+    setAptitude({ ib_diploma: newIBDiploma });
+    if (newIBDiploma) {
+      const updatedProfile = { ...profile, aptitude: { ...profile.aptitude, ib_diploma: true } };
+      generateRigorInsight(updatedProfile);
+    }
+  };
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const getRigorLevel = (count: number) => {
     if (count >= 12) return { text: 'Maximum rigor', color: BRAND_COLORS.success };
@@ -514,7 +553,7 @@ function RigorCard() {
                 </p>
               </div>
               <button
-                onClick={() => setAptitude({ ib_diploma: !ibDiploma })}
+                onClick={handleIBToggle}
                 className="w-12 h-6 rounded-full transition-colors relative"
                 style={{
                   backgroundColor: ibDiploma ? BRAND_COLORS.primary : BRAND_COLORS.borderLight,

@@ -13,8 +13,10 @@ import {
   useInsights,
   useIsGeneratingInsights,
   useInsightCounts,
+  useRealtimeInsights,
 } from '@/lib/store';
 import type { Insight, InsightSeverity, InsightCategory } from '@/lib/insights/types';
+import type { RealtimeInsight } from '@/lib/insights/realtimeInsights';
 import {
   AlertCircle,
   AlertTriangle,
@@ -28,6 +30,13 @@ import {
   Heart,
   Brain,
   Building,
+  Lightbulb,
+  Target,
+  Award,
+  Microscope,
+  TrendingUp,
+  Zap,
+  type LucideIcon,
 } from 'lucide-react';
 
 // ============================================================================
@@ -167,6 +176,134 @@ function InsightCard({ insight }: { insight: Insight }) {
   );
 }
 
+// Real-time insight colors
+const REALTIME_COLORS: Record<RealtimeInsight['category'], { bg: string; border: string; text: string; iconBg: string }> = {
+  positive: {
+    bg: 'rgba(22, 163, 74, 0.08)',
+    border: 'rgba(22, 163, 74, 0.3)',
+    text: '#16a34a',
+    iconBg: 'linear-gradient(135deg, #1DBF73, #15D77C)',
+  },
+  warning: {
+    bg: 'rgba(217, 119, 6, 0.08)',
+    border: 'rgba(217, 119, 6, 0.3)',
+    text: '#d97706',
+    iconBg: 'linear-gradient(135deg, #FFBB00, #EAB705)',
+  },
+  tip: {
+    bg: 'rgba(147, 51, 234, 0.08)',
+    border: 'rgba(147, 51, 234, 0.3)',
+    text: '#9333ea',
+    iconBg: 'linear-gradient(135deg, #7B61FF, #9B7FFF)',
+  },
+  info: {
+    bg: 'rgba(59, 130, 246, 0.08)',
+    border: 'rgba(59, 130, 246, 0.3)',
+    text: '#3b82f6',
+    iconBg: 'linear-gradient(135deg, #55AAAA, #CCE6E6)',
+  },
+};
+
+// Map category to default icon
+const REALTIME_CATEGORY_ICONS: Record<RealtimeInsight['category'], LucideIcon> = {
+  positive: CheckCircle,
+  warning: AlertTriangle,
+  tip: Lightbulb,
+  info: Info,
+};
+
+// Get appropriate icon based on insight title keywords and category
+function getRealtimeInsightIcon(title: string, category: RealtimeInsight['category']): LucideIcon {
+  const titleLower = title.toLowerCase();
+
+  if (titleLower.includes('gpa') || titleLower.includes('academic')) return BookOpen;
+  if (titleLower.includes('sat') || titleLower.includes('act') || titleLower.includes('test')) return Target;
+  if (titleLower.includes('leadership')) return Award;
+  if (titleLower.includes('research') || titleLower.includes('publication')) return Microscope;
+  if (titleLower.includes('service') || titleLower.includes('community')) return Heart;
+  if (titleLower.includes('rigor') || titleLower.includes('ap') || titleLower.includes('course') || titleLower.includes('ib')) return TrendingUp;
+  if (titleLower.includes('impact') || titleLower.includes('reach')) return Users;
+  if (titleLower.includes('first-gen') || titleLower.includes('first gen') || titleLower.includes('pioneer')) return Zap;
+
+  return REALTIME_CATEGORY_ICONS[category];
+}
+
+function RealtimeInsightCard({ insight, isLatest }: { insight: RealtimeInsight; isLatest: boolean }) {
+  const colors = REALTIME_COLORS[insight.category];
+  const timeAgo = getTimeAgo(insight.timestamp);
+  const IconComponent = getRealtimeInsightIcon(insight.title, insight.category);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.3 }}
+      className="p-4 rounded-xl"
+      style={{
+        backgroundColor: colors.bg,
+        border: `1px solid ${colors.border}`,
+        boxShadow: isLatest ? `0 0 0 2px ${BRAND_COLORS.primary}40` : undefined,
+      }}
+    >
+      <div className="flex items-start gap-3">
+        {/* Lucide icon in gradient circle */}
+        <div
+          className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+          style={{
+            background: colors.iconBg,
+            boxShadow: `0 4px 12px ${colors.text}40`,
+          }}
+        >
+          <IconComponent className="w-5 h-5 text-white" strokeWidth={2.5} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h4
+              className="font-semibold text-sm"
+              style={{ color: BRAND_COLORS.textHeading }}
+            >
+              {insight.title}
+            </h4>
+            {isLatest && (
+              <span
+                className="text-xs font-medium px-2 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: BRAND_COLORS.primary,
+                  color: 'white',
+                }}
+              >
+                NEW
+              </span>
+            )}
+          </div>
+          <p
+            className="text-sm leading-relaxed"
+            style={{ color: BRAND_COLORS.textPrimary }}
+          >
+            {insight.message}
+          </p>
+          <p
+            className="text-xs mt-2"
+            style={{ color: BRAND_COLORS.textMuted }}
+          >
+            {timeAgo}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function getTimeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 5) return 'Just now';
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
+
 function InsightsSummary() {
   const counts = useInsightCounts();
 
@@ -223,10 +360,11 @@ export function InsightsPanel({
   severities,
   categories,
   showSummary = true,
-  title = 'Real-time Insights',
+  title = 'Profile Insights',
   className = '',
 }: InsightsPanelProps) {
   const allInsights = useInsights();
+  const realtimeInsights = useRealtimeInsights();
   const isGenerating = useIsGeneratingInsights();
 
   // Filter insights based on props
@@ -244,6 +382,13 @@ export function InsightsPanel({
   const displayInsights = [...filteredInsights]
     .sort((a, b) => b.priority - a.priority)
     .slice(0, maxInsights);
+
+  // Sort realtime insights by timestamp (newest first) and take top 5
+  const displayRealtimeInsights = [...realtimeInsights]
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 5);
+
+  const hasAnyInsights = displayInsights.length > 0 || displayRealtimeInsights.length > 0;
 
   return (
     <div
@@ -285,13 +430,24 @@ export function InsightsPanel({
       {showSummary && <InsightsSummary />}
 
       {/* Insights List */}
-      <div className="space-y-3">
+      <div className="space-y-3 max-h-[500px] overflow-y-auto">
         <AnimatePresence mode="popLayout">
-          {displayInsights.length > 0 ? (
-            displayInsights.map((insight) => (
-              <InsightCard key={insight.id} insight={insight} />
-            ))
-          ) : (
+          {/* Real-time insights first (newest) */}
+          {displayRealtimeInsights.map((insight, index) => (
+            <RealtimeInsightCard
+              key={insight.id}
+              insight={insight}
+              isLatest={index === 0}
+            />
+          ))}
+
+          {/* Original insights from InsightEngine */}
+          {displayInsights.map((insight) => (
+            <InsightCard key={insight.id} insight={insight} />
+          ))}
+
+          {/* Empty state */}
+          {!hasAnyInsights && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

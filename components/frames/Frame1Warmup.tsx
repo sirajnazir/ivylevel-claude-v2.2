@@ -7,7 +7,9 @@ import { useStudentStore, useSessionStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { FrameWrapper, CardNavigation } from '@/components/layout/AssessmentLayout';
+import { SplitFrameLayout } from '@/components/layout/SplitFrameLayout';
 import { SCHOOL_DATABASE } from '@/lib/data/schools';
+import { FRAME1_MESSAGES } from '@/lib/constants/droneMessages';
 import {
   User,
   Users,
@@ -54,34 +56,42 @@ export function Frame1Warmup({ onComplete }: Frame1Props) {
     }
   }, [currentCard]);
 
+  // Get the drone message for the current card
+  const currentCardType = CARDS[currentCard];
+  const droneMessage = FRAME1_MESSAGES[currentCardType] || FRAME1_MESSAGES.role;
+
   return (
     <FrameWrapper
       title="Welcome to IvyQuest"
       highlights={["IvyQuest"]}
       subtitle="Let's build your Digital Twin Fleet"
     >
-      <AnimatePresence mode="wait">
-        {CARDS[currentCard] === 'role' && (
-          <RoleCard key="role" onComplete={handleNext} />
-        )}
-        {CARDS[currentCard] === 'identity' && (
-          <IdentityCard key="identity" />
-        )}
-        {CARDS[currentCard] === 'schools' && (
-          <SchoolsCard key="schools" />
-        )}
-        {CARDS[currentCard] === 'major' && (
-          <MajorCard key="major" />
-        )}
-      </AnimatePresence>
+      <SplitFrameLayout droneMessage={droneMessage}>
+        <div className="space-y-6">
+          <AnimatePresence mode="wait">
+            {CARDS[currentCard] === 'role' && (
+              <RoleCard key="role" onComplete={handleNext} />
+            )}
+            {CARDS[currentCard] === 'identity' && (
+              <IdentityCard key="identity" />
+            )}
+            {CARDS[currentCard] === 'schools' && (
+              <SchoolsCard key="schools" />
+            )}
+            {CARDS[currentCard] === 'major' && (
+              <MajorCard key="major" />
+            )}
+          </AnimatePresence>
 
-      <CardNavigation
-        currentCard={currentCard}
-        totalCards={CARDS.length}
-        onNext={handleNext}
-        onPrev={handlePrev}
-        canProgress={useCardValidation(CARDS[currentCard])}
-      />
+          <CardNavigation
+            currentCard={currentCard}
+            totalCards={CARDS.length}
+            onNext={handleNext}
+            onPrev={handlePrev}
+            canProgress={useCardValidation(CARDS[currentCard])}
+          />
+        </div>
+      </SplitFrameLayout>
     </FrameWrapper>
   );
 }

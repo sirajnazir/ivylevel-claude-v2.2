@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk } from 'next/font/google';
 import { AnalyticsProvider } from '@/lib/analytics';
 import { FeedbackProvider, ToastContainer } from '@/lib/feedback';
 import { InsightsProvider } from '@/components/insights';
+import { NotificationInsightCard } from '@/components/insights/NotificationInsightCard';
 import './globals.css';
 
 const inter = Inter({
@@ -52,6 +53,9 @@ export default function RootLayout({
 
             {/* Global toast container */}
             <ToastContainer />
+
+            {/* Floating notification system */}
+            <NotificationInsightCard />
           </FeedbackProvider>
         </AnalyticsProvider>
       </body>

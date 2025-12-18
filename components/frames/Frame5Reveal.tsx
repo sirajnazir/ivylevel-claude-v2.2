@@ -7,7 +7,7 @@
  * Never use dark-mode Tailwind classes (text-text-primary, bg-background-secondary, etc.)
  */
 
-import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useCallback, useEffect, useRef, lazy, Suspense, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
 import { useResultsStore, useSessionStore, useStudentStore } from '@/lib/store';
@@ -36,6 +36,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import type { SchoolProbability, SchoolFit, IvyReadyScore } from '@/lib/types/student';
+import { LoadingInsight } from '@/components/insights/LoadingInsight';
+import { generateLoadingInsights } from '@/lib/insights/loadingInsights';
 
 // Lazy load 3D components to avoid SSR issues
 const TwinFleet = lazy(() => import('@/components/twin/TwinFleet').then(mod => ({ default: mod.TwinFleet })));
@@ -140,6 +142,12 @@ export function Frame5Reveal({ onComplete }: Frame5Props) {
     }
   }, [currentStage]);
 
+  // Generate personalized loading insights
+  const loadingInsights = useMemo(
+    () => generateLoadingInsights(profile),
+    [profile]
+  );
+
   // Show loading/error state while scoring
   if (!results || !ivyScore) {
     return (
@@ -217,6 +225,23 @@ export function Frame5Reveal({ onComplete }: Frame5Props) {
                         {step}
                       </div>
                     ))}
+                  </div>
+
+                  {/* Rotating personalized insights */}
+                  <div
+                    className="mt-6 pt-6"
+                    style={{ borderTop: `1px solid ${BRAND_COLORS.borderLight}` }}
+                  >
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <Sparkles className="w-4 h-4" style={{ color: BRAND_COLORS.primary }} />
+                      <span
+                        className="text-xs font-medium uppercase tracking-wide"
+                        style={{ color: BRAND_COLORS.textMuted }}
+                      >
+                        Did You Know?
+                      </span>
+                    </div>
+                    <LoadingInsight messages={loadingInsights} interval={2500} />
                   </div>
                 </div>
               )}

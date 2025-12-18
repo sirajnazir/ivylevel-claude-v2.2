@@ -8,21 +8,22 @@
  *
  * LAYOUT: Uses SplitFrameLayout with:
  * - Left: Input cards (spike, leadership, projects, research, etc.)
- * - Right: PillarCards + InsightsPanel
+ * - Right: InsightsPanel for real-time feedback
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
-import { useStudentStore, useSessionStore } from '@/lib/store';
+import { useStudentStore, useSessionStore, useAddRealtimeInsight } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Slider } from '@/components/ui/Slider';
 import { Button } from '@/components/ui/Button';
 import { FrameWrapper, CardNavigation } from '@/components/layout/AssessmentLayout';
 import { SplitFrameLayout } from '@/components/layout/SplitFrameLayout';
-import { PillarCards } from '@/components/rings/PillarCards';
 import { InsightsPanel } from '@/components/insights';
+import { RealtimeInsightGenerator, type RealtimeInsight } from '@/lib/insights/realtimeInsights';
+import { useNotificationStore } from '@/lib/hooks/useInsightNotifications';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { Check, Loader2 } from 'lucide-react';
 import {
@@ -77,33 +78,20 @@ export function Frame3Building({ onComplete }: Frame3Props) {
     }
   }, [currentCard]);
 
-  // Get current profile for pillar visualization
-  const profile = useStudentStore((s) => s.profile);
-
-  // Calculate preliminary scores for real-time visualization
-  const passionScore = calculatePassionPreview(profile);
-  const communityScore = calculateCommunityPreview(profile);
-
   return (
     <FrameWrapper
       title="Building Your Profile"
       subtitle="Tell us about your passions and impact"
     >
       <SplitFrameLayout
-        ivAnimation={
-          <PillarCards
-            aptitude={0}
-            passion={passionScore}
-            community={communityScore}
-            narrative={0}
-          />
-        }
         rightPanel={
-          <InsightsPanel
-            maxInsights={3}
-            categories={['PASSION', 'TEMPORAL', 'CONTEXT', 'HYPER_LOCAL']}
-            title="Profile Insights"
-          />
+          <div className="sticky top-24">
+            <InsightsPanel
+              maxInsights={3}
+              categories={['PASSION', 'TEMPORAL', 'CONTEXT', 'HYPER_LOCAL']}
+              title="Profile Insights"
+            />
+          </div>
         }
       >
         <AnimatePresence mode="wait">
@@ -128,90 +116,6 @@ export function Frame3Building({ onComplete }: Frame3Props) {
       </SplitFrameLayout>
     </FrameWrapper>
   );
-}
-
-/**
- * Calculate a preview passion score based on current profile data
- */
-function calculatePassionPreview(profile: ReturnType<typeof useStudentStore.getState>['profile']): number {
-  let score = 0;
-  const passion = profile.passion;
-
-  // Leadership contribution (max 35 points)
-  if (passion?.leadership_level) {
-    const leadershipScores: Record<string, number> = {
-      'FOUNDER_NATIONAL': 35,
-      'FOUNDER_STATE': 28,
-      'STATE_PRES': 21,
-      'SCHOOL_PRES': 17,
-      'OFFICER': 12,
-      'PARTICIPANT': 7,
-    };
-    score += leadershipScores[passion.leadership_level] || 0;
-  }
-
-  // Project impact contribution (max 25 points)
-  const impact = passion?.project_impact ?? 0;
-  if (impact >= 10000) score += 25;
-  else if (impact >= 1000) score += 20;
-  else if (impact >= 500) score += 15;
-  else if (impact >= 100) score += 10;
-  else if (impact > 0) score += 5;
-
-  // Research contribution (max 20 points)
-  if (passion?.research_level) {
-    const researchScores: Record<string, number> = {
-      'NATIONAL': 20,
-      'STATE': 15,
-      'SCHOOL': 10,
-      'INDEPENDENT': 5,
-      'NONE': 0,
-    };
-    score += researchScores[passion.research_level] || 0;
-  }
-
-  // EC awards contribution (max 20 points)
-  const ecAwards = passion?.ec_awards?.length ?? 0;
-  score += Math.min(20, ecAwards * 5);
-
-  return Math.round(Math.min(100, score));
-}
-
-/**
- * Calculate a preview community score based on current profile data
- */
-function calculateCommunityPreview(profile: ReturnType<typeof useStudentStore.getState>['profile']): number {
-  let score = 0;
-  const community = profile.community;
-
-  // Service leadership contribution (max 35 points)
-  if (community?.service_leadership) {
-    const leadershipScores: Record<string, number> = {
-      'NATIONAL': 35,
-      'REGIONAL': 25,
-      'LOCAL': 15,
-      'PARTICIPANT': 8,
-    };
-    score += leadershipScores[community.service_leadership] || 0;
-  }
-
-  // Service hours contribution (max 35 points)
-  const hours = community?.service_hours ?? 0;
-  if (hours >= 300) score += 35;
-  else if (hours >= 200) score += 28;
-  else if (hours >= 100) score += 20;
-  else if (hours >= 50) score += 12;
-  else if (hours > 0) score += 5;
-
-  // Community impact contribution (max 30 points)
-  const impact = community?.community_impact ?? 0;
-  if (impact >= 5000) score += 30;
-  else if (impact >= 1000) score += 22;
-  else if (impact >= 500) score += 15;
-  else if (impact >= 100) score += 8;
-  else if (impact > 0) score += 3;
-
-  return Math.round(Math.min(100, score));
 }
 
 // Spike Category Card
@@ -294,8 +198,27 @@ function SpikeCard() {
 
 // Leadership Card
 function LeadershipCard() {
+  const profile = useStudentStore((s) => s.profile);
   const leadershipLevel = useStudentStore((s) => s.profile.passion.leadership_level);
   const setLeadershipLevel = useStudentStore((s) => s.setLeadershipLevel);
+  const addRealtimeInsight = useAddRealtimeInsight();
+
+  const handleLeadershipChange = (value: LeadershipLevel) => {
+    setLeadershipLevel(value);
+
+    // Generate insight for the new leadership level
+    const updatedProfile = {
+      ...profile,
+      passion: { ...profile.passion, leadership_level: value },
+    };
+    const insight = RealtimeInsightGenerator.generateLeadershipInsight(updatedProfile);
+    if (insight) {
+      // Add to floating notification queue
+      useNotificationStore.getState().addNotification(insight);
+      // Also add to panel for history
+      addRealtimeInsight(insight);
+    }
+  };
 
   const levels: { value: LeadershipLevel; label: string; description: string; score: number }[] = [
     { value: 'FOUNDER_NATIONAL', label: 'National Founder', description: 'Founded org with national reach', score: 100 },
@@ -334,7 +257,7 @@ function LeadershipCard() {
               return (
                 <button
                   key={level.value}
-                  onClick={() => setLeadershipLevel(level.value)}
+                  onClick={() => handleLeadershipChange(level.value)}
                   className="w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left"
                   style={isSelected ? {
                     border: `2px solid ${BRAND_COLORS.primary}`,
@@ -752,8 +675,27 @@ function BragTextCard() {
 
 // Research Card
 function ResearchCard() {
+  const profile = useStudentStore((s) => s.profile);
   const researchLevel = useStudentStore((s) => s.profile.passion.research_level);
   const setResearchLevel = useStudentStore((s) => s.setResearchLevel);
+  const addRealtimeInsight = useAddRealtimeInsight();
+
+  const handleResearchChange = (value: ResearchLevel) => {
+    setResearchLevel(value);
+
+    // Generate insight for the new research level
+    const updatedProfile = {
+      ...profile,
+      passion: { ...profile.passion, research_level: value },
+    };
+    const insight = RealtimeInsightGenerator.generateResearchInsight(updatedProfile);
+    if (insight) {
+      // Add to floating notification queue
+      useNotificationStore.getState().addNotification(insight);
+      // Also add to panel for history
+      addRealtimeInsight(insight);
+    }
+  };
 
   const levels: { value: ResearchLevel; label: string; description: string }[] = [
     { value: 'NATIONAL', label: 'National Publication', description: 'Published in peer-reviewed journal or major conference' },
@@ -791,7 +733,7 @@ function ResearchCard() {
               return (
                 <button
                   key={level.value}
-                  onClick={() => setResearchLevel(level.value)}
+                  onClick={() => handleResearchChange(level.value)}
                   className="w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left"
                   style={isSelected ? {
                     border: `2px solid ${BRAND_COLORS.primary}`,
@@ -899,15 +841,42 @@ function ECAwardsCard() {
 
 // Community Service Card
 function CommunityCard() {
+  const profile = useStudentStore((s) => s.profile);
   const serviceLeadership = useStudentStore((s) => s.profile.community.service_leadership);
   const serviceHours = useStudentStore((s) => s.profile.community.service_hours);
   const communityImpact = useStudentStore((s) => s.profile.community.community_impact);
   const setServiceLeadership = useStudentStore((s) => s.setServiceLeadership);
   const setServiceHours = useStudentStore((s) => s.setServiceHours);
   const setCommunityImpact = useStudentStore((s) => s.setCommunityImpact);
+  const addRealtimeInsight = useAddRealtimeInsight();
 
   const [hours, setHours] = useState(serviceHours ?? 100);
   const [impact, setImpact] = useState(communityImpact ?? 200);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const generateServiceInsight = useCallback((hoursValue: number) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const updatedProfile = {
+        ...profile,
+        community: { ...profile.community, service_hours: hoursValue },
+      };
+      const insight = RealtimeInsightGenerator.generateServiceInsight(updatedProfile);
+      if (insight) {
+        // Add to floating notification queue
+        useNotificationStore.getState().addNotification(insight);
+        // Also add to panel for history
+        addRealtimeInsight(insight);
+      }
+    }, 500);
+  }, [profile, addRealtimeInsight]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const levels: { value: ServiceLeadership; label: string }[] = [
     { value: 'NATIONAL', label: 'National Organization Leader' },
@@ -973,6 +942,7 @@ function CommunityCard() {
               const val = parseInt(e.target.value);
               setHours(val);
               setServiceHours(val);
+              generateServiceInsight(val);
             }}
             formatValue={(v) => `${v} hours`}
           />

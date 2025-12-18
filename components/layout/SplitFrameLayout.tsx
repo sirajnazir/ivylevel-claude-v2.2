@@ -2,26 +2,34 @@
 
 import React from 'react';
 import { BRAND_COLORS } from '@/lib/constants/brand';
+import { DronePanel } from '@/components/common/DroneAssistant';
 
 /**
  * SplitFrameLayout - 2-column responsive layout for frames
  *
  * Layout Structure:
  * ┌──────────────────────────────────────────────────────┐
- * │  Left Panel (40%)       │  Right Panel (60%)        │
+ * │  Left Panel (50%)       │  Right Panel (50%)        │
  * │  ─────────────────      │  ─────────────────        │
- * │  Input Cards            │  IV Animation             │
- * │  (children)             │  + Code Box               │
+ * │  Input Cards            │  Drone Assistant          │
+ * │  (children)             │  or IV Animation          │
+ * │                         │  + Code Box               │
  * └──────────────────────────────────────────────────────┘
  *
  * Responsive Behavior:
  * - Desktop (≥1024px): 2 columns side-by-side
- * - Mobile/Tablet (<1024px): Stack vertically
+ * - Mobile/Tablet (<1024px): Stack vertically (left only, drone hidden)
  */
 
 interface SplitFrameLayoutProps {
   /** Left panel content (input cards) */
   children: React.ReactNode;
+
+  /** Right panel: Drone assistant message */
+  droneMessage?: string;
+
+  /** Right panel: Show coral gradient background for drone (default: true) */
+  droneGradientBg?: boolean;
 
   /** Right panel: IV animation component (centered in container) */
   ivAnimation?: React.ReactNode;
@@ -32,10 +40,10 @@ interface SplitFrameLayoutProps {
   /** Right panel: Code box content (single message or array of messages) */
   codeBoxContent?: string | string[];
 
-  /** Left panel width (default: "40%") - used for inline style on desktop */
+  /** Left panel width (default: "50%") - used for inline style on desktop */
   leftWidth?: string;
 
-  /** Right panel width (default: "60%") - used for inline style on desktop */
+  /** Right panel width (default: "50%") - used for inline style on desktop */
   rightWidth?: string;
 
   /** Additional CSS classes for the container */
@@ -46,6 +54,9 @@ interface SplitFrameLayoutProps {
 
   /** Hide the IV animation section even if provided */
   hideIVAnimation?: boolean;
+
+  /** Hide the drone on mobile (default: true) */
+  hideDroneOnMobile?: boolean;
 }
 
 /**
@@ -86,20 +97,24 @@ const IV_ANIMATION_STYLES = {
 
 export function SplitFrameLayout({
   children,
+  droneMessage,
+  droneGradientBg = true,
   ivAnimation,
   rightPanel,
   codeBoxContent,
-  leftWidth = '40%',
-  rightWidth = '60%',
+  leftWidth = '50%',
+  rightWidth = '50%',
   className = '',
   hideCodeBox = false,
   hideIVAnimation = false,
+  hideDroneOnMobile = true,
 }: SplitFrameLayoutProps) {
   // Determine if we should show right panel sections
+  const showDrone = !!droneMessage;
   const showIVAnimation = ivAnimation && !hideIVAnimation;
   const showRightPanel = !!rightPanel;
   const showCodeBox = codeBoxContent && !hideCodeBox;
-  const hasRightPanelContent = showIVAnimation || showRightPanel || showCodeBox;
+  const hasRightPanelContent = showDrone || showIVAnimation || showRightPanel || showCodeBox;
 
   // Convert codeBoxContent to array for consistent rendering
   const codeMessages = codeBoxContent
@@ -111,22 +126,25 @@ export function SplitFrameLayout({
   return (
     <div className={`w-full ${className}`}>
       {/* Desktop: 2-column grid, Mobile: Stack vertically */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* LEFT PANEL: Input Cards (children) */}
-        <div
-          className="space-y-6"
-          style={{
-            // Apply custom width on desktop via CSS custom property
-            // The grid will handle the actual layout
-          }}
-        >
+        <div className="space-y-6">
           {children}
         </div>
 
-        {/* RIGHT PANEL: IV Animation / Custom Panel / Code Box */}
+        {/* RIGHT PANEL: Drone Assistant / IV Animation / Custom Panel / Code Box */}
         {hasRightPanelContent && (
-          <div className="space-y-6">
-            {/* IV Animation Section (centered) - renders first */}
+          <div className={`space-y-6 ${hideDroneOnMobile && showDrone ? 'hidden lg:block' : ''}`}>
+            {/* Drone Assistant Panel */}
+            {showDrone && (
+              <DronePanel
+                message={droneMessage}
+                showGradientBg={droneGradientBg}
+                className="min-h-[400px]"
+              />
+            )}
+
+            {/* IV Animation Section (centered) */}
             {showIVAnimation && (
               <div style={IV_ANIMATION_STYLES.container}>
                 {ivAnimation}

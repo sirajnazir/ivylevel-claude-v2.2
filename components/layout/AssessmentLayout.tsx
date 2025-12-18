@@ -127,7 +127,7 @@ export function AssessmentLayout({
 
       {/* Main content */}
       <main className={cn('relative z-10 pt-32 pb-12 px-4', showProgress ? 'pt-40' : 'pt-24')}>
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <AnimatePresence mode="wait">
             {children}
           </AnimatePresence>
