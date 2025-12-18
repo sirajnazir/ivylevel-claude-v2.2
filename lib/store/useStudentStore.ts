@@ -31,6 +31,10 @@ import type {
   ParentArchetype,
   CoachabilityLevel,
   BurnoutRisk,
+  // Frame 4 Operating types
+  OperatingData,
+  ProfileCompleteness,
+  ProfileClassification,
 } from '../types/student';
 
 // Default empty profile
@@ -211,6 +215,11 @@ interface StudentStoreState {
   setAssessmentIntelligence: (ai: Partial<AssessmentIntelligence>) => void;
   setPsychometrics: (psych: Partial<AssessmentIntelligence['psychometrics']>) => void;
   setTimeManagement: (tm: Partial<AssessmentIntelligence['time_management']>) => void;
+
+  // Frame 4: Operating Data (NEW)
+  updateOperating: <K extends keyof OperatingData>(field: K, value: OperatingData[K]) => void;
+  updateOperatingBulk: (data: Partial<OperatingData>) => void;
+  calculateCompleteness: () => number;
 
   // Profile management
   resetProfile: () => void;
@@ -463,6 +472,105 @@ export const useStudentStore = create<StudentStoreState>()(
             Object.assign(state.profile.assessment_intelligence.time_management, tm);
             state.isDirty = true;
           }),
+
+        // Frame 4: Operating Data
+        updateOperating: (field, value) =>
+          set((state) => {
+            if (!state.profile.operating) {
+              state.profile.operating = {};
+            }
+            (state.profile.operating as Record<string, unknown>)[field] = value;
+            state.isDirty = true;
+          }),
+        updateOperatingBulk: (data) =>
+          set((state) => {
+            if (!state.profile.operating) {
+              state.profile.operating = {};
+            }
+            Object.assign(state.profile.operating, data);
+            state.isDirty = true;
+          }),
+        calculateCompleteness: () => {
+          const profile = get().profile;
+          let score = 0;
+          let hasAcademics = false;
+          let hasActivities = false;
+          let hasContext = false;
+          let hasOperating = false;
+
+          // Academics (30 points possible)
+          if (profile.aptitude?.gpa_weighted || profile.aptitude?.gpa_unweighted) {
+            score += 10;
+            hasAcademics = true;
+          }
+          if (profile.aptitude?.sat_total || profile.aptitude?.act_total) {
+            score += 10;
+            hasAcademics = true;
+          }
+          if (profile.aptitude?.ap_count && profile.aptitude.ap_count > 0) {
+            score += 10;
+            hasAcademics = true;
+          }
+
+          // Activities (40 points possible)
+          const ecCommitment = profile.passion?.ec_commitment_years;
+          const serviceHours = profile.community?.service_hours || 0;
+          const leadershipLevel = profile.passion?.leadership_level;
+
+          if (ecCommitment && ecCommitment > 0) {
+            score += 20;
+            hasActivities = true;
+          }
+          if (serviceHours > 0) {
+            score += 10;
+            hasActivities = true;
+          }
+          if (leadershipLevel && leadershipLevel !== 'PARTICIPANT') {
+            score += 10;
+            hasActivities = true;
+          }
+
+          // Context (15 points possible)
+          if (profile.operating?.parent1Occupation) {
+            score += 5;
+            hasContext = true;
+          }
+          if (profile.operating?.transportation) {
+            score += 5;
+            hasContext = true;
+          }
+          if (profile.operating?.firstGeneration !== undefined && profile.operating.firstGeneration !== null) {
+            score += 5;
+            hasContext = true;
+          }
+
+          // Operating (15 points possible)
+          if (profile.operating?.availableHoursPerWeek !== undefined) {
+            score += 5;
+            hasOperating = true;
+          }
+          if (profile.operating?.favoriteSubject) {
+            score += 5;
+            hasOperating = true;
+          }
+          if (profile.operating?.strengths && profile.operating.strengths.length > 0) {
+            score += 5;
+            hasOperating = true;
+          }
+
+          // Update completeness in store
+          set((state) => {
+            state.profile.completeness = {
+              score,
+              hasAcademics,
+              hasActivities,
+              hasContext,
+              hasOperating,
+            };
+          });
+
+          return score;
+        },
 
         // Profile management
         resetProfile: () =>
