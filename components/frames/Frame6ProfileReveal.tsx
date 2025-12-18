@@ -13,10 +13,11 @@
  * @version 1.0.0
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useStudentStore } from '@/lib/store/useStudentStore';
 import { useSessionStore } from '@/lib/store/useSessionStore';
+import { useResultsStore } from '@/lib/store/useResultsStore';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { getProfileTier } from '@/lib/utils/skipLogic';
 import {
@@ -113,6 +114,43 @@ interface Frame6ProfileRevealProps {
 export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
   const { profile } = useStudentStore();
   const { nextFrame, completeFrame } = useSessionStore();
+  const setResults = useResultsStore((s) => s.setResults);
+  const existingResults = useResultsStore((s) => s.results);
+  const [isScoring, setIsScoring] = useState(false);
+
+  // Run scoring API to populate results for the results page
+  useEffect(() => {
+    // Skip if already have results or currently scoring
+    if (existingResults || isScoring) return;
+
+    const runScoring = async () => {
+      setIsScoring(true);
+      try {
+        const response = await fetch('/api/score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile }),
+        });
+
+        const data = await response.json();
+        console.log('Frame6ProfileReveal: Scoring API response:', {
+          success: data.success,
+          hasResults: !!data.results
+        });
+
+        if (response.ok && data.results) {
+          setResults(data.results);
+        }
+      } catch (error) {
+        console.error('Frame6ProfileReveal: Scoring error:', error);
+        // Non-blocking - continue even if scoring fails
+      } finally {
+        setIsScoring(false);
+      }
+    };
+
+    runScoring();
+  }, [profile, existingResults, isScoring, setResults]);
 
   // Calculate category scores
   const categoryScores = useMemo(
