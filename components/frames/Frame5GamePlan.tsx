@@ -38,20 +38,16 @@ import {
   ArrowRight,
   Trophy,
   Sparkles,
-  Download,
-  Loader2,
 } from 'lucide-react';
 
-// Dynamically import PDF components to avoid SSR issues
-const PDFDownloadLink = dynamic(
-  () => import('@react-pdf/renderer').then((mod) => mod.PDFDownloadLink),
-  { ssr: false, loading: () => <span>Loading PDF...</span> }
-);
-const GamePlanPDF = dynamic(
-  () => import('@/lib/pdf/GamePlanPDF').then((mod) => mod.GamePlanPDF),
+// Dynamically import coach booking component to avoid SSR issues
+const CoachBooking = dynamic(
+  () => import('@/components/booking/CoachBooking').catch((err) => {
+    console.error('Failed to load CoachBooking:', err);
+    return { default: () => null };
+  }),
   { ssr: false }
 );
-const CoachBooking = dynamic(() => import('@/components/booking/CoachBooking'), { ssr: false });
 
 // ============================================================================
 // CONSTANTS
@@ -400,8 +396,37 @@ export function Frame5GamePlan({ onComplete }: Frame5GamePlanProps) {
   const [expandedActions, setExpandedActions] = useState<Set<string>>(new Set());
   const [showSummary, setShowSummary] = useState(true);
 
-  // Generate game plan
-  const gamePlan = useMemo(() => generateGamePlan(profile), [profile]);
+  // Generate game plan with error handling
+  const gamePlan = useMemo(() => {
+    try {
+      console.log('Frame5GamePlan: Generating game plan with profile:', profile);
+      const plan = generateGamePlan(profile);
+      console.log('Frame5GamePlan: Generated game plan:', plan);
+      return plan;
+    } catch (error) {
+      console.error('Frame5GamePlan: Error generating game plan:', error);
+      // Return a minimal valid game plan structure
+      return {
+        tier: 'fresh-start' as const,
+        tierInfo: {
+          title: 'Getting Started',
+          description: 'Building your profile from scratch.',
+          encouragement: "Every journey begins with a first step!"
+        },
+        totalEstimatedHours: 0,
+        weeklyCommitment: 0,
+        phases: [],
+        quickWins: [],
+        longTermGoals: [],
+        warnings: [],
+        summary: {
+          strengthAreas: [],
+          improvementAreas: [],
+          focusRecommendation: 'Start by exploring activities that interest you.',
+        },
+      };
+    }
+  }, [profile]);
 
   // Get strength-based recommendations
   const strengthRecs = useMemo(
@@ -879,52 +904,6 @@ export function Frame5GamePlan({ onComplete }: Frame5GamePlanProps) {
           gap: 16,
         }}
       >
-        {/* PDF Download Button */}
-        {typeof window !== 'undefined' && (
-          <PDFDownloadLink
-            document={
-              <GamePlanPDF
-                gamePlan={gamePlan}
-                studentName={profile.identity?.name || 'Student'}
-                studentGrade={typeof profile.identity?.grade === 'number' ? profile.identity.grade : 9}
-              />
-            }
-            fileName={`${(profile.identity?.name || 'Student').replace(/\s+/g, '_')}_GamePlan.pdf`}
-          >
-            {({ loading, error }) => (
-              <button
-                disabled={loading}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '12px 24px',
-                  backgroundColor: 'white',
-                  border: `2px solid ${BRAND_COLORS.primary}`,
-                  borderRadius: 10,
-                  color: BRAND_COLORS.primary,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.7 : 1,
-                }}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                    Preparing PDF...
-                  </>
-                ) : (
-                  <>
-                    <Download size={18} />
-                    Download Game Plan (PDF)
-                  </>
-                )}
-              </button>
-            )}
-          </PDFDownloadLink>
-        )}
-
         {/* Complete Button */}
         <button
           onClick={handleComplete}

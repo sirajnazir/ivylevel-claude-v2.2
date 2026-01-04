@@ -29,19 +29,19 @@ export interface HUDProps {
 }
 
 // ============================================
-// XP Level Calculation
+// Edge Points Level Calculation
 // ============================================
 
-const XP_PER_LEVEL = 100;
+const EDGE_PER_LEVEL = 100;
 const MAX_LEVEL = 50;
 
-function calculateLevel(xp: number): { level: number; currentXP: number; nextLevelXP: number; progress: number } {
-  const level = Math.min(Math.floor(xp / XP_PER_LEVEL) + 1, MAX_LEVEL);
-  const currentXP = xp % XP_PER_LEVEL;
-  const nextLevelXP = XP_PER_LEVEL;
-  const progress = (currentXP / nextLevelXP) * 100;
+function calculateLevel(edge: number): { level: number; currentEdge: number; nextLevelEdge: number; progress: number } {
+  const level = Math.min(Math.floor(edge / EDGE_PER_LEVEL) + 1, MAX_LEVEL);
+  const currentEdge = edge % EDGE_PER_LEVEL;
+  const nextLevelEdge = EDGE_PER_LEVEL;
+  const progress = (currentEdge / nextLevelEdge) * 100;
 
-  return { level, currentXP, nextLevelXP, progress };
+  return { level, currentEdge, nextLevelEdge, progress };
 }
 
 // ============================================
@@ -79,7 +79,7 @@ export function HUD({
   if (variant === 'minimal') {
     return (
       <div className={cn('flex items-center gap-4', className)}>
-        <XPBadge xp={xp} level={levelInfo.level} size="sm" />
+        <EdgeBadge edge={xp} level={levelInfo.level} size="sm" />
         <MiniTimeline currentFrame={currentFrame} />
       </div>
     );
@@ -104,8 +104,8 @@ export function HUD({
           {/* Center: Timeline */}
           {showTimeline && <MiniTimeline currentFrame={currentFrame} />}
 
-          {/* Right: XP */}
-          {showXP && <XPBadge xp={xp} level={levelInfo.level} size="sm" />}
+          {/* Right: Edge */}
+          {showXP && <EdgeBadge edge={xp} level={levelInfo.level} size="sm" />}
         </div>
       </div>
     );
@@ -136,7 +136,7 @@ export function HUD({
               {showXP && (
                 <div className="flex items-center gap-1">
                   <Zap className="w-3.5 h-3.5 text-gear-gold" />
-                  <span className="text-sm text-text-secondary font-mono">{xp} XP</span>
+                  <span className="text-sm text-text-secondary font-mono">{xp} Edge</span>
                 </div>
               )}
               {achievements.length > 0 && (
@@ -193,7 +193,7 @@ export function HUD({
                   />
                 </div>
                 <div className="text-xs text-text-muted mt-0.5 text-right font-mono">
-                  {levelInfo.currentXP}/{levelInfo.nextLevelXP}
+                  {levelInfo.currentEdge}/{levelInfo.nextLevelEdge}
                 </div>
               </div>
             )}
@@ -212,25 +212,28 @@ export function HUD({
 }
 
 // ============================================
-// XP Badge Component
+// Edge Badge Component (formerly XP Badge)
 // ============================================
 
-interface XPBadgeProps {
-  xp: number;
+interface EdgeBadgeProps {
+  edge: number;
   level: number;
   size?: 'sm' | 'md' | 'lg';
   showProgress?: boolean;
   className?: string;
 }
 
-export function XPBadge({
-  xp,
+// Alias for backwards compatibility
+export type XPBadgeProps = EdgeBadgeProps;
+
+export function EdgeBadge({
+  edge,
   level,
   size = 'md',
   showProgress = true,
   className,
-}: XPBadgeProps) {
-  const levelInfo = useMemo(() => calculateLevel(xp), [xp]);
+}: EdgeBadgeProps) {
+  const levelInfo = useMemo(() => calculateLevel(edge), [edge]);
 
   const sizes = {
     sm: {
@@ -269,13 +272,16 @@ export function XPBadge({
 
       {showProgress && (
         <div className="flex items-center gap-1">
-          <span className={cn('font-mono text-text-muted', sizeConfig.text)}>{xp}</span>
-          <span className={cn('text-text-disabled', sizeConfig.text)}>XP</span>
+          <span className={cn('font-mono text-text-muted', sizeConfig.text)}>{edge}</span>
+          <span className={cn('text-text-disabled', sizeConfig.text)}>Edge</span>
         </div>
       )}
     </div>
   );
 }
+
+// Backwards compatibility alias for XPBadge
+export const XPBadge = EdgeBadge;
 
 // ============================================
 // Score Display Component

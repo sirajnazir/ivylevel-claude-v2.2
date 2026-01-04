@@ -1,14 +1,29 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSessionStore } from '@/lib/store/useSessionStore';
 
 export default function HomePage() {
   const router = useRouter();
+  const isCompleted = useSessionStore((s) => s.is_completed);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    router.replace('/quest');
-  }, [router]);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    // If assessment is complete, redirect to dashboard
+    // Otherwise, redirect to quest (assessment flow)
+    if (isCompleted) {
+      router.replace('/dashboard');
+    } else {
+      router.replace('/quest');
+    }
+  }, [router, isCompleted, mounted]);
 
   return (
     <div
@@ -24,7 +39,6 @@ export default function HomePage() {
 // Demo Page (preserved for API testing)
 // ============================================================================
 
-import { useState } from 'react';
 import type { StudentProfile, AssessmentResults } from '@/lib/types/student';
 
 function DemoPage() {

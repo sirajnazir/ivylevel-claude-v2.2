@@ -7,7 +7,7 @@
  * - Glassmorphism with orange tint (IvyLevel brand)
  * - Lucide-react icons (not emojis)
  * - Progress rings (Apple Watch style)
- * - XP badges with animations
+ * - Edge badges with animations
  * - Outcome data cards with statistics
  */
 
@@ -207,7 +207,7 @@ export function IvyInsightCard({
               </div>
             </div>
 
-            {/* XP Badge */}
+            {/* Edge Badge */}
             {xpEarned && xpEarned > 0 && (
               <motion.div
                 initial={{ scale: 0 }}

@@ -16,8 +16,25 @@ import { useState, useCallback } from 'react';
 import { useStudentStore } from '@/lib/store/useStudentStore';
 import { useSessionStore } from '@/lib/store/useSessionStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Info, Check } from 'lucide-react';
+import {
+  ChevronRight,
+  ChevronLeft,
+  Info,
+  Check,
+  BookOpen,
+  FlaskConical,
+  MessageCircle,
+  Target,
+  Users,
+  Palette,
+  Calculator,
+  Clock,
+  Search,
+  Pencil,
+  HelpCircle,
+} from 'lucide-react';
 import { BRAND_COLORS } from '@/lib/constants/brand';
+import { STRENGTH_ICONS, ICON_COLORS } from '@/lib/constants/icons';
 
 // ============================================================================
 // CONSTANTS
@@ -44,18 +61,19 @@ const CAREER_EXCLUSIONS = [
   { id: 'arts', label: 'Arts / Creative fields' },
 ];
 
+// Strength options with SVG icons (v11 - replaced emojis)
 const STRENGTH_OPTIONS = [
-  { id: 'memorization', label: 'Memorization & recall', icon: '📚' },
-  { id: 'hands-on', label: 'Building/hands-on work', icon: '🧪' },
-  { id: 'explaining', label: 'Explaining to others', icon: '💬' },
-  { id: 'competitive', label: 'Competitive drive', icon: '🎯' },
-  { id: 'social', label: 'Connecting with people', icon: '🤝' },
-  { id: 'creative', label: 'Creative problem-solving', icon: '🎨' },
-  { id: 'analytical', label: 'Math/logic/patterns', icon: '📊' },
-  { id: 'disciplined', label: 'Discipline & consistency', icon: '⏰' },
-  { id: 'curious', label: 'Curiosity & questioning', icon: '🔬' },
-  { id: 'writing', label: 'Writing & storytelling', icon: '📝' },
-  { id: 'not-sure', label: 'Not sure yet', icon: '❓' },
+  { id: 'memorization', label: 'Memorization & recall', Icon: BookOpen },
+  { id: 'hands-on', label: 'Building/hands-on work', Icon: FlaskConical },
+  { id: 'explaining', label: 'Explaining to others', Icon: MessageCircle },
+  { id: 'competitive', label: 'Competitive drive', Icon: Target },
+  { id: 'social', label: 'Connecting with people', Icon: Users },
+  { id: 'creative', label: 'Creative problem-solving', Icon: Palette },
+  { id: 'analytical', label: 'Math/logic/patterns', Icon: Calculator },
+  { id: 'disciplined', label: 'Discipline & consistency', Icon: Clock },
+  { id: 'curious', label: 'Curiosity & questioning', Icon: Search },
+  { id: 'writing', label: 'Writing & storytelling', Icon: Pencil },
+  { id: 'not-sure', label: 'Not sure yet', Icon: HelpCircle },
 ];
 
 const OCCUPATION_OPTIONS = [
@@ -375,7 +393,17 @@ export function Frame4Context({ onComplete }: Frame4ContextProps) {
                     cursor: !canSelect && !isSelected ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  <span className="text-2xl">{strength.icon}</span>
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{
+                      backgroundColor: isSelected ? BRAND_COLORS.primaryBg : 'rgba(0,0,0,0.05)',
+                    }}
+                  >
+                    <strength.Icon
+                      size={20}
+                      style={{ color: isSelected ? BRAND_COLORS.primary : BRAND_COLORS.textMuted }}
+                    />
+                  </div>
                   <span className="flex-1 font-medium" style={{ color: BRAND_COLORS.textPrimary }}>
                     {strength.label}
                   </span>

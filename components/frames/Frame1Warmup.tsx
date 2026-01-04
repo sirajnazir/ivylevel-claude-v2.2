@@ -40,7 +40,7 @@ export function Frame1Warmup({ onComplete }: Frame1Props) {
   });
 
   const handleNext = useCallback(() => {
-    completeCard(25); // 25 XP per card
+    completeCard(25); // 25 Edge per card
     if (currentCard < CARDS.length - 1) {
       setCurrentCard((prev) => prev + 1);
       nextCard();
@@ -115,9 +115,11 @@ function useCardValidation(card: CardType): boolean {
 }
 
 // Role selection card with Ivylevel styling
+// v10.0: Also sets userType in session store for DualView
 function RoleCard({ onComplete }: { onComplete: () => void }) {
   const role = useStudentStore((s) => s.profile.identity.role);
   const setRole = useStudentStore((s) => s.setRole);
+  const setUserType = useSessionStore((s) => s.setUserType);
 
   const roles: { value: Role; label: string; icon: typeof User; description: string }[] = [
     {
@@ -151,7 +153,10 @@ function RoleCard({ onComplete }: { onComplete: () => void }) {
               key={r.value}
               hoverable
               selected={isSelected}
-              onClick={() => setRole(r.value)}
+              onClick={() => {
+                setRole(r.value);
+                setUserType(r.value === 'PARENT' ? 'parent' : 'student');
+              }}
               className="cursor-pointer"
               padding="lg"
             >

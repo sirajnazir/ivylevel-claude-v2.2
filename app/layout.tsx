@@ -4,6 +4,7 @@ import { AnalyticsProvider } from '@/lib/analytics';
 import { FeedbackProvider, ToastContainer } from '@/lib/feedback';
 import { InsightsProvider } from '@/components/insights';
 import { NotificationInsightCard } from '@/components/insights/NotificationInsightCard';
+import { ClearStaleData } from '@/components/common/ClearStaleData';
 import './globals.css';
 
 const inter = Inter({
@@ -32,6 +33,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className={`${inter.className} min-h-screen antialiased`}>
+        {/* Clear stale localStorage on version changes */}
+        <ClearStaleData />
         <AnalyticsProvider
           config={{
             enableTracking: true,

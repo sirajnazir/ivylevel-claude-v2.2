@@ -99,7 +99,7 @@ export function AssessmentLayout({
               <IvylevelLogo size="sm" />
             </div>
 
-            {/* XP Counter */}
+            {/* Edge Counter */}
             {showXP && (
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
@@ -111,7 +111,7 @@ export function AssessmentLayout({
                 }}
               >
                 <Zap className="w-4 h-4" style={{ color: '#FF4A23' }} />
-                <span className="font-semibold" style={{ color: '#FF4A23' }}>{totalXP} XP</span>
+                <span className="font-semibold" style={{ color: '#FF4A23' }}>{totalXP} Edge</span>
               </motion.div>
             )}
           </div>

@@ -203,9 +203,9 @@ export function NotificationInsightCard() {
                 {current.message}
               </p>
 
-              {/* XP Badge and Score Indicator Row */}
+              {/* Edge Badge and Score Indicator Row */}
               <div className="flex items-center gap-2">
-                {/* XP Badge */}
+                {/* Edge Badge */}
                 <motion.div
                   initial={{ scale: 0, x: 20 }}
                   animate={{ scale: 1, x: 0 }}
@@ -226,7 +226,7 @@ export function NotificationInsightCard() {
                       fontFamily: IVYLEVEL_DESIGN.typography.fontFamily.mono,
                     }}
                   >
-                    +25 XP
+                    +25 Edge
                   </span>
                 </motion.div>
 

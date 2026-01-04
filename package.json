@@ -7,7 +7,13 @@
     "build": "next build",
     "start": "next start -p 3006",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test:scoring": "node scripts/test-scoring.js",
+    "test:e2e": "npx playwright test",
+    "test:e2e:huda": "npx playwright test e2e/huda-benchmark.spec.ts",
+    "test:e2e:agents": "npx playwright test e2e/v10-agents.spec.ts",
+    "test:e2e:full": "npx playwright test e2e/full-assessment.spec.ts",
+    "test:all": "npm run test:scoring && npm run test:e2e"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

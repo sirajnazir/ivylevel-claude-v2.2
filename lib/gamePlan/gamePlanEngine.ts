@@ -100,6 +100,8 @@ export interface GamePlan {
 
 const DEFAULT_WEEKLY_HOURS = 10;
 
+// v11: Icon identifiers map to lucide-react icons in UI layer
+// This allows the engine to remain data-only while UI handles rendering
 const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> = {
   // Academic Actions
   IMPROVE_GPA: {
@@ -107,7 +109,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     description: 'Focus on academic improvement strategies to boost your GPA over the next semester.',
     category: 'academics',
     timeCommitment: '3-5 hrs/week',
-    icon: '📚',
+    icon: 'academics',  // v11: icon identifier
     impact: { pillar: 'aptitude', points: 10 },
     tips: [
       'Meet with teachers during office hours weekly',
@@ -122,7 +124,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     category: 'testing',
     timeCommitment: '4-6 hrs/week',
     deadline: '6 months before test date',
-    icon: '📝',
+    icon: 'testing',  // v11: icon identifier
     impact: { pillar: 'aptitude', points: 12 },
     tips: [
       'Take a diagnostic test to identify weak areas',
@@ -141,7 +143,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     category: 'academics',
     timeCommitment: '5-8 hrs/week per course',
     deadline: 'Course selection period',
-    icon: '🎓',
+    icon: 'graduation',  // v11: icon identifier
     impact: { pillar: 'aptitude', points: 8 },
     tips: [
       'Start with 1-2 APs in subjects you enjoy',
@@ -157,7 +159,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     description: 'Begin an extracurricular activity aligned with your interests and potential major.',
     category: 'activities',
     timeCommitment: '3-5 hrs/week',
-    icon: '🎯',
+    icon: 'activities',  // v11: icon identifier
     impact: { pillar: 'passion', points: 8 },
     tips: [
       'Choose something you genuinely enjoy, not just for the resume',
@@ -171,7 +173,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     description: 'Take your current activities to the next level through increased involvement and impact.',
     category: 'activities',
     timeCommitment: '2-4 hrs/week additional',
-    icon: '🚀',
+    icon: 'growth',  // v11: icon identifier
     impact: { pillar: 'passion', points: 10 },
     tips: [
       'Propose a new initiative or project within the activity',
@@ -185,7 +187,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     description: 'Create something unique that showcases your initiative and genuine interests.',
     category: 'activities',
     timeCommitment: '4-6 hrs/week',
-    icon: '💡',
+    icon: 'idea',  // v11: icon identifier
     impact: { pillar: 'passion', points: 15 },
     tips: [
       'Identify a problem you care about solving',
@@ -202,7 +204,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     category: 'leadership',
     timeCommitment: '2-3 hrs/week additional',
     deadline: 'Before election/selection periods',
-    icon: '👑',
+    icon: 'leadership',  // v11: icon identifier
     impact: { pillar: 'passion', points: 12 },
     tips: [
       'Express interest to current leaders early',
@@ -216,7 +218,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     description: 'Take charge of a project or start something new that shows leadership without a formal title.',
     category: 'leadership',
     timeCommitment: '3-4 hrs/week',
-    icon: '⚡',
+    icon: 'growth',  // v11: icon identifier (Zap/lightning)
     impact: { pillar: 'passion', points: 10 },
     tips: [
       'Identify a gap or need in your school/community',
@@ -232,7 +234,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     description: 'Start volunteering in an area that aligns with your interests and values.',
     category: 'service',
     timeCommitment: '2-4 hrs/week',
-    icon: '💚',
+    icon: 'service',  // v11: icon identifier
     impact: { pillar: 'community', points: 8 },
     tips: [
       'Choose service that connects to your interests/major',
@@ -246,7 +248,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     description: 'Transform your service from volunteer hours to meaningful, sustained impact.',
     category: 'service',
     timeCommitment: '3-5 hrs/week',
-    icon: '🌟',
+    icon: 'narrative',  // v11: icon identifier (star/sparkle)
     impact: { pillar: 'community', points: 12 },
     tips: [
       'Move from participant to organizer/leader',
@@ -262,7 +264,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     description: 'Participate in competitions and contests to earn recognition in your field.',
     category: 'awards',
     timeCommitment: '3-5 hrs/week',
-    icon: '🏆',
+    icon: 'trophy',  // v11: icon identifier
     impact: { pillar: 'aptitude', points: 12 },
     tips: [
       'Start with school-level competitions to build confidence',
@@ -285,7 +287,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     category: 'summer',
     timeCommitment: '2-6 weeks',
     deadline: 'December-February for most programs',
-    icon: '☀️',
+    icon: 'summer',  // v11: icon identifier
     impact: { pillar: 'aptitude', points: 10 },
     tips: [
       'Research program selectivity and reputation',
@@ -315,7 +317,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     category: 'research',
     timeCommitment: '15-25 hrs/week during summer',
     deadline: 'February-March for formal programs',
-    icon: '🔬',
+    icon: 'research',
     impact: { pillar: 'aptitude', points: 15 },
     tips: [
       'Email professors at local universities with genuine interest',
@@ -331,7 +333,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     description: 'Develop a cohesive story that connects your activities, interests, and goals.',
     category: 'narrative',
     timeCommitment: '1-2 hrs/week',
-    icon: '📖',
+    icon: 'narrative',
     impact: { pillar: 'identity', points: 10 },
     tips: [
       'Identify 2-3 themes that connect your activities',
@@ -345,7 +347,7 @@ const ACTION_TEMPLATES: Record<string, Omit<GamePlanAction, 'id' | 'priority'>> 
     description: 'Actively explore different areas to discover what genuinely excites you.',
     category: 'narrative',
     timeCommitment: '2-3 hrs/week',
-    icon: '🧭',
+    icon: 'idea',
     impact: { pillar: 'identity', points: 8 },
     tips: [
       'Try new activities without pressure to commit',

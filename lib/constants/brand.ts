@@ -18,6 +18,11 @@ export const BRAND_COLORS = {
   primaryBg: 'rgba(255, 74, 35, 0.1)',    // Light orange background
   primaryBgHover: 'rgba(255, 74, 35, 0.15)', // Hover background
 
+  // Accent (alias for consistency with v10 components)
+  accent: '#FF4A23',
+  accentLight: '#FF7224',
+  accentBg: '#FFF7ED',
+
   // Secondary Brand Colors
   secondary: '#641432',         // Ivylevel maroon - headings, important text
   secondaryLight: '#8a1d45',    // Lighter maroon
@@ -42,6 +47,18 @@ export const BRAND_COLORS = {
   bgSuccess: 'rgba(29, 191, 115, 0.1)',    // Light green (updated)
   bgWarning: 'rgba(234, 183, 5, 0.1)',     // Light yellow (updated)
   bgError: 'rgba(220, 38, 38, 0.1)',       // Light red
+
+  // v10 aliases (for component compatibility)
+  successBg: '#D1FAE5',
+  warningBg: '#FEF3C7',
+  errorBg: '#FEE2E2',
+  infoBg: '#DBEAFE',
+
+  // Category colors (for score displays)
+  aptitude: '#2563EB',
+  passion: '#F97316',
+  service: '#059669',
+  identity: '#7C3AED',
 
   // Icon Colors (from original Figma design)
   iconPrimary: '#292D32',       // Dark charcoal - standard icon color
@@ -179,3 +196,23 @@ export function getFeedbackColor(
       return BRAND_COLORS.textSecondary;
   }
 }
+
+/**
+ * Category configuration for score displays
+ */
+export const CATEGORY_CONFIG = {
+  aptitude: { label: 'Aptitude', color: BRAND_COLORS.aptitude, icon: 'Brain' },
+  passion: { label: 'Passion', color: BRAND_COLORS.passion, icon: 'Heart' },
+  service: { label: 'Service', color: BRAND_COLORS.service, icon: 'Users' },
+  identity: { label: 'Identity', color: BRAND_COLORS.identity, icon: 'Fingerprint' },
+} as const;
+
+/**
+ * Brand gradients
+ */
+export const BRAND_GRADIENTS = {
+  primary: 'linear-gradient(135deg, #641432 0%, #8B1E4A 100%)',
+  accent: 'linear-gradient(135deg, #FF4A23 0%, #FF6B47 100%)',
+  warm: 'linear-gradient(135deg, #FFF5F2 0%, #FFFFFF 100%)',
+  cri: 'linear-gradient(135deg, #FEF3C7 0%, #FFF7ED 50%, #FFFFFF 100%)',
+} as const;

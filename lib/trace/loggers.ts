@@ -368,14 +368,19 @@ class NavigationLogger {
   }
 
   /**
-   * Log XP award
+   * Log Edge award (formerly XP)
    */
-  logXPAward(amount: number, reason: string, totalXP: number): void {
-    this.ctx.info('navigation', 'xp:award', `+${amount} XP: ${reason}`, {
+  logEdgeAward(amount: number, reason: string, totalEdge: number): void {
+    this.ctx.info('navigation', 'edge:award', `+${amount} Edge: ${reason}`, {
       amount,
       reason,
-      totalXP,
+      totalEdge,
     });
+  }
+
+  // Backwards compatibility alias
+  logXPAward(amount: number, reason: string, totalXP: number): void {
+    this.logEdgeAward(amount, reason, totalXP);
   }
 
   /**

@@ -19,11 +19,12 @@ export const FIT_LABELS = {
 } as const;
 
 // Category configuration for scoring breakdown
+// Icons are now string identifiers - use getCategoryIcon() from lib/constants/icons.ts
 export const CATEGORIES = [
-  { id: 'aptitude', label: 'Aptitude', icon: '📚', weight: 0.35, description: 'Academic performance & rigor' },
-  { id: 'passion', label: 'Passion', icon: '🔥', weight: 0.30, description: 'Spike activities & depth' },
-  { id: 'community', label: 'Community', icon: '🤝', weight: 0.20, description: 'Service & leadership impact' },
-  { id: 'operating', label: 'Operating', icon: '⚙️', weight: 0.15, description: 'Style & execution capacity' },
+  { id: 'aptitude', label: 'Aptitude', icon: 'aptitude', weight: 0.35, description: 'Academic performance & rigor' },
+  { id: 'passion', label: 'Passion', icon: 'passion', weight: 0.30, description: 'Spike activities & depth' },
+  { id: 'community', label: 'Community', icon: 'community', weight: 0.20, description: 'Service & leadership impact' },
+  { id: 'operating', label: 'Operating', icon: 'operating', weight: 0.15, description: 'Style & execution capacity' },
 ] as const;
 
 // School acceptance rates and configurations

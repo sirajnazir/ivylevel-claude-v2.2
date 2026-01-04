@@ -104,7 +104,7 @@ export function QuestContainer({
   const currentFrame = useSessionStore((s) => s.current_frame);
   const xp = useSessionStore((s) => s.total_xp);
   const startFrame = useSessionStore((s) => s.startFrame);
-  const level = Math.floor(xp / 100) + 1; // Calculate level from XP
+  const level = Math.floor(xp / 100) + 1; // Calculate level from Edge points
   const studentName = useStudentStore((s) => s.profile.identity.name);
   const twinCount = useTwinStore((s) => s.getTwinCount());
 
@@ -193,14 +193,14 @@ export function QuestContainer({
                 </div>
               </div>
 
-              {/* Right: XP & Level */}
+              {/* Right: Edge & Level */}
               <div className="flex items-center gap-4">
                 <div className="text-right">
                   <div className="hud-text text-text-muted">LEVEL</div>
                   <div className="font-mono text-xl text-gear-gold">{level}</div>
                 </div>
                 <div className="w-32">
-                  <div className="hud-text text-text-muted mb-1">XP</div>
+                  <div className="hud-text text-text-muted mb-1">Edge</div>
                   <div className="xp-bar">
                     <div
                       className="xp-fill"
@@ -208,7 +208,7 @@ export function QuestContainer({
                     />
                   </div>
                   <div className="text-xs text-text-muted mt-0.5 text-right font-mono">
-                    {xp} XP
+                    {xp} Edge
                   </div>
                 </div>
               </div>

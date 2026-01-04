@@ -1,0 +1,53 @@
+# IvyQuest v10.0 Agent Service Dependencies
+# =====================================================
+# 3P Stack: Agno + LangGraph + AutoGen
+# =====================================================
+
+# Core Agent Framework
+agno>=0.1.0
+
+# LangChain/LangGraph for deliberation graphs
+langgraph>=0.2.0
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langchain-community>=0.3.0
+
+# AutoGen for offline debates (selective use)
+pyautogen>=0.2.0
+
+# API Framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+
+# Data validation
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+
+# Database
+supabase>=2.10.0
+asyncpg>=0.30.0
+
+# HTTP client
+httpx>=0.28.0
+
+# OpenAI for LLM calls
+openai>=1.55.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Async support
+anyio>=4.7.0
+
+# Utilities
+tenacity>=9.0.0  # Retry logic
+structlog>=24.4.0  # Structured logging
+
+# Testing
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+pytest-cov>=6.0.0
+
+# Type checking
+mypy>=1.13.0
+types-requests>=2.32.0

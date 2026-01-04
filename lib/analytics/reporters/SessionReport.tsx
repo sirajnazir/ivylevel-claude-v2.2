@@ -346,11 +346,12 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({
   showSuggestions = true,
   maxItems = 5,
 }) => {
+  // Icons are now string identifiers - use getInsightIcon() from lib/constants/icons.ts
   const typeConfig = {
-    strength: { icon: '💪', color: '#10B981', label: 'Strengths' },
-    improvement: { icon: '📈', color: '#F59E0B', label: 'Areas to Improve' },
-    suggestion: { icon: '💡', color: '#3B82F6', label: 'Suggestions' },
-    achievement: { icon: '🏆', color: '#FFD700', label: 'Achievements' },
+    strength: { icon: 'strength', color: '#10B981', label: 'Strengths' },
+    improvement: { icon: 'growth', color: '#F59E0B', label: 'Areas to Improve' },
+    suggestion: { icon: 'suggestion', color: '#3B82F6', label: 'Suggestions' },
+    achievement: { icon: 'achievement', color: '#FFD700', label: 'Achievements' },
   };
   
   return (

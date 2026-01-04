@@ -82,7 +82,7 @@ function PlaceholderFrame({ frameId, onComplete }: { frameId: number; onComplete
 export default function FramePage() {
   const params = useParams();
   const router = useRouter();
-  const { goToFrame, completeFrame } = useSessionStore();
+  const { goToFrame, completeFrame, completeAssessment } = useSessionStore();
 
   const frameId = useMemo(() => {
     const id = parseInt(params.frameId as string, 10);
@@ -127,8 +127,9 @@ export default function FramePage() {
       });
       router.push(`/quest/${frameId + 1}`);
     } else {
-      // Assessment complete - go to results
-      router.push('/results');
+      // Assessment complete - mark as completed and go to dashboard
+      completeAssessment();
+      router.push('/dashboard');
     }
   };
 

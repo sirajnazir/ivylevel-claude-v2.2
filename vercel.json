@@ -1,0 +1,21 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "regions": ["sfo1"],
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "ENABLE_V10_AGENTS": "false",
+    "ENABLE_CRISIS_ALCHEMY": "false",
+    "ENABLE_CRI_COMPUTATION": "false",
+    "ENABLE_EDS_TRACKING": "false",
+    "ENABLE_HITL_MODE": "false",
+    "ENABLE_DUAL_VIEW": "false"
+  },
+  "crons": []
+}

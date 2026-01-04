@@ -36,6 +36,7 @@ export interface Scenario {
   optionB: ScenarioOption;
 }
 
+// Icons are now string identifiers - use SCENARIO_ICONS from lib/constants/icons.ts
 export const SCENARIOS: Record<ScenarioId, Scenario> = {
   deadline_crunch: {
     id: 'deadline_crunch',
@@ -43,14 +44,14 @@ export const SCENARIOS: Record<ScenarioId, Scenario> = {
     prompt: 'A major project fails the day before deadline. You have 24 hours. What\'s your move?',
     optionA: {
       id: 'systematic',
-      icon: '📋',
+      icon: 'systematic',
       label: 'Systematic',
       description: 'Make a checklist, prioritize tasks, work through methodically',
       traitSignal: 'systematic_thinker',
     },
     optionB: {
       id: 'adaptive',
-      icon: '⚡',
+      icon: 'adaptive',
       label: 'Adaptive',
       description: 'Dive in and fix the biggest issue first, adapt as you go',
       traitSignal: 'adaptive_thinker',
@@ -62,14 +63,14 @@ export const SCENARIOS: Record<ScenarioId, Scenario> = {
     prompt: 'It\'s Saturday. No homework, no obligations. What sounds better?',
     optionA: {
       id: 'social',
-      icon: '👥',
+      icon: 'social',
       label: 'Rally the Squad',
       description: 'Organize something with friends — hackathon, project jam, hangout',
       traitSignal: 'extrovert_energy',
     },
     optionB: {
       id: 'solo',
-      icon: '🔬',
+      icon: 'solo',
       label: 'Deep Dive',
       description: 'Finally work on that personal project you\'ve been thinking about',
       traitSignal: 'introvert_energy',
@@ -81,14 +82,14 @@ export const SCENARIOS: Record<ScenarioId, Scenario> = {
     prompt: 'A prestigious competition opens. Entry deadline is next week. You\'d be starting from scratch.',
     optionA: {
       id: 'cautious',
-      icon: '🎯',
+      icon: 'cautious',
       label: 'Strategic Pass',
       description: 'Focus on what I\'m already building — quality over quantity',
       traitSignal: 'cautious_strategic',
     },
     optionB: {
       id: 'bold',
-      icon: '🚀',
+      icon: 'bold',
       label: 'Go For It',
       description: 'Tight deadline? Challenge accepted. Let\'s see what I can do.',
       traitSignal: 'bold_opportunistic',
@@ -230,24 +231,25 @@ export interface ProductivityOption {
   insight: string;
 }
 
+// Icons are now string identifiers - use PRODUCTIVITY_ICONS from lib/constants/icons.ts
 export const PRODUCTIVITY_OPTIONS: Record<ProductivityId, ProductivityOption> = {
   early_bird: {
     id: 'early_bird',
-    icon: '🌅',
+    icon: 'early_bird',
     label: 'Early Bird',
     description: 'Best before noon',
     insight: 'Morning programs, early deadlines work well for you',
   },
   night_owl: {
     id: 'night_owl',
-    icon: '🌙',
+    icon: 'night_owl',
     label: 'Night Owl',
     description: 'After 8pm is my time',
     insight: 'Self-paced programs give you flexibility',
   },
   flexible: {
     id: 'flexible',
-    icon: '⚖️',
+    icon: 'flexible',
     label: 'Flexible',
     description: 'Depends on the day',
     insight: 'You can adapt to any program schedule',
@@ -286,15 +288,16 @@ export interface EnergySpectrumConfig {
   }>;
 }
 
+// Icons are now string identifiers - use ENERGY_ICONS from lib/constants/icons.ts
 export const ENERGY_SPECTRUM: EnergySpectrumConfig = {
   min: {
     label: 'People',
-    icon: '👥',
+    icon: 'people',
     description: 'Working with others',
   },
   max: {
     label: 'Ideas',
-    icon: '💡',
+    icon: 'ideas',
     description: 'Working on problems',
   },
   positions: [
@@ -339,59 +342,60 @@ export interface HiddenCapabilityConfig {
   boosterAffinity: string[];
 }
 
+// Icons are now string identifiers - use CAPABILITY_ICONS from lib/constants/icons.ts
 export const HIDDEN_CAPABILITIES: Record<HiddenCapability, HiddenCapabilityConfig> = {
   writing: {
     id: 'writing',
-    icon: '✍️',
+    icon: 'writing',
     label: 'Writing',
     description: 'Essays, articles, storytelling',
     boosterAffinity: ['essay_coaching', 'journalism_programs'],
   },
   public_speaking: {
     id: 'public_speaking',
-    icon: '🗣️',
+    icon: 'public_speaking',
     label: 'Public Speaking',
     description: 'Presentations, debates, pitches',
     boosterAffinity: ['debate_programs', 'ted_talks', 'model_un'],
   },
   creative_design: {
     id: 'creative_design',
-    icon: '🎨',
+    icon: 'creative_design',
     label: 'Creative Design',
     description: 'Visual arts, graphic design',
     boosterAffinity: ['portfolio_programs', 'design_competitions'],
   },
   technical_build: {
     id: 'technical_build',
-    icon: '🔧',
+    icon: 'technical_build',
     label: 'Technical Build',
     description: 'Coding, hardware, engineering',
     boosterAffinity: ['hackathons', 'robotics', 'research_programs'],
   },
   networking: {
     id: 'networking',
-    icon: '🤝',
+    icon: 'networking',
     label: 'Networking',
     description: 'Building relationships, connecting people',
     boosterAffinity: ['summer_programs', 'mentorship', 'internships'],
   },
   data_analysis: {
     id: 'data_analysis',
-    icon: '📊',
+    icon: 'data_analysis',
     label: 'Data Analysis',
     description: 'Research, stats, quantitative work',
     boosterAffinity: ['research_programs', 'competitions', 'olympiads'],
   },
   strategic_planning: {
     id: 'strategic_planning',
-    icon: '🎯',
+    icon: 'strategic_planning',
     label: 'Strategic Planning',
     description: 'Long-term vision, goal-setting',
     boosterAffinity: ['entrepreneurship', 'leadership_programs'],
   },
   idea_generation: {
     id: 'idea_generation',
-    icon: '💡',
+    icon: 'idea_generation',
     label: 'Idea Generation',
     description: 'Brainstorming, innovation',
     boosterAffinity: ['innovation_programs', 'entrepreneurship', 'startups'],

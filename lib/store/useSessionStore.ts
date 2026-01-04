@@ -1,6 +1,7 @@
 /**
  * Assessment Session Store (Zustand)
  * Manages the assessment flow state (frames, progress, quiz)
+ * @version 10.0 - Added userType for DualView, agentDataCache
  */
 
 import { create } from 'zustand';
@@ -8,6 +9,7 @@ import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
 export type FrameId = 1 | 2 | 3 | 4 | 5 | 6;
+export type UserType = 'student' | 'parent' | null;
 
 export interface FrameProgress {
   frame_id: FrameId;
@@ -24,6 +26,17 @@ export interface QuizAnswer {
   points_earned: number;
   response_time_ms: number;
   answered_at: string;
+}
+
+// v10.0 Agent data cache
+export interface AgentDataCache {
+  cri?: number;
+  criBoostPercentage?: number;
+  criFactors?: string[];
+  narrativeDna?: string;
+  narrativeThemes?: string[];
+  archetype?: string;
+  assessmentTier?: string;
 }
 
 interface SessionStoreState {
@@ -47,6 +60,14 @@ interface SessionStoreState {
   is_completed: boolean;
   completed_at: string | null;
 
+  // v10.0 User type for DualView
+  userType: UserType;
+
+  // v10.0 Agent data cache
+  agentDataCache: AgentDataCache;
+  agentDataLoading: boolean;
+  agentDataError: string | null;
+
   // Actions
   setUserId: (userId: string) => void;
   goToFrame: (frame: FrameId) => void;
@@ -65,6 +86,13 @@ interface SessionStoreState {
   completeAssessment: () => void;
   resetSession: () => void;
   getProgress: () => number; // 0-100
+
+  // v10.0 Actions
+  setUserType: (type: UserType) => void;
+  setAgentDataCache: (data: Partial<AgentDataCache>) => void;
+  setAgentDataLoading: (loading: boolean) => void;
+  setAgentDataError: (error: string | null) => void;
+  setAssessmentComplete: (complete: boolean) => void; // Alias for v10 components
 }
 
 const createEmptyFrameProgress = (frame_id: FrameId): FrameProgress => ({
@@ -108,6 +136,12 @@ export const useSessionStore = create<SessionStoreState>()(
         total_xp: 0,
         is_completed: false,
         completed_at: null,
+
+        // v10.0 defaults
+        userType: null,
+        agentDataCache: {},
+        agentDataLoading: false,
+        agentDataError: null,
 
         setUserId: (userId) =>
           set((state) => {
@@ -237,9 +271,38 @@ export const useSessionStore = create<SessionStoreState>()(
 
           return total > 0 ? Math.round((completed / total) * 100) : 0;
         },
+
+        // v10.0 Actions
+        setUserType: (type) =>
+          set((state) => {
+            state.userType = type;
+          }),
+
+        setAgentDataCache: (data) =>
+          set((state) => {
+            state.agentDataCache = { ...state.agentDataCache, ...data };
+          }),
+
+        setAgentDataLoading: (loading) =>
+          set((state) => {
+            state.agentDataLoading = loading;
+          }),
+
+        setAgentDataError: (error) =>
+          set((state) => {
+            state.agentDataError = error;
+          }),
+
+        setAssessmentComplete: (complete) =>
+          set((state) => {
+            state.is_completed = complete;
+            if (complete && !state.completed_at) {
+              state.completed_at = new Date().toISOString();
+            }
+          }),
       })),
       {
-        name: 'ivyquest-session',
+        name: 'ivyquest-session-v10',
         partialize: (state) => ({
           session_id: state.session_id,
           user_id: state.user_id,
@@ -249,9 +312,30 @@ export const useSessionStore = create<SessionStoreState>()(
           quiz_answers: state.quiz_answers,
           total_xp: state.total_xp,
           is_completed: state.is_completed,
+          // v10.0 fields
+          userType: state.userType,
+          agentDataCache: state.agentDataCache,
         }),
       }
     ),
     { name: 'SessionStore' }
   )
 );
+
+// v10.0 Selector hooks
+export const useCurrentFrame = () => useSessionStore((s) => s.current_frame);
+export const useUserType = () => useSessionStore((s) => s.userType);
+export const useIsParentView = () => useSessionStore((s) => s.userType === 'parent');
+export const useViewMode = () => useSessionStore((s) => s.userType || 'student');
+export const useIsAssessmentComplete = () => useSessionStore((s) => s.is_completed);
+export const useAgentDataCache = () => useSessionStore((s) => s.agentDataCache);
+export const useCRIData = () => useSessionStore((s) => ({
+  cri: s.agentDataCache.cri,
+  boostPercentage: s.agentDataCache.criBoostPercentage,
+  factors: s.agentDataCache.criFactors,
+}));
+export const useNarrativeData = () => useSessionStore((s) => ({
+  dna: s.agentDataCache.narrativeDna,
+  themes: s.agentDataCache.narrativeThemes,
+  archetype: s.agentDataCache.archetype,
+}));

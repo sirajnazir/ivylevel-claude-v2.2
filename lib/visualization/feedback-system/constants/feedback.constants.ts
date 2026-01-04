@@ -83,14 +83,14 @@ export const VALIDATION_STATES = {
   },
   warning: {
     id: 'warning',
-    icon: '⚠',
+    icon: 'warning',
     borderColor: '#F59E0B',
     backgroundColor: 'rgba(245, 158, 11, 0.1)',
     textColor: '#F59E0B',
   },
   pending: {
     id: 'pending',
-    icon: '⟳',
+    icon: 'pending',
     borderColor: '#3B82F6',
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
     textColor: '#3B82F6',
@@ -226,12 +226,13 @@ export type AchievementRarity = keyof typeof ACHIEVEMENT_CONFIG.rarities;
 // MILESTONE DEFINITIONS
 // ============================================================================
 
+// Icons are now string identifiers - use getInsightIcon() from lib/constants/icons.ts
 export const MILESTONES = {
   identity_complete: {
     id: 'identity_complete',
     title: 'Identity Locked In!',
     description: 'You\'ve established your basic profile.',
-    icon: '🎯',
+    icon: 'target',
     frame: 0,
     animation: 'confetti',
   },
@@ -239,7 +240,7 @@ export const MILESTONES = {
     id: 'academic_profile',
     title: 'Academic Snapshot Captured!',
     description: 'Your academic profile is complete.',
-    icon: '📊',
+    icon: 'analytics',
     frame: 1,
     animation: 'glow',
   },
@@ -247,7 +248,7 @@ export const MILESTONES = {
     id: 'activities_logged',
     title: 'Your Story Takes Shape!',
     description: 'Activities and involvement recorded.',
-    icon: '✨',
+    icon: 'narrative',
     frame: 2,
     animation: 'stars',
   },
@@ -255,7 +256,7 @@ export const MILESTONES = {
     id: 'spike_identified',
     title: 'Spike Detected!',
     description: 'Your unique strength has been identified.',
-    icon: '🔥',
+    icon: 'passion',
     frame: 2,
     animation: 'fire',
   },
@@ -263,7 +264,7 @@ export const MILESTONES = {
     id: 'operating_mapped',
     title: 'Operating Style Mapped!',
     description: 'We understand how you work.',
-    icon: '⚡',
+    icon: 'operating',
     frame: 3,
     animation: 'pulse',
   },
@@ -271,7 +272,7 @@ export const MILESTONES = {
     id: 'scores_revealed',
     title: 'The Verdict Is In!',
     description: 'Your Ivy+ Ready Score has been calculated.',
-    icon: '🎉',
+    icon: 'achievement',
     frame: 4,
     animation: 'reveal',
   },
@@ -279,7 +280,7 @@ export const MILESTONES = {
     id: 'quest_complete',
     title: 'Ready to Launch!',
     description: 'You\'ve completed the IvyQuest assessment.',
-    icon: '🚀',
+    icon: 'growth',
     frame: 5,
     animation: 'celebration',
   },
@@ -291,32 +292,33 @@ export type MilestoneId = keyof typeof MILESTONES;
 // HINT CONFIGURATION
 // ============================================================================
 
+// Icons are now string identifiers - use getInsightIcon() from lib/constants/icons.ts
 export const HINT_CONFIG = {
   types: {
     tip: {
       id: 'tip',
-      icon: '💡',
+      icon: 'suggestion',
       backgroundColor: '#1E3A5F',
       borderColor: '#3B82F6',
       accentColor: '#60A5FA',
     },
     suggestion: {
       id: 'suggestion',
-      icon: '✨',
+      icon: 'narrative',
       backgroundColor: '#064E3B',
       borderColor: '#10B981',
       accentColor: '#34D399',
     },
     warning: {
       id: 'warning',
-      icon: '⚠️',
+      icon: 'warning',
       backgroundColor: '#78350F',
       borderColor: '#F59E0B',
       accentColor: '#FBBF24',
     },
     boost: {
       id: 'boost',
-      icon: '🚀',
+      icon: 'growth',
       backgroundColor: '#4C1D95',
       borderColor: '#8B5CF6',
       accentColor: '#A78BFA',
