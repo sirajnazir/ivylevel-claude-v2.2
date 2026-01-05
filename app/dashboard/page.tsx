@@ -1,13 +1,14 @@
 /**
- * Command Deck Dashboard - v12.0
- * Tabbed interface matching original frontend specification
+ * Command Deck Dashboard - v13.0
+ * Tabbed interface with real backend integration
+ * Uses hooks to call /api/score and real engines
  */
 'use client';
 
 import { useState, useEffect, Suspense, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useSessionStore } from '@/lib/store/useSessionStore';
 import { useStudentStore } from '@/lib/store/useStudentStore';
 import { useResultsStore } from '@/lib/store/useResultsStore';
@@ -19,99 +20,16 @@ import { GrowthTab } from '@/components/tabs/GrowthTab';
 import { MultiAgentsTab } from '@/components/tabs/MultiAgentsTab';
 import { type TabId, COLORS, getTierFromScore } from '@/lib/constants/design';
 
-// ============================================================================
-// SCORING CALCULATION FUNCTIONS (Same as Frame6ProfileReveal)
-// ============================================================================
-
-const hasValue = (val: any) => val !== null && val !== undefined && val !== 0 && val !== '';
-
-function calculateAptitudeScore(profile: any): number {
-  const apt = profile.aptitude;
-  if (!apt) return 0;
-
-  let total = 0;
-  let count = 0;
-
-  const gpa = apt.gpa_weighted ?? apt.gpa_unweighted;
-  if (hasValue(gpa) && gpa > 0) {
-    const gpaMax = apt.gpa_weighted ? 5.0 : 4.0;
-    total += (gpa / gpaMax) * 100;
-    count++;
-  }
-
-  if (hasValue(apt.sat_total) && apt.sat_total > 0) {
-    total += (apt.sat_total / 1600) * 100;
-    count++;
-  }
-
-  if (hasValue(apt.act_total) && apt.act_total > 0) {
-    total += (apt.act_total / 36) * 100;
-    count++;
-  }
-
-  if (hasValue(apt.ap_count) && apt.ap_count > 0) {
-    total += Math.min((apt.ap_count / 12) * 100, 100);
-    count++;
-  }
-
-  return count > 0 ? Math.round(total / count) : 0;
-}
-
-function calculatePassionScore(profile: any): number {
-  const pass = profile.passion;
-  if (!pass) return 0;
-
-  let score = 0;
-
-  const ecYears = pass.ec_commitment_years;
-  if (hasValue(ecYears) && ecYears > 0) {
-    score += Math.min((ecYears / 4) * 40, 40);
-  }
-
-  const leadership = pass.leadership_level;
-  if (leadership && leadership !== 'PARTICIPANT') {
-    score += 30;
-  }
-
-  const awards = pass.ec_awards;
-  if (Array.isArray(awards) && awards.length > 0) {
-    score += 30;
-  }
-
-  return Math.round(score);
-}
-
-function calculateServiceScore(profile: any): number {
-  const community = profile.community;
-  if (!community || !hasValue(community.service_hours) || community.service_hours === 0) {
-    return 0;
-  }
-  return Math.round(Math.min((community.service_hours / 300) * 100, 100));
-}
-
-function calculateIdentityScore(profile: any): number {
-  let score = 0;
-
-  if (hasValue(profile.operating?.favoriteSubject)) {
-    score += 25;
-  }
-
-  const strengths = profile.operating?.strengths;
-  if (Array.isArray(strengths) && strengths.length > 0) {
-    score += 25;
-  }
-
-  const career = profile.operating?.careerDirection;
-  if (career && career !== 'no-idea' && career !== '') {
-    score += 25;
-  }
-
-  if (profile.demographics?.first_gen === true) {
-    score += 25;
-  }
-
-  return score;
-}
+// Import real hooks for backend integration
+import {
+  useScoring,
+  useIvyScore,
+  useSchoolProbabilities,
+  useArchetype,
+  useFactors,
+} from '@/lib/hooks/useScoring';
+import { useGamePlan, usePreparationData } from '@/lib/hooks/useGamePlan';
+import { useInsights } from '@/lib/hooks/useInsights';
 
 const mockGamePlanData = {
   targetProfile: {
@@ -246,13 +164,40 @@ function DashboardContent() {
   const router = useRouter();
   const is_completed = useSessionStore((s) => s.is_completed);
   const studentProfile = useStudentStore((s) => s.profile);
-  const results = useResultsStore((s) => s.results);
-  const ivyScore = useResultsStore((s) => s.ivy_score);
-  const helpingFactors = useResultsStore((s) => s.helping_factors);
-  const holdingBackFactors = useResultsStore((s) => s.holding_back_factors);
-  const schoolProbabilities = useResultsStore((s) => s.school_probabilities);
   const [activeTab, setActiveTab] = useState<TabId>('assessment');
   const [mounted, setMounted] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // === REAL HOOKS - Call /api/score and use real engines ===
+  const {
+    calculateScore,
+    results,
+    isLoading: isScoreLoading,
+    error: scoreError,
+  } = useScoring();
+
+  const { totalScore, categoryScores, percentileRank, hasResults } = useIvyScore();
+  const { probabilities: schoolProbabilities, topSchool } = useSchoolProbabilities();
+  const { archetype, label: archetypeLabel, tagline } = useArchetype();
+  const { helping: helpingFactors, holdingBack: holdingBackFactors } = useFactors();
+
+  // Game Plan and Insights from real engines
+  const {
+    gamePlan,
+    generatePlan,
+    phases,
+    quickWins,
+    isGenerating: isGamePlanGenerating,
+  } = useGamePlan();
+  const { weeklyTasks } = usePreparationData();
+  const {
+    insights,
+    generateInsights,
+    criticalInsights,
+    warningInsights,
+    positiveInsights,
+    isGenerating: isInsightsGenerating,
+  } = useInsights();
 
   useEffect(() => {
     setMounted(true);
@@ -265,23 +210,55 @@ function DashboardContent() {
     }
   }, [is_completed, router, mounted]);
 
+  // === FETCH REAL DATA ON MOUNT ===
+  useEffect(() => {
+    const initializeDashboard = async () => {
+      if (!mounted || !is_completed) return;
+
+      try {
+        // Calculate scores if not already done
+        if (!hasResults) {
+          console.log('[Dashboard] Calling /api/score...');
+          await calculateScore();
+        }
+
+        // Generate game plan if not exists
+        if (!gamePlan) {
+          console.log('[Dashboard] Generating game plan...');
+          await generatePlan();
+        }
+
+        // Generate insights if empty
+        if (insights.length === 0) {
+          console.log('[Dashboard] Generating insights...');
+          await generateInsights();
+        }
+
+        setIsInitialized(true);
+      } catch (err) {
+        console.error('[Dashboard] Initialization error:', err);
+        setIsInitialized(true); // Still show UI even on error
+      }
+    };
+
+    initializeDashboard();
+  }, [mounted, is_completed, hasResults, gamePlan, insights.length, calculateScore, generatePlan, generateInsights]);
+
   const handleLogout = () => {
     router.push('/');
   };
 
-  // Calculate dynamic assessment data from student profile
+  // === BUILD ASSESSMENT DATA FROM REAL SCORES ===
   const assessmentData = useMemo(() => {
-    // Calculate pillar scores from the actual student profile
-    const aptitudeScore = calculateAptitudeScore(studentProfile);
-    const passionScore = calculatePassionScore(studentProfile);
-    const serviceScore = calculateServiceScore(studentProfile);
-    const identityScore = calculateIdentityScore(studentProfile);
-
-    // Calculate overall score as average of pillars
-    const overallScore = Math.round((aptitudeScore + passionScore + serviceScore + identityScore) / 4);
+    // Use real scores from /api/score via hooks
+    const aptitudeScore = categoryScores.aptitude;
+    const passionScore = categoryScores.passion;
+    const serviceScore = categoryScores.community;
+    const identityScore = categoryScores.narrative;
+    const overallScore = totalScore;
     const tier = getTierFromScore(overallScore);
 
-    // Generate strengths from helping factors or profile analysis
+    // Generate strengths from real helping factors
     const strengths = helpingFactors.length > 0
       ? helpingFactors.slice(0, 3).map((factor, i) => ({
           title: factor,
@@ -294,7 +271,7 @@ function DashboardContent() {
           serviceScore >= 50 && { title: 'Community Service Commitment', roi: 2.5, impact: 'Service differentiation' },
         ].filter(Boolean) as Array<{ title: string; roi: number; impact: string }>;
 
-    // Generate weak spots from holding back factors or profile gaps
+    // Generate weak spots from real holding back factors
     const weakSpots = holdingBackFactors.length > 0
       ? holdingBackFactors.slice(0, 3).map((factor, i) => ({
           title: factor,
@@ -307,21 +284,21 @@ function DashboardContent() {
           identityScore < 50 && { title: 'Personal Narrative', priority: 'P2' as const, description: 'Clarify your unique story and direction' },
         ].filter(Boolean) as Array<{ title: string; priority: 'P0' | 'P1' | 'P2'; description: string }>;
 
-    // Get target schools from school probabilities or profile
+    // Get target schools from real probabilities
     const targetSchools = schoolProbabilities.length > 0
       ? schoolProbabilities.slice(0, 4).map((s) => s.school_id)
-      : studentProfile.target_schools || ['Harvard', 'Stanford', 'MIT', 'Yale'];
+      : studentProfile?.target_schools || ['Harvard', 'Stanford', 'MIT', 'Yale'];
 
-    // Calculate admissions rubric metrics
+    // Calculate admissions probability from real data
     const avgProbability = schoolProbabilities.length > 0
       ? Math.round(schoolProbabilities.reduce((sum, s) => sum + (s.p_final || 0) * 100, 0) / schoolProbabilities.length)
-      : Math.round(overallScore * 0.35); // Estimate based on overall score
+      : Math.round(overallScore * 0.35);
 
     return {
       ivyReadyScore: {
         overall: overallScore,
         tier,
-        changeVs180Days: 0, // TODO: Implement historical comparison
+        changeVs180Days: 0,
       },
       pillars: {
         aptitude: aptitudeScore,
@@ -345,20 +322,113 @@ function DashboardContent() {
         overallAdmitProbability: avgProbability,
         targetSchools,
       },
-      criMultiplier: studentProfile.demographics?.first_gen ? 1.3 : 1.0,
+      criMultiplier: studentProfile?.demographics?.first_gen ? 1.3 : 1.0,
     };
-  }, [studentProfile, helpingFactors, holdingBackFactors, schoolProbabilities]);
+  }, [totalScore, categoryScores, helpingFactors, holdingBackFactors, schoolProbabilities, studentProfile]);
+
+  // === BUILD GAME PLAN DATA FROM REAL ENGINE ===
+  const realGamePlanData = useMemo(() => {
+    if (!gamePlan) return mockGamePlanData;
+
+    return {
+      ...mockGamePlanData,
+      phases: phases.map((phase, idx) => ({
+        id: phase.id,
+        name: phase.title,
+        dateRange: phase.timeframe,
+        goal: phase.description,
+        completionPercent: idx === 0 ? 50 : 0,
+        milestones: phase.actions.slice(0, 3).map((action) => ({
+          id: action.id,
+          title: action.title,
+          status: 'pending' as const,
+          targetDate: action.deadline || '',
+        })),
+      })),
+      currentPhase: phases[0]?.id || 'phase1',
+      actions: quickWins.slice(0, 5).map((action) => ({
+        id: action.id,
+        title: action.title,
+        description: action.description || '',
+        category: action.category,
+        priority: action.priority as 'critical' | 'high' | 'medium',
+        edgePoints: 30,
+        timeEstimate: action.timeCommitment,
+      })),
+    };
+  }, [gamePlan, phases, quickWins]);
+
+  // === BUILD PREPARATION DATA FROM REAL ENGINE ===
+  const realPreparationData = useMemo(() => {
+    if (weeklyTasks.length === 0) return mockPreparationData;
+
+    return {
+      weeks: weeklyTasks.slice(0, 4).map((week) => ({
+        weekNumber: week.weekNumber,
+        dateRange: week.weekRange,
+        focus: week.focus,
+        completionPercent: week.progress,
+        tasks: week.tasks.map((task) => ({
+          id: task.id,
+          title: task.title,
+          description: '',
+          category: task.category,
+          status: task.status,
+          dueDate: '',
+          estimatedTime: task.timeCommitment,
+        })),
+      })),
+      currentWeek: 1,
+    };
+  }, [weeklyTasks]);
+
+  // === BUILD GROWTH DATA FROM REAL INSIGHTS ===
+  const realGrowthData = useMemo(() => {
+    const events = [
+      {
+        id: 'assessment-complete',
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        title: 'Assessment Completed',
+        description: `Ivy+ Ready Score: ${totalScore}%`,
+        category: 'milestone' as const,
+        impact: 'high' as const,
+        scoreChange: totalScore,
+      },
+      ...criticalInsights.slice(0, 2).map((insight) => ({
+        id: insight.id,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        title: insight.title,
+        description: insight.message,
+        category: 'insight' as const,
+        impact: 'high' as const,
+      })),
+      ...positiveInsights.slice(0, 2).map((insight) => ({
+        id: insight.id,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        title: insight.title,
+        description: insight.message,
+        category: 'achievement' as const,
+        impact: 'medium' as const,
+        scoreChange: 3,
+      })),
+    ];
+
+    return {
+      events: events.length > 0 ? events : mockGrowthData.events,
+      totalGrowth: totalScore > 0 ? totalScore : mockGrowthData.totalGrowth,
+    };
+  }, [totalScore, criticalInsights, positiveInsights]);
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'assessment':
         return <AssessmentTab data={assessmentData} />;
       case 'gameplan':
-        return <GamePlanTab data={mockGamePlanData} />;
+        return <GamePlanTab data={realGamePlanData} />;
       case 'preparation':
-        return <PreparationTab weeks={mockPreparationData.weeks} currentWeek={mockPreparationData.currentWeek} />;
+        return <PreparationTab weeks={realPreparationData.weeks} currentWeek={realPreparationData.currentWeek} />;
       case 'growth':
-        return <GrowthTab events={mockGrowthData.events} totalGrowth={mockGrowthData.totalGrowth} />;
+        return <GrowthTab events={realGrowthData.events} totalGrowth={realGrowthData.totalGrowth} />;
       case 'multiagents':
         return <MultiAgentsTab />;
       default:
@@ -366,8 +436,24 @@ function DashboardContent() {
     }
   };
 
+  // Show loading while initializing or fetching data
+  const isLoading = isScoreLoading || isGamePlanGenerating || isInsightsGenerating;
+
   if (!mounted) {
     return <DashboardLoading />;
+  }
+
+  // Show loading indicator while fetching real data
+  if (!isInitialized && isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: COLORS.bgPage }}>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 size={40} className="animate-spin" style={{ color: COLORS.primary }} />
+          <p className="text-sm" style={{ color: COLORS.textSecondary }}>Loading your profile data...</p>
+          <p className="text-xs" style={{ color: COLORS.textMuted }}>Calling scoring engine...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -379,6 +465,36 @@ function DashboardContent() {
         studentName={studentProfile?.identity?.name || 'Student'}
         onLogout={handleLogout}
       />
+
+      {/* Error Banner */}
+      {scoreError && (
+        <div className="mx-auto max-w-6xl px-6 pt-4">
+          <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA' }}>
+            <AlertCircle size={20} style={{ color: '#DC2626' }} />
+            <div>
+              <p className="font-medium" style={{ color: '#DC2626' }}>Scoring Error</p>
+              <p className="text-sm" style={{ color: '#7F1D1D' }}>{scoreError}</p>
+            </div>
+            <button
+              onClick={() => calculateScore()}
+              className="ml-auto px-3 py-1 text-sm rounded"
+              style={{ backgroundColor: '#DC2626', color: 'white' }}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Loading indicator for background operations */}
+      {isLoading && isInitialized && (
+        <div className="mx-auto max-w-6xl px-6 pt-4">
+          <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+            <Loader2 size={16} className="animate-spin" style={{ color: '#2563EB' }} />
+            <p className="text-sm" style={{ color: '#1E40AF' }}>Refreshing data...</p>
+          </div>
+        </div>
+      )}
 
       {/* Tab Content */}
       <main>

@@ -1,6 +1,6 @@
 /**
  * MultiAgentsTab - Multi-Agent Chat Interface
- * v12.0 - Matches original frontend specification
+ * v13.0 - Integrated with real backend agents via useMultiAgentChat hook
  */
 'use client';
 
@@ -11,36 +11,36 @@ import {
   Brain, Target, Award, BookOpen, Lightbulb
 } from 'lucide-react';
 import { COLORS, GRADIENTS } from '@/lib/constants/design';
+import { useMultiAgentChat, type AgentType } from '@/lib/hooks/useAgents';
 
 interface Agent {
-  id: string;
+  id: AgentType;
   name: string;
   specialty: string;
   icon: React.ReactNode;
   color: string;
 }
 
-interface Message {
-  id: string;
-  agentId: string;
-  content: string;
-  timestamp: Date;
-  isUser: boolean;
-}
-
 const AGENTS: Agent[] = [
   { id: 'strategist', name: 'Strategist', specialty: 'Long-term planning', icon: <Target size={16} />, color: '#667eea' },
-  { id: 'advisor', name: 'Academic Advisor', specialty: 'Course selection', icon: <Brain size={16} />, color: '#8b5cf6' },
+  { id: 'academic', name: 'Academic Advisor', specialty: 'Course selection', icon: <Brain size={16} />, color: '#8b5cf6' },
   { id: 'awards', name: 'Awards Scout', specialty: 'Scholarships & competitions', icon: <Award size={16} />, color: '#f59e0b' },
   { id: 'narrative', name: 'Story Coach', specialty: 'Personal narrative', icon: <BookOpen size={16} />, color: '#10b981' },
-  { id: 'creative', name: 'Innovation Guide', specialty: 'Unique opportunities', icon: <Lightbulb size={16} />, color: '#ec4899' },
+  { id: 'opportunity', name: 'Innovation Guide', specialty: 'Unique opportunities', icon: <Lightbulb size={16} />, color: '#ec4899' },
 ];
 
 export function MultiAgentsTab() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Use real multi-agent chat hook
+  const {
+    messages: chatMessages,
+    activeAgent,
+    setActiveAgent,
+    isProcessing,
+    sendMessage,
+    clearMessages,
+  } = useMultiAgentChat();
+
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeAgents, setActiveAgents] = useState<string[]>(['strategist']);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -49,69 +49,51 @@ export function MultiAgentsTab() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [chatMessages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isProcessing) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      agentId: 'user',
-      content: input,
-      timestamp: new Date(),
-      isUser: true,
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const message = input;
     setInput('');
-    setIsLoading(true);
 
-    // Simulate multi-agent responses
-    for (const agentId of activeAgents) {
-      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
-
-      const agent = AGENTS.find(a => a.id === agentId);
-      if (!agent) continue;
-
-      const agentMessage: Message = {
-        id: `${Date.now()}-${agentId}`,
-        agentId,
-        content: getAgentResponse(agentId, input),
-        timestamp: new Date(),
-        isUser: false,
-      };
-
-      setMessages(prev => [...prev, agentMessage]);
-    }
-
-    setIsLoading(false);
+    // Send message via real hook (calls backend API)
+    await sendMessage(message);
   };
 
-  const toggleAgent = (agentId: string) => {
-    setActiveAgents(prev =>
-      prev.includes(agentId)
-        ? prev.filter(id => id !== agentId)
-        : [...prev, agentId]
-    );
+  const selectAgent = (agentId: AgentType) => {
+    setActiveAgent(agentId);
   };
+
+  // Transform chat messages to display format
+  const displayMessages = chatMessages.map((msg) => ({
+    id: msg.id,
+    agentId: msg.role === 'user' ? 'user' : (msg.agentType || activeAgent),
+    content: msg.content,
+    timestamp: new Date(msg.timestamp),
+    isUser: msg.role === 'user',
+  }));
 
   return (
     <div className="h-[calc(100vh-64px)] flex">
       {/* Agent Selector Sidebar */}
       <div className="w-64 border-r bg-gray-50 p-4" style={{ borderColor: COLORS.borderDefault }}>
         <h3 className="text-sm font-semibold mb-4" style={{ color: COLORS.textHeading }}>
-          Active Agents
+          Select Agent
         </h3>
+        <p className="text-xs mb-4" style={{ color: COLORS.textMuted }}>
+          Choose an agent to chat with. Each agent specializes in different aspects.
+        </p>
         <div className="space-y-2">
           {AGENTS.map(agent => (
             <button
               key={agent.id}
-              onClick={() => toggleAgent(agent.id)}
+              onClick={() => selectAgent(agent.id)}
               className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${
-                activeAgents.includes(agent.id) ? 'bg-white shadow-sm' : 'hover:bg-white/50'
+                activeAgent === agent.id ? 'bg-white shadow-sm' : 'hover:bg-white/50'
               }`}
               style={{
-                borderLeft: activeAgents.includes(agent.id) ? `3px solid ${agent.color}` : '3px solid transparent',
+                borderLeft: activeAgent === agent.id ? `3px solid ${agent.color}` : '3px solid transparent',
               }}
             >
               <div
@@ -128,34 +110,52 @@ export function MultiAgentsTab() {
                   {agent.specialty}
                 </p>
               </div>
+              {activeAgent === agent.id && (
+                <span className="ml-auto text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: agent.color, color: 'white' }}>
+                  Active
+                </span>
+              )}
             </button>
           ))}
         </div>
+
+        {displayMessages.length > 0 && (
+          <button
+            onClick={clearMessages}
+            className="mt-4 w-full text-xs py-2 rounded border"
+            style={{ borderColor: COLORS.borderDefault, color: COLORS.textMuted }}
+          >
+            Clear Chat
+          </button>
+        )}
       </div>
 
       {/* Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {messages.length === 0 && (
+          {displayMessages.length === 0 && (
             <div className="text-center py-16">
               <Sparkles size={48} style={{ color: COLORS.textMuted }} className="mx-auto mb-4" />
               <h3 className="font-semibold" style={{ color: COLORS.textHeading }}>
                 Multi-Agent Intelligence
               </h3>
               <p className="text-sm mt-2" style={{ color: COLORS.textSecondary }}>
-                Ask a question and get perspectives from multiple specialized agents
+                Ask a question and get advice from {AGENTS.find(a => a.id === activeAgent)?.name || 'the agent'}
+              </p>
+              <p className="text-xs mt-2" style={{ color: COLORS.textMuted }}>
+                Connected to real backend agents via /api/agents
               </p>
             </div>
           )}
 
           <AnimatePresence>
-            {messages.map((message) => (
+            {displayMessages.map((message) => (
               <MessageBubble key={message.id} message={message} />
             ))}
           </AnimatePresence>
 
-          {isLoading && (
+          {isProcessing && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -163,7 +163,7 @@ export function MultiAgentsTab() {
               style={{ color: COLORS.textMuted }}
             >
               <Loader2 size={16} className="animate-spin" />
-              Agents are thinking...
+              {AGENTS.find(a => a.id === activeAgent)?.name || 'Agent'} is thinking...
             </motion.div>
           )}
 
@@ -178,14 +178,14 @@ export function MultiAgentsTab() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask your agents anything..."
+              placeholder={`Ask ${AGENTS.find(a => a.id === activeAgent)?.name || 'the agent'} anything...`}
               className="flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500"
               style={{ borderColor: COLORS.borderDefault }}
-              disabled={isLoading}
+              disabled={isProcessing}
             />
             <button
               onClick={handleSend}
-              disabled={isLoading || !input.trim()}
+              disabled={isProcessing || !input.trim()}
               className="p-3 rounded-xl text-white disabled:opacity-50 transition-colors"
               style={{ background: GRADIENTS.purple }}
             >
@@ -198,7 +198,15 @@ export function MultiAgentsTab() {
   );
 }
 
-function MessageBubble({ message }: { message: Message }) {
+interface DisplayMessage {
+  id: string;
+  agentId: string;
+  content: string;
+  timestamp: Date;
+  isUser: boolean;
+}
+
+function MessageBubble({ message }: { message: DisplayMessage }) {
   if (message.isUser) {
     return (
       <motion.div
@@ -217,7 +225,8 @@ function MessageBubble({ message }: { message: Message }) {
   }
 
   const agent = AGENTS.find(a => a.id === message.agentId);
-  if (!agent) return null;
+  // Fallback to strategist if agent not found
+  const displayAgent = agent || AGENTS[0];
 
   return (
     <motion.div
@@ -227,16 +236,16 @@ function MessageBubble({ message }: { message: Message }) {
     >
       <div
         className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-        style={{ backgroundColor: `${agent.color}20` }}
+        style={{ backgroundColor: `${displayAgent.color}20` }}
       >
-        <span style={{ color: agent.color }}>{agent.icon}</span>
+        <span style={{ color: displayAgent.color }}>{displayAgent.icon}</span>
       </div>
       <div className="max-w-xl">
         <span
           className="text-xs font-medium"
-          style={{ color: agent.color }}
+          style={{ color: displayAgent.color }}
         >
-          {agent.name}
+          {displayAgent.name}
         </span>
         <div
           className="mt-1 px-4 py-3 rounded-2xl rounded-tl-sm bg-white border"
@@ -247,18 +256,6 @@ function MessageBubble({ message }: { message: Message }) {
       </div>
     </motion.div>
   );
-}
-
-// Mock responses
-function getAgentResponse(agentId: string, query: string): string {
-  const responses: Record<string, string> = {
-    strategist: `Based on your profile, I recommend focusing on building a clear narrative spike. Consider deepening your involvement in your strongest activity area over the next 6 months.`,
-    advisor: `For your academic trajectory, I suggest balancing rigor with strategic course selection. Advanced courses in your interest areas will strengthen your application.`,
-    awards: `I've identified several competitions and scholarships that match your profile. The deadline for the national competition in your field is coming up in 8 weeks.`,
-    narrative: `Your unique story has compelling elements. Let's work on connecting your experiences into a cohesive narrative that showcases your growth and potential impact.`,
-    creative: `Have you considered creating a project that combines your interests? An innovative initiative could set you apart and demonstrate leadership.`,
-  };
-  return responses[agentId] || 'I\'m here to help with your college journey.';
 }
 
 export default MultiAgentsTab;
