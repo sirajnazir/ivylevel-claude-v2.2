@@ -13,6 +13,7 @@ import { useSessionStore } from '@/lib/store/useSessionStore';
 import { useStudentStore } from '@/lib/store/useStudentStore';
 import { useResultsStore } from '@/lib/store/useResultsStore';
 import { logout, startFreshAssessment } from '@/lib/session/sessionManager';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { TabHeader } from '@/components/shared/TabHeader';
 import { AssessmentTab } from '@/components/tabs/AssessmentTab';
 import { GamePlanTab } from '@/components/tabs/GamePlanTab';
@@ -163,6 +164,7 @@ function DashboardLoading() {
 // Main dashboard content
 function DashboardContent() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const is_completed = useSessionStore((s) => s.is_completed);
   const studentProfile = useStudentStore((s) => s.profile);
   const [activeTab, setActiveTab] = useState<TabId>('assessment');
@@ -245,8 +247,10 @@ function DashboardContent() {
     initializeDashboard();
   }, [mounted, is_completed, hasResults, gamePlan, insights.length, calculateScore, generatePlan, generateInsights]);
 
-  const handleLogout = () => {
-    // Use centralized session manager to properly clear all state
+  const handleLogout = async () => {
+    // Sign out from Supabase first
+    await signOut();
+    // Then clear local state with session manager
     logout({ redirectTo: '/', forceReload: true });
   };
 

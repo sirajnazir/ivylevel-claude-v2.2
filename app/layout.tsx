@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
+import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { AnalyticsProvider } from '@/lib/analytics';
 import { FeedbackProvider, ToastContainer } from '@/lib/feedback';
 import { InsightsProvider } from '@/components/insights';
@@ -35,32 +36,34 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen antialiased`}>
         {/* Clear stale localStorage on version changes */}
         <ClearStaleData />
-        <AnalyticsProvider
-          config={{
-            enableTracking: true,
-            trackInteractions: true,
-            trackTiming: true,
-          }}
-        >
-          <FeedbackProvider
+        <AuthProvider>
+          <AnalyticsProvider
             config={{
-              maxToasts: 5,
+              enableTracking: true,
+              trackInteractions: true,
+              trackTiming: true,
             }}
           >
-            <InsightsProvider>
-              {/* Main Content - No dark wrapper */}
-              <div className="relative min-h-screen">
-                {children}
-              </div>
-            </InsightsProvider>
+            <FeedbackProvider
+              config={{
+                maxToasts: 5,
+              }}
+            >
+              <InsightsProvider>
+                {/* Main Content - No dark wrapper */}
+                <div className="relative min-h-screen">
+                  {children}
+                </div>
+              </InsightsProvider>
 
-            {/* Global toast container */}
-            <ToastContainer />
+              {/* Global toast container */}
+              <ToastContainer />
 
-            {/* Floating notification system */}
-            <NotificationInsightCard />
-          </FeedbackProvider>
-        </AnalyticsProvider>
+              {/* Floating notification system */}
+              <NotificationInsightCard />
+            </FeedbackProvider>
+          </AnalyticsProvider>
+        </AuthProvider>
       </body>
     </html>
   );
