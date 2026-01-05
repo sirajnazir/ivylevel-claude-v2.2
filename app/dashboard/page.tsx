@@ -4,63 +4,114 @@
  */
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useSessionStore } from '@/lib/store/useSessionStore';
 import { useStudentStore } from '@/lib/store/useStudentStore';
+import { useResultsStore } from '@/lib/store/useResultsStore';
 import { TabHeader } from '@/components/shared/TabHeader';
 import { AssessmentTab } from '@/components/tabs/AssessmentTab';
 import { GamePlanTab } from '@/components/tabs/GamePlanTab';
 import { PreparationTab } from '@/components/tabs/PreparationTab';
 import { GrowthTab } from '@/components/tabs/GrowthTab';
 import { MultiAgentsTab } from '@/components/tabs/MultiAgentsTab';
-import { type TabId, COLORS } from '@/lib/constants/design';
+import { type TabId, COLORS, getTierFromScore } from '@/lib/constants/design';
 
-// Mock data - replace with API calls in production
-const mockAssessmentData = {
-  ivyReadyScore: {
-    overall: 85,
-    tier: 'GOLD',
-    changeVs180Days: 12,
-  },
-  pillars: {
-    aptitude: 95,
-    passion: 100,
-    service: 100,
-    identity: 50,
-  },
-  dimensionalScores: [
-    { dimension: 'Academic Rigor', score: 92, tier: 'Excellent' },
-    { dimension: 'Leadership', score: 85, tier: 'Strong' },
-    { dimension: 'Creativity', score: 78, tier: 'Good' },
-    { dimension: 'Community Impact', score: 88, tier: 'Strong' },
-    { dimension: 'Research', score: 72, tier: 'Developing' },
-    { dimension: 'Athletics', score: 65, tier: 'Developing' },
-    { dimension: 'Arts', score: 80, tier: 'Strong' },
-    { dimension: 'Global Perspective', score: 75, tier: 'Good' },
-  ],
-  strengths: [
-    { title: 'STEM Research Excellence', roi: 4.2, impact: 'High admission boost' },
-    { title: 'Leadership in Robotics Club', roi: 3.8, impact: 'Strong spike demonstration' },
-    { title: 'Community Tutoring Program', roi: 2.5, impact: 'Service differentiation' },
-  ],
-  weakSpots: [
-    { title: 'Personal Essay Development', priority: 'P0' as const, description: 'Narrative needs stronger hook and personal voice' },
-    { title: 'Arts/Humanities Balance', priority: 'P1' as const, description: 'Add humanities engagement to balance STEM focus' },
-    { title: 'Interview Preparation', priority: 'P2' as const, description: 'Practice structured responses for school interviews' },
-  ],
-  admissionsRubric: {
-    academicIndex: 94,
-    extracurricularRating: 88,
-    personalQualities: 72,
-    recommendationStrength: 85,
-    overallAdmitProbability: 28,
-    targetSchools: ['MIT', 'Stanford', 'CMU', 'Berkeley'],
-  },
-  criMultiplier: 1.7,
-};
+// ============================================================================
+// SCORING CALCULATION FUNCTIONS (Same as Frame6ProfileReveal)
+// ============================================================================
+
+const hasValue = (val: any) => val !== null && val !== undefined && val !== 0 && val !== '';
+
+function calculateAptitudeScore(profile: any): number {
+  const apt = profile.aptitude;
+  if (!apt) return 0;
+
+  let total = 0;
+  let count = 0;
+
+  const gpa = apt.gpa_weighted ?? apt.gpa_unweighted;
+  if (hasValue(gpa) && gpa > 0) {
+    const gpaMax = apt.gpa_weighted ? 5.0 : 4.0;
+    total += (gpa / gpaMax) * 100;
+    count++;
+  }
+
+  if (hasValue(apt.sat_total) && apt.sat_total > 0) {
+    total += (apt.sat_total / 1600) * 100;
+    count++;
+  }
+
+  if (hasValue(apt.act_total) && apt.act_total > 0) {
+    total += (apt.act_total / 36) * 100;
+    count++;
+  }
+
+  if (hasValue(apt.ap_count) && apt.ap_count > 0) {
+    total += Math.min((apt.ap_count / 12) * 100, 100);
+    count++;
+  }
+
+  return count > 0 ? Math.round(total / count) : 0;
+}
+
+function calculatePassionScore(profile: any): number {
+  const pass = profile.passion;
+  if (!pass) return 0;
+
+  let score = 0;
+
+  const ecYears = pass.ec_commitment_years;
+  if (hasValue(ecYears) && ecYears > 0) {
+    score += Math.min((ecYears / 4) * 40, 40);
+  }
+
+  const leadership = pass.leadership_level;
+  if (leadership && leadership !== 'PARTICIPANT') {
+    score += 30;
+  }
+
+  const awards = pass.ec_awards;
+  if (Array.isArray(awards) && awards.length > 0) {
+    score += 30;
+  }
+
+  return Math.round(score);
+}
+
+function calculateServiceScore(profile: any): number {
+  const community = profile.community;
+  if (!community || !hasValue(community.service_hours) || community.service_hours === 0) {
+    return 0;
+  }
+  return Math.round(Math.min((community.service_hours / 300) * 100, 100));
+}
+
+function calculateIdentityScore(profile: any): number {
+  let score = 0;
+
+  if (hasValue(profile.operating?.favoriteSubject)) {
+    score += 25;
+  }
+
+  const strengths = profile.operating?.strengths;
+  if (Array.isArray(strengths) && strengths.length > 0) {
+    score += 25;
+  }
+
+  const career = profile.operating?.careerDirection;
+  if (career && career !== 'no-idea' && career !== '') {
+    score += 25;
+  }
+
+  if (profile.demographics?.first_gen === true) {
+    score += 25;
+  }
+
+  return score;
+}
 
 const mockGamePlanData = {
   targetProfile: {
@@ -195,6 +246,11 @@ function DashboardContent() {
   const router = useRouter();
   const is_completed = useSessionStore((s) => s.is_completed);
   const studentProfile = useStudentStore((s) => s.profile);
+  const results = useResultsStore((s) => s.results);
+  const ivyScore = useResultsStore((s) => s.ivy_score);
+  const helpingFactors = useResultsStore((s) => s.helping_factors);
+  const holdingBackFactors = useResultsStore((s) => s.holding_back_factors);
+  const schoolProbabilities = useResultsStore((s) => s.school_probabilities);
   const [activeTab, setActiveTab] = useState<TabId>('assessment');
   const [mounted, setMounted] = useState(false);
 
@@ -213,10 +269,90 @@ function DashboardContent() {
     router.push('/');
   };
 
+  // Calculate dynamic assessment data from student profile
+  const assessmentData = useMemo(() => {
+    // Calculate pillar scores from the actual student profile
+    const aptitudeScore = calculateAptitudeScore(studentProfile);
+    const passionScore = calculatePassionScore(studentProfile);
+    const serviceScore = calculateServiceScore(studentProfile);
+    const identityScore = calculateIdentityScore(studentProfile);
+
+    // Calculate overall score as average of pillars
+    const overallScore = Math.round((aptitudeScore + passionScore + serviceScore + identityScore) / 4);
+    const tier = getTierFromScore(overallScore);
+
+    // Generate strengths from helping factors or profile analysis
+    const strengths = helpingFactors.length > 0
+      ? helpingFactors.slice(0, 3).map((factor, i) => ({
+          title: factor,
+          roi: 3.5 - i * 0.5,
+          impact: i === 0 ? 'High admission boost' : i === 1 ? 'Strong differentiation' : 'Solid foundation',
+        }))
+      : [
+          aptitudeScore >= 70 && { title: 'Strong Academic Foundation', roi: 3.5, impact: 'High admission boost' },
+          passionScore >= 60 && { title: 'Demonstrated Passion & Leadership', roi: 3.0, impact: 'Strong differentiation' },
+          serviceScore >= 50 && { title: 'Community Service Commitment', roi: 2.5, impact: 'Service differentiation' },
+        ].filter(Boolean) as Array<{ title: string; roi: number; impact: string }>;
+
+    // Generate weak spots from holding back factors or profile gaps
+    const weakSpots = holdingBackFactors.length > 0
+      ? holdingBackFactors.slice(0, 3).map((factor, i) => ({
+          title: factor,
+          priority: (i === 0 ? 'P0' : i === 1 ? 'P1' : 'P2') as 'P0' | 'P1' | 'P2',
+          description: `Address this to improve your overall profile`,
+        }))
+      : [
+          aptitudeScore < 50 && { title: 'Academic Profile Needs Development', priority: 'P0' as const, description: 'Focus on GPA and test scores' },
+          passionScore < 40 && { title: 'Extracurricular Depth', priority: 'P1' as const, description: 'Develop sustained activity involvement' },
+          identityScore < 50 && { title: 'Personal Narrative', priority: 'P2' as const, description: 'Clarify your unique story and direction' },
+        ].filter(Boolean) as Array<{ title: string; priority: 'P0' | 'P1' | 'P2'; description: string }>;
+
+    // Get target schools from school probabilities or profile
+    const targetSchools = schoolProbabilities.length > 0
+      ? schoolProbabilities.slice(0, 4).map((s) => s.school_id)
+      : studentProfile.target_schools || ['Harvard', 'Stanford', 'MIT', 'Yale'];
+
+    // Calculate admissions rubric metrics
+    const avgProbability = schoolProbabilities.length > 0
+      ? Math.round(schoolProbabilities.reduce((sum, s) => sum + (s.p_final || 0) * 100, 0) / schoolProbabilities.length)
+      : Math.round(overallScore * 0.35); // Estimate based on overall score
+
+    return {
+      ivyReadyScore: {
+        overall: overallScore,
+        tier,
+        changeVs180Days: 0, // TODO: Implement historical comparison
+      },
+      pillars: {
+        aptitude: aptitudeScore,
+        passion: passionScore,
+        service: serviceScore,
+        identity: identityScore,
+      },
+      dimensionalScores: [
+        { dimension: 'Academic Rigor', score: aptitudeScore, tier: aptitudeScore >= 85 ? 'Excellent' : aptitudeScore >= 70 ? 'Strong' : aptitudeScore >= 50 ? 'Good' : 'Developing' },
+        { dimension: 'Leadership', score: passionScore, tier: passionScore >= 85 ? 'Excellent' : passionScore >= 70 ? 'Strong' : passionScore >= 50 ? 'Good' : 'Developing' },
+        { dimension: 'Community Impact', score: serviceScore, tier: serviceScore >= 85 ? 'Excellent' : serviceScore >= 70 ? 'Strong' : serviceScore >= 50 ? 'Good' : 'Developing' },
+        { dimension: 'Personal Story', score: identityScore, tier: identityScore >= 85 ? 'Excellent' : identityScore >= 70 ? 'Strong' : identityScore >= 50 ? 'Good' : 'Developing' },
+      ],
+      strengths: strengths.length > 0 ? strengths : [{ title: 'Building Your Foundation', roi: 2.0, impact: 'Starting fresh with potential' }],
+      weakSpots: weakSpots.length > 0 ? weakSpots : [{ title: 'Complete Your Profile', priority: 'P0' as const, description: 'Add more information to get personalized insights' }],
+      admissionsRubric: {
+        academicIndex: aptitudeScore,
+        extracurricularRating: passionScore,
+        personalQualities: identityScore,
+        recommendationStrength: Math.round((aptitudeScore + passionScore) / 2),
+        overallAdmitProbability: avgProbability,
+        targetSchools,
+      },
+      criMultiplier: studentProfile.demographics?.first_gen ? 1.3 : 1.0,
+    };
+  }, [studentProfile, helpingFactors, holdingBackFactors, schoolProbabilities]);
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'assessment':
-        return <AssessmentTab data={mockAssessmentData} />;
+        return <AssessmentTab data={assessmentData} />;
       case 'gameplan':
         return <GamePlanTab data={mockGamePlanData} />;
       case 'preparation':
@@ -226,7 +362,7 @@ function DashboardContent() {
       case 'multiagents':
         return <MultiAgentsTab />;
       default:
-        return <AssessmentTab data={mockAssessmentData} />;
+        return <AssessmentTab data={assessmentData} />;
     }
   };
 
