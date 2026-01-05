@@ -3,16 +3,16 @@
  * Matching Original Frontend Specification
  */
 
-// Brand Colors
+// Brand Colors - Aligned with Ivylevel brand.ts
 export const COLORS = {
-  // Primary (Orange)
-  primary: '#FF5733',
-  primaryLight: 'rgba(255, 87, 51, 0.1)',
-  primaryFade: '#FFC300',
+  // Primary (Ivylevel Orange)
+  primary: '#FF4A23',
+  primaryLight: 'rgba(255, 74, 35, 0.1)',
+  primaryAccent: '#FF7224',
 
-  // Secondary (Purple Gradient)
-  secondary: '#667eea',
-  secondaryAccent: '#764ba2',
+  // Secondary (Ivylevel Maroon)
+  secondary: '#641432',
+  secondaryLight: '#8a1d45',
 
   // Text
   textHeading: '#333',
@@ -37,10 +37,20 @@ export const COLORS = {
   borderHeader: '#EAEAEA',
 };
 
-// Gradients
+// Gradients - Aligned with Ivylevel brand colors
 export const GRADIENTS = {
-  purple: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  orange: 'linear-gradient(90deg, #FF5733, #FFC300)',
+  // Primary brand gradient (maroon to lighter maroon)
+  primary: 'linear-gradient(135deg, #641432 0%, #8B1E4A 100%)',
+  // Accent brand gradient (orange)
+  accent: 'linear-gradient(135deg, #FF4A23 0%, #FF7224 100%)',
+  // Combined brand gradient (maroon to orange) - for feature cards
+  brand: 'linear-gradient(135deg, #641432 0%, #8B1E4A 50%, #FF4A23 100%)',
+  // Warm gradient for backgrounds
+  warm: 'linear-gradient(135deg, #641432 0%, #FF4A23 100%)',
+  // Legacy alias for backward compatibility
+  purple: 'linear-gradient(135deg, #641432 0%, #8B1E4A 100%)',
+  orange: 'linear-gradient(135deg, #FF4A23 0%, #FF7224 100%)',
+  // Pillar gradients
   aptitude: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
   passion: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
   service: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',

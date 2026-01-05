@@ -53,7 +53,7 @@ export function IvyScoreCard({ score, changeVs180Days = 0, criMultiplier = 1.0 }
       {/* Background gradient accent */}
       <div
         className="absolute top-0 left-0 right-0 h-1"
-        style={{ background: `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.primaryFade})` }}
+        style={{ background: `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.primaryAccent})` }}
       />
 
       <div className="flex items-start justify-between">

@@ -173,7 +173,7 @@ export function AssessmentTab({ data }: AssessmentTabProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className="rounded-2xl p-6 text-white"
-            style={{ background: GRADIENTS.purple }}
+            style={{ background: GRADIENTS.primary }}
           >
             <h3 className="text-lg font-semibold mb-4">Admissions Rubric Correlation</h3>
 
