@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Flame, Search, Bell, LogOut, User,
+  Flame, Search, Bell, LogOut, User, RefreshCw, ChevronDown,
   BarChart3, Map, Calendar, TrendingUp, Video, Bot
 } from 'lucide-react';
 import { COLORS, TABS, type TabId } from '@/lib/constants/design';
@@ -26,10 +26,12 @@ interface TabHeaderProps {
   onTabChange: (tab: TabId) => void;
   studentName?: string;
   onLogout?: () => void;
+  onRetakeAssessment?: () => void;
 }
 
-export function TabHeader({ activeTab, onTabChange, studentName = 'Student', onLogout }: TabHeaderProps) {
+export function TabHeader({ activeTab, onTabChange, studentName = 'Student', onLogout, onRetakeAssessment }: TabHeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMenu, setShowMenu] = useState(false);
 
   return (
     <header
@@ -116,26 +118,64 @@ export function TabHeader({ activeTab, onTabChange, studentName = 'Student', onL
             />
           </button>
 
-          {/* Profile */}
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: COLORS.bgSubtle }}
+          {/* Profile Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <User size={16} style={{ color: COLORS.textSecondary }} />
-            </div>
-            <span className="text-sm font-medium" style={{ color: COLORS.textPrimary }}>
-              {studentName}
-            </span>
-          </div>
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: COLORS.bgSubtle }}
+              >
+                <User size={16} style={{ color: COLORS.textSecondary }} />
+              </div>
+              <span className="text-sm font-medium" style={{ color: COLORS.textPrimary }}>
+                {studentName}
+              </span>
+              <ChevronDown size={14} style={{ color: COLORS.textMuted }} />
+            </button>
 
-          {/* Logout */}
-          <button
-            onClick={onLogout}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <LogOut size={20} style={{ color: COLORS.textSecondary }} />
-          </button>
+            {/* Dropdown Menu */}
+            {showMenu && (
+              <>
+                {/* Backdrop to close menu */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowMenu(false)}
+                />
+                <div
+                  className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg border z-50 overflow-hidden"
+                  style={{ backgroundColor: 'white', borderColor: COLORS.borderDefault }}
+                >
+                  {onRetakeAssessment && (
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        onRetakeAssessment();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 transition-colors"
+                      style={{ color: COLORS.textPrimary }}
+                    >
+                      <RefreshCw size={16} style={{ color: COLORS.textSecondary }} />
+                      Retake Assessment
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onLogout?.();
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 transition-colors border-t"
+                    style={{ color: COLORS.textPrimary, borderColor: COLORS.borderDefault }}
+                  >
+                    <LogOut size={16} style={{ color: COLORS.textSecondary }} />
+                    Logout
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </header>

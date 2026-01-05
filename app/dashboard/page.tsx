@@ -12,6 +12,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { useSessionStore } from '@/lib/store/useSessionStore';
 import { useStudentStore } from '@/lib/store/useStudentStore';
 import { useResultsStore } from '@/lib/store/useResultsStore';
+import { logout, startFreshAssessment } from '@/lib/session/sessionManager';
 import { TabHeader } from '@/components/shared/TabHeader';
 import { AssessmentTab } from '@/components/tabs/AssessmentTab';
 import { GamePlanTab } from '@/components/tabs/GamePlanTab';
@@ -245,7 +246,13 @@ function DashboardContent() {
   }, [mounted, is_completed, hasResults, gamePlan, insights.length, calculateScore, generatePlan, generateInsights]);
 
   const handleLogout = () => {
-    router.push('/');
+    // Use centralized session manager to properly clear all state
+    logout({ redirectTo: '/', forceReload: true });
+  };
+
+  const handleRetakeAssessment = () => {
+    // Use centralized session manager to start fresh
+    startFreshAssessment({ redirectTo: '/quest/1' });
   };
 
   // === BUILD ASSESSMENT DATA FROM REAL SCORES ===
@@ -464,6 +471,7 @@ function DashboardContent() {
         onTabChange={setActiveTab}
         studentName={studentProfile?.identity?.name || 'Student'}
         onLogout={handleLogout}
+        onRetakeAssessment={handleRetakeAssessment}
       />
 
       {/* Error Banner */}

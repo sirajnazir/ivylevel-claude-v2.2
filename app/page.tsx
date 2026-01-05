@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSessionStore } from '@/lib/store/useSessionStore';
+import { startFreshAssessment } from '@/lib/session/sessionManager';
 
 export default function HomePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isCompleted = useSessionStore((s) => s.is_completed);
   const [mounted, setMounted] = useState(false);
 
@@ -16,6 +18,15 @@ export default function HomePage() {
   useEffect(() => {
     if (!mounted) return;
 
+    // Check if user wants to start fresh (via ?fresh=1 query param)
+    const shouldStartFresh = searchParams.get('fresh') === '1';
+
+    if (shouldStartFresh) {
+      // Clear all state and start new assessment
+      startFreshAssessment({ redirectTo: '/quest/1' });
+      return;
+    }
+
     // If assessment is complete, redirect to dashboard
     // Otherwise, redirect to quest (assessment flow)
     if (isCompleted) {
@@ -23,7 +34,7 @@ export default function HomePage() {
     } else {
       router.replace('/quest');
     }
-  }, [router, isCompleted, mounted]);
+  }, [router, isCompleted, mounted, searchParams]);
 
   return (
     <div

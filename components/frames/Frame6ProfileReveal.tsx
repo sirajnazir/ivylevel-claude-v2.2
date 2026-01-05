@@ -281,35 +281,72 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
     runScoring();
   }, [profile, existingResults, isScoring, setResults]);
 
-  // Calculate category scores
+  // Calculate category scores - USE API RESULTS when available, fallback to local
   const categoryScores = useMemo(
-    () => [
-      {
-        name: 'Aptitude',
-        score: calculateAptitudeScore(profile),
-        color: 'blue',
-        icon: <BookOpen size={20} />,
-      },
-      {
-        name: 'Passion',
-        score: calculatePassionScore(profile),
-        color: 'purple',
-        icon: <Sparkles size={20} />,
-      },
-      {
-        name: 'Service',
-        score: calculateServiceScore(profile),
-        color: 'green',
-        icon: <Users size={20} />,
-      },
-      {
-        name: 'Identity',
-        score: calculateIdentityScore(profile),
-        color: 'amber',
-        icon: <Star size={20} />,
-      },
-    ],
-    [profile]
+    () => {
+      // Check if we have real API results
+      const apiScores = existingResults?.ivy_ready_score?.category_scores;
+
+      if (apiScores) {
+        console.log('[Frame6] Using API scores:', apiScores);
+        return [
+          {
+            name: 'Aptitude',
+            score: apiScores.aptitude ?? 0,
+            color: 'blue',
+            icon: <BookOpen size={20} />,
+          },
+          {
+            name: 'Passion',
+            score: apiScores.passion ?? 0,
+            color: 'purple',
+            icon: <Sparkles size={20} />,
+          },
+          {
+            name: 'Service',
+            score: apiScores.community ?? 0,
+            color: 'green',
+            icon: <Users size={20} />,
+          },
+          {
+            name: 'Identity',
+            score: apiScores.narrative ?? 0,
+            color: 'amber',
+            icon: <Star size={20} />,
+          },
+        ];
+      }
+
+      // Fallback to local calculations while API loads
+      console.log('[Frame6] Using local calculation fallback (API results not ready)');
+      return [
+        {
+          name: 'Aptitude',
+          score: calculateAptitudeScore(profile),
+          color: 'blue',
+          icon: <BookOpen size={20} />,
+        },
+        {
+          name: 'Passion',
+          score: calculatePassionScore(profile),
+          color: 'purple',
+          icon: <Sparkles size={20} />,
+        },
+        {
+          name: 'Service',
+          score: calculateServiceScore(profile),
+          color: 'green',
+          icon: <Users size={20} />,
+        },
+        {
+          name: 'Identity',
+          score: calculateIdentityScore(profile),
+          color: 'amber',
+          icon: <Star size={20} />,
+        },
+      ];
+    },
+    [profile, existingResults]
   );
 
   // CRITICAL: Calculate completeness FRESH based on actual data, not stored flags
@@ -630,9 +667,10 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
               passion={categoryScores.find((c) => c.name === 'Passion')?.score || 0}
               community={categoryScores.find((c) => c.name === 'Service')?.score || 0}
               narrative={categoryScores.find((c) => c.name === 'Identity')?.score || 0}
-              totalScore={Math.round(
-                categoryScores.reduce((sum, c) => sum + c.score, 0) / categoryScores.length
-              )}
+              totalScore={
+                existingResults?.ivy_ready_score?.total_score ??
+                Math.round(categoryScores.reduce((sum, c) => sum + c.score, 0) / categoryScores.length)
+              }
               size={320}
             />
           </div>
