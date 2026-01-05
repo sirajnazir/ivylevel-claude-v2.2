@@ -166,9 +166,11 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
     },
   ];
 
-  // Calculate total animation time for center score delay
-  const totalAnimationTime = animation.duration + (rings.length - 1) * animation.stagger;
-  const centerScoreDelay = 1.0; // Delay after rings start
+  // Animation delay for center elements
+  const centerScoreDelay = 1.0;
+
+  // Calculate center circle size based on component size
+  const centerCircleSize = Math.max(70, size * 0.2); // 20% of size, min 70px
 
   return (
     <div
@@ -176,146 +178,164 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
         position: 'relative',
         width: '100%',
         maxWidth: size,
-        aspectRatio: '1',
         margin: '0 auto',
+        paddingBottom: 60, // Extra space for the score card below rings
       }}
     >
-      {/* SVG Container - matches Phoenix structure */}
+      {/* Rings Container - Square aspect ratio */}
       <div
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
+          position: 'relative',
           width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          paddingTop: '100%', // Maintains 1:1 aspect ratio
         }}
       >
-        <svg
-          width="100%"
-          height="100%"
-          viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
+        {/* SVG and Center Circle Container - fills the padded area */}
+        <div
           style={{
-            transform: 'rotate(-90deg)', // Start rings from top (12 o'clock)
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-        {/* Gradient definition for Ivy+ Score ring - matches Gemini Phoenix */}
-        <defs>
-          <linearGradient id="ivyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#641432" />
-            <stop offset="30%" stopColor="#8A1D45" />
-            <stop offset="50%" stopColor="#FE4A22" />
-            <stop offset="70%" stopColor="#FF7224" />
-            <stop offset="100%" stopColor="#FFBB6D" />
-          </linearGradient>
-        </defs>
+          {/* SVG Rings */}
+          <svg
+            width="100%"
+            height="100%"
+            viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
+            style={{
+              transform: 'rotate(-90deg)', // Start rings from top (12 o'clock)
+              position: 'absolute',
+              top: 0,
+              left: 0,
+            }}
+          >
+            {/* Gradient definition for Ivy+ Score ring - matches Gemini Phoenix */}
+            <defs>
+              <linearGradient id="ivyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#641432" />
+                <stop offset="30%" stopColor="#8A1D45" />
+                <stop offset="50%" stopColor="#FE4A22" />
+                <stop offset="70%" stopColor="#FF7224" />
+                <stop offset="100%" stopColor="#FFBB6D" />
+              </linearGradient>
+            </defs>
 
-        {rings.map((ring) => {
-          const circumference = getCircumference(ring.radius);
-          const path = getCirclePath(ring.radius, center, center);
-          const strokeDashoffset = circumference * (1 - ring.score / 100);
-          const animationDelay = ring.index * animation.stagger;
+            {rings.map((ring) => {
+              const circumference = getCircumference(ring.radius);
+              const strokeDashoffset = circumference * (1 - ring.score / 100);
+              const animationDelay = ring.index * animation.stagger;
 
-          return (
-            <g key={ring.name}>
-              {/* Background ring (gray) */}
-              <circle
-                cx={center}
-                cy={center}
-                r={ring.radius}
-                fill="none"
-                stroke={colors.background}
-                strokeWidth={ring.strokeWidth}
-              />
+              return (
+                <g key={ring.name}>
+                  {/* Background ring (gray) */}
+                  <circle
+                    cx={center}
+                    cy={center}
+                    r={ring.radius}
+                    fill="none"
+                    stroke={colors.background}
+                    strokeWidth={ring.strokeWidth}
+                  />
 
-              {/* Animated progress ring */}
-              <motion.circle
-                cx={center}
-                cy={center}
-                r={ring.radius}
-                fill="none"
-                stroke={ring.color}
-                strokeWidth={ring.strokeWidth}
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                initial={{ strokeDashoffset: circumference }}
-                animate={{ strokeDashoffset }}
-                transition={{
-                  duration: animation.duration,
-                  delay: animationDelay,
-                  ease: animation.easing,
-                }}
-              />
-            </g>
-          );
-        })}
-        </svg>
+                  {/* Animated progress ring */}
+                  <motion.circle
+                    cx={center}
+                    cy={center}
+                    r={ring.radius}
+                    fill="none"
+                    stroke={ring.color}
+                    strokeWidth={ring.strokeWidth}
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    initial={{ strokeDashoffset: circumference }}
+                    animate={{ strokeDashoffset }}
+                    transition={{
+                      duration: animation.duration,
+                      delay: animationDelay,
+                      ease: animation.easing,
+                    }}
+                  />
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Center Score Circle - TRUE center using flexbox */}
+          <motion.div
+            style={{
+              position: 'relative',
+              zIndex: 10,
+              width: centerCircleSize,
+              height: centerCircleSize,
+              borderRadius: '50%',
+              overflow: 'hidden',
+              background: 'linear-gradient(135deg, #FF4A23 0%, #FF7043 100%)',
+              border: '4px solid white',
+              boxShadow: '0 8px 32px rgba(255, 74, 35, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{
+              duration: 0.5,
+              delay: centerScoreDelay,
+              ease: 'easeOut',
+            }}
+          >
+            <motion.span
+              style={{
+                color: 'white',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                fontSize: Math.max(18, centerCircleSize * 0.32),
+                fontWeight: 700,
+                textAlign: 'center',
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{
+                duration: 0.3,
+                delay: centerScoreDelay + 0.2,
+              }}
+            >
+              {clampScore(totalScore)}%
+            </motion.span>
+          </motion.div>
+        </div>
       </div>
 
-      {/* Center Profile Circle - matches Gemini Phoenix exactly */}
+      {/* Bottom Score Card - Glassmorphism effect, overlapping outer ring */}
       <motion.div
         style={{
           position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 80,  // Fixed 80px like Phoenix
-          height: 80, // Fixed 80px like Phoenix
-          borderRadius: '50%',
-          overflow: 'hidden',
-          background: 'linear-gradient(135deg, #FF4A23 0%, #FF7043 100%)',
-          border: '3px solid white',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10,
-        }}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{
-          duration: 0.5,
-          delay: centerScoreDelay,
-          ease: 'easeOut',
-        }}
-      >
-        <motion.span
-          style={{
-            color: 'white',
-            fontFamily: 'Inter, system-ui, sans-serif',
-            fontSize: 24,  // Fixed 24px like Phoenix
-            fontWeight: 700,
-            textAlign: 'center',
-          }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{
-            duration: 0.3,
-            delay: centerScoreDelay + 0.2,
-          }}
-        >
-          {clampScore(totalScore)}%
-        </motion.span>
-      </motion.div>
-
-      {/* Bottom Score Label - positioned just below the outer ring */}
-      <motion.div
-        style={{
-          position: 'absolute',
-          bottom: '5%',  // Closer to rings (outer ring ends at ~7% from bottom)
+          bottom: 0,
           left: '50%',
           transform: 'translateX(-50%)',
-          background: 'linear-gradient(135deg, #FF5733 0%, #FF7043 100%)',
+          // Glassmorphism effect
+          background: 'linear-gradient(135deg, rgba(255, 74, 35, 0.9) 0%, rgba(255, 112, 67, 0.85) 100%)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           color: 'white',
-          padding: '12px 24px',
-          borderRadius: 12,
+          padding: '14px 28px',
+          borderRadius: 16,
           textAlign: 'center',
-          zIndex: 10,
-          boxShadow: '0 4px 20px rgba(255, 87, 51, 0.2)',
+          zIndex: 20,
+          // 3D shadow effect
+          boxShadow: `
+            0 8px 32px rgba(255, 74, 35, 0.35),
+            0 4px 16px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2)
+          `,
+          border: '1px solid rgba(255, 255, 255, 0.25)',
         }}
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
           duration: 0.5,
@@ -323,11 +343,11 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
           ease: 'easeOut',
         }}
       >
-        <div style={{ fontSize: 32, fontWeight: 700, lineHeight: 1 }}>
-          {clampScore(totalScore)}%
-        </div>
-        <div style={{ fontSize: 11, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1 }}>
+        <div style={{ fontSize: 11, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>
           Ivy+ Ready Score
+        </div>
+        <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1 }}>
+          {clampScore(totalScore)}%
         </div>
       </motion.div>
     </div>

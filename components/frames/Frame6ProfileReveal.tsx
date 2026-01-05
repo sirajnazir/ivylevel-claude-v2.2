@@ -588,81 +588,93 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
         </p>
       </motion.div>
 
-      {/* Ivy+ Ready Score - 5-Ring Circular Visualization */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
+      {/* Score Cards Row - Rings (left) + Pillars (right) - Responsive */}
+      <div
         style={{
-          backgroundColor: 'white',
-          border: `2px solid ${BRAND_COLORS.borderLight}`,
-          borderRadius: 16,
-          padding: 24,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+          gap: 24,
           marginBottom: 24,
         }}
       >
-        <h2
+        {/* Ivy+ Ready Score - 5-Ring Circular Visualization */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
           style={{
-            fontSize: 20,
-            fontWeight: 700,
-            color: BRAND_COLORS.textHeading,
-            marginBottom: 20,
-            textAlign: 'center',
+            backgroundColor: 'white',
+            border: `2px solid ${BRAND_COLORS.borderLight}`,
+            borderRadius: 16,
+            padding: 24,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          Your Ivy+ Ready Score
-        </h2>
+          <h2
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: BRAND_COLORS.textHeading,
+              marginBottom: 16,
+              textAlign: 'center',
+            }}
+          >
+            Your Ivy+ Ready Score
+          </h2>
 
-        {/* CircularProgress - 5 concentric rings visualization */}
-        <div style={{ maxWidth: 400, margin: '0 auto' }}>
-          <CircularProgress
-            aptitude={categoryScores.find((c) => c.name === 'Aptitude')?.score || 0}
-            passion={categoryScores.find((c) => c.name === 'Passion')?.score || 0}
-            community={categoryScores.find((c) => c.name === 'Service')?.score || 0}
-            narrative={categoryScores.find((c) => c.name === 'Identity')?.score || 0}
-            totalScore={Math.round(
-              categoryScores.reduce((sum, c) => sum + c.score, 0) / categoryScores.length
-            )}
-            size={360}
-          />
-        </div>
-      </motion.div>
+          {/* CircularProgress - 5 concentric rings visualization */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CircularProgress
+              aptitude={categoryScores.find((c) => c.name === 'Aptitude')?.score || 0}
+              passion={categoryScores.find((c) => c.name === 'Passion')?.score || 0}
+              community={categoryScores.find((c) => c.name === 'Service')?.score || 0}
+              narrative={categoryScores.find((c) => c.name === 'Identity')?.score || 0}
+              totalScore={Math.round(
+                categoryScores.reduce((sum, c) => sum + c.score, 0) / categoryScores.length
+              )}
+              size={320}
+            />
+          </div>
+        </motion.div>
 
-      {/* Four Pillars - 2x2 Grid with Wave Animations */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        style={{
-          backgroundColor: 'white',
-          border: `2px solid ${BRAND_COLORS.borderLight}`,
-          borderRadius: 16,
-          padding: 24,
-          marginBottom: 24,
-        }}
-      >
-        <h2
+        {/* Four Pillars - 2x2 Grid with Wave Animations */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
           style={{
-            fontSize: 20,
-            fontWeight: 700,
-            color: BRAND_COLORS.textHeading,
-            marginBottom: 20,
-            textAlign: 'center',
+            backgroundColor: 'white',
+            border: `2px solid ${BRAND_COLORS.borderLight}`,
+            borderRadius: 16,
+            padding: 24,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          Four Pillars of Excellence
-        </h2>
+          <h2
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: BRAND_COLORS.textHeading,
+              marginBottom: 16,
+              textAlign: 'center',
+            }}
+          >
+            Four Pillars of Excellence
+          </h2>
 
-        {/* PillarCards - 2x2 grid with SVG wave animations */}
-        <div style={{ maxWidth: 500, margin: '0 auto' }}>
-          <PillarCards
-            aptitude={categoryScores.find((c) => c.name === 'Aptitude')?.score || 0}
-            passion={categoryScores.find((c) => c.name === 'Passion')?.score || 0}
-            community={categoryScores.find((c) => c.name === 'Service')?.score || 0}
-            narrative={categoryScores.find((c) => c.name === 'Identity')?.score || 0}
-          />
-        </div>
-      </motion.div>
+          {/* PillarCards - 2x2 grid with SVG wave animations */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <PillarCards
+              aptitude={categoryScores.find((c) => c.name === 'Aptitude')?.score || 0}
+              passion={categoryScores.find((c) => c.name === 'Passion')?.score || 0}
+              community={categoryScores.find((c) => c.name === 'Service')?.score || 0}
+              narrative={categoryScores.find((c) => c.name === 'Identity')?.score || 0}
+            />
+          </div>
+        </motion.div>
+      </div>
 
       {/* Strengths & Gaps */}
       <div
