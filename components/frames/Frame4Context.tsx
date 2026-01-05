@@ -9,12 +9,15 @@
  * - Context (parent occupation, first-gen, transportation) - MANDATORY
  * - Time capacity (available hours, homework hours) - MANDATORY
  *
- * @version 1.0.0
+ * Also computes psychometrics from collected data before proceeding.
+ *
+ * @version 1.1.0
  */
 
 import { useState, useCallback } from 'react';
 import { useStudentStore } from '@/lib/store/useStudentStore';
 import { useSessionStore } from '@/lib/store/useSessionStore';
+import { computeTimeManagement } from '@/lib/types/frame4';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronRight,
@@ -106,12 +109,59 @@ interface Frame4ContextProps {
 // ============================================================================
 
 export function Frame4Context({ onComplete }: Frame4ContextProps) {
-  const { profile, updateOperating, calculateCompleteness } = useStudentStore();
+  const { profile, updateOperating, calculateCompleteness, setPsychometrics, setAssessmentIntelligence } = useStudentStore();
   const { nextFrame, completeFrame } = useSessionStore();
   const [currentSection, setCurrentSection] = useState<number>(0);
 
   // Get operating data with defaults
   const operating = profile.operating || {};
+
+  // ============================================================================
+  // DERIVE PSYCHOMETRICS FROM STRENGTHS
+  // ============================================================================
+
+  /**
+   * Maps selected strengths to psychometric dimensions.
+   * This provides better-than-default values based on user selections.
+   */
+  const deriveFromStrengths = useCallback((strengths: string[]): Record<string, number> => {
+    // Start with neutral 0.5 baseline
+    const scores: Record<string, number> = {
+      openness: 0.5,
+      conscientiousness: 0.5,
+      extraversion: 0.5,
+      agreeableness: 0.5,
+      neuroticism: 0.5,
+      grit_resilience: 0.5,
+      coachability_score: 0.5,
+    };
+
+    // Strength to psychometric mapping
+    const strengthMappings: Record<string, Partial<typeof scores>> = {
+      'memorization': { conscientiousness: 0.1, grit_resilience: 0.05 },
+      'hands-on': { openness: 0.1, conscientiousness: 0.05 },
+      'explaining': { extraversion: 0.15, agreeableness: 0.1 },
+      'competitive': { agreeableness: -0.1, grit_resilience: 0.15, neuroticism: 0.05 },
+      'social': { extraversion: 0.2, agreeableness: 0.1 },
+      'creative': { openness: 0.2, neuroticism: -0.05 },
+      'analytical': { conscientiousness: 0.15, openness: 0.1 },
+      'disciplined': { conscientiousness: 0.2, grit_resilience: 0.15, neuroticism: -0.1 },
+      'curious': { openness: 0.2, coachability_score: 0.1 },
+      'writing': { openness: 0.15, conscientiousness: 0.05 },
+    };
+
+    // Apply impacts from each selected strength
+    for (const strength of strengths) {
+      const mapping = strengthMappings[strength];
+      if (mapping) {
+        for (const [dimension, impact] of Object.entries(mapping)) {
+          scores[dimension] = Math.max(0, Math.min(1, scores[dimension] + (impact || 0)));
+        }
+      }
+    }
+
+    return scores;
+  }, []);
 
   // ============================================================================
   // SECTION 1: INTERESTS
@@ -867,7 +917,62 @@ export function Frame4Context({ onComplete }: Frame4ContextProps) {
       setCurrentSection(currentSection + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // Calculate completeness and proceed
+      // ========================================================================
+      // COMPUTE AND SAVE PSYCHOMETRICS BEFORE PROCEEDING
+      // ========================================================================
+
+      // 1. Derive psychometrics from selected strengths
+      const strengths = operating.strengths || [];
+      const derivedScores = deriveFromStrengths(strengths);
+
+      // 2. Compute time management from operating data
+      const timeManagement = computeTimeManagement({
+        availableHoursPerWeek: operating.availableHoursPerWeek,
+        homeworkHoursPerDay: operating.homeworkHoursPerDay,
+      });
+
+      // 3. Derive coachability category from score
+      const coachabilityScore = derivedScores.coachability_score || 0.5;
+      const coachability: 'LOW' | 'MEDIUM' | 'HIGH' =
+        coachabilityScore >= 0.7 ? 'HIGH' :
+        coachabilityScore >= 0.4 ? 'MEDIUM' : 'LOW';
+
+      // 4. Save psychometrics to student store
+      setPsychometrics({
+        openness: derivedScores.openness,
+        conscientiousness: derivedScores.conscientiousness,
+        extraversion: derivedScores.extraversion,
+        agreeableness: derivedScores.agreeableness,
+        neuroticism: derivedScores.neuroticism,
+        grit_resilience: derivedScores.grit_resilience,
+        coachability_score: coachabilityScore,
+        coachability,
+        introversion_extroversion: (derivedScores.extraversion - 0.5) * 2,
+      });
+
+      // 5. Save assessment intelligence (time management + hidden capabilities)
+      setAssessmentIntelligence({
+        time_management: timeManagement,
+        hidden_capabilities: {
+          hobby_passions: [],
+          unconventional_interests: [],
+          hidden_technical_projects: [],
+          family_responsibilities: operating.familyResponsibilities || undefined,
+          work_experience: operating.workHours && operating.workHours > 0
+            ? `Part-time work ${operating.workHours} hrs/week`
+            : undefined,
+        },
+      });
+
+      console.log('[Frame4Context] Saved psychometrics:', {
+        derivedScores,
+        timeManagement,
+        coachability,
+      });
+
+      // ========================================================================
+      // COMPLETE FRAME AND PROCEED
+      // ========================================================================
       calculateCompleteness();
       completeFrame();
       if (onComplete) {
@@ -876,7 +981,18 @@ export function Frame4Context({ onComplete }: Frame4ContextProps) {
         nextFrame();
       }
     }
-  }, [currentSection, sections.length, calculateCompleteness, completeFrame, onComplete, nextFrame]);
+  }, [
+    currentSection,
+    sections.length,
+    operating,
+    deriveFromStrengths,
+    setPsychometrics,
+    setAssessmentIntelligence,
+    calculateCompleteness,
+    completeFrame,
+    onComplete,
+    nextFrame,
+  ]);
 
   const handleBack = useCallback(() => {
     if (currentSection > 0) {

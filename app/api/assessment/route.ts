@@ -2,7 +2,9 @@
  * Assessment Persistence API
  * POST /api/assessment - Save an assessment
  * GET /api/assessment?session_id=xxx - Load an assessment by session ID
- * GET /api/assessment?email=xxx - Load assessments by email
+ * GET /api/assessment?user_id=xxx - Load assessments by user ID
+ *
+ * Updated for new beta schema (010_beta_complete_schema.sql)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -28,21 +30,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       session_id,
-      email,
+      user_id,
       profile,
-      game_plan,
       scores,
       completeness = 0,
-      tier,
       archetype,
     } = body as {
       session_id: string;
-      email?: string;
+      user_id?: string;
       profile: StudentProfile;
-      game_plan?: unknown;
       scores?: { aptitude: number; passion: number; community: number; identity: number; overall: number };
       completeness?: number;
-      tier?: string;
       archetype?: string;
     };
 
@@ -55,26 +53,46 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Check if assessment already exists
-    const { data: existing } = await supabase
-      .from('assessments')
-      .select('id')
-      .eq('session_id', session_id)
-      .single();
+    // Build the scores object for storage
+    const scoresJson: Json = scores ? {
+      aptitude: scores.aptitude,
+      passion: scores.passion,
+      community: scores.community,
+      identity: scores.identity,
+      overall: scores.overall,
+      ivy_ready_score: scores.overall,
+    } : {
+      aptitude: 0,
+      passion: 0,
+      community: 0,
+      identity: 0,
+      overall: 0,
+      ivy_ready_score: 0,
+    };
+
+    // If user_id is provided, check for existing by user_id + session_id
+    // Otherwise, check by session_id alone (anonymous user)
+    let existing = null;
+    if (user_id) {
+      const { data } = await supabase
+        .from('assessments')
+        .select('id')
+        .eq('user_id', user_id)
+        .eq('session_id', session_id)
+        .maybeSingle();
+      existing = data;
+    }
 
     const now = new Date().toISOString();
 
     if (existing) {
       // Update existing assessment
       const updateData: AssessmentUpdate = {
-        email: email || null,
         profile_data: profile as unknown as Json,
-        game_plan_data: (game_plan as unknown as Json) || null,
-        scores: scores || null,
-        completeness,
-        tier: tier || null,
+        scores: scoresJson,
+        completeness_score: completeness,
         archetype: archetype || null,
-        updated_at: now,
+        completed_at: now,
       };
 
       const { error: updateError } = await supabase
@@ -97,18 +115,26 @@ export async function POST(request: NextRequest) {
         id: existing.id,
       });
     } else {
-      // Insert new assessment
+      // Insert new assessment - requires user_id in the new schema
+      if (!user_id) {
+        // For anonymous users, we can't save to the new schema
+        // Return a soft failure that allows the app to continue
+        console.log('[Assessment API] No user_id provided, cannot save to new schema');
+        return NextResponse.json({
+          success: true,
+          persisted: false,
+          message: 'Assessment accepted but not persisted (no user_id)',
+        });
+      }
+
       const insertData: AssessmentInsert = {
+        user_id,
         session_id,
-        email: email || null,
         profile_data: profile as unknown as Json,
-        game_plan_data: (game_plan as unknown as Json) || null,
-        scores: scores || null,
-        completeness,
-        tier: tier || null,
+        scores: scoresJson,
+        completeness_score: completeness,
         archetype: archetype || null,
-        created_at: now,
-        updated_at: now,
+        completed_at: now,
       };
 
       const { data: newAssessment, error: insertError } = await supabase
@@ -155,39 +181,40 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const session_id = searchParams.get('session_id');
-    const email = searchParams.get('email');
+    const user_id = searchParams.get('user_id');
 
-    if (!session_id && !email) {
+    if (!session_id && !user_id) {
       return NextResponse.json(
-        { error: 'Missing query parameter: session_id or email required' },
+        { error: 'Missing query parameter: session_id or user_id required' },
         { status: 400 }
       );
     }
 
     const supabase = createAdminClient();
 
-    if (session_id) {
-      // Fetch by session ID (single assessment)
+    if (session_id && user_id) {
+      // Fetch by user_id + session_id (specific assessment)
       const { data, error } = await supabase
         .from('assessments')
         .select('*')
+        .eq('user_id', user_id)
         .eq('session_id', session_id)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // No rows returned
-          return NextResponse.json({
-            success: true,
-            found: false,
-            data: null,
-          });
-        }
         console.error('[Assessment API] GET error:', error);
         return NextResponse.json(
           { error: 'Failed to fetch assessment', details: error.message },
           { status: 500 }
         );
+      }
+
+      if (!data) {
+        return NextResponse.json({
+          success: true,
+          found: false,
+          data: null,
+        });
       }
 
       return NextResponse.json({
@@ -196,18 +223,17 @@ export async function GET(request: NextRequest) {
         data: {
           ...data,
           profile: data.profile_data,
-          game_plan: data.game_plan_data,
         },
       });
     }
 
-    if (email) {
-      // Fetch by email (potentially multiple assessments)
+    if (user_id) {
+      // Fetch all assessments by user_id
       const { data, error } = await supabase
         .from('assessments')
         .select('*')
-        .eq('email', email)
-        .order('updated_at', { ascending: false });
+        .eq('user_id', user_id)
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('[Assessment API] GET error:', error);
@@ -219,15 +245,53 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        found: data.length > 0,
-        count: data.length,
-        data: data.map((item) => ({
+        found: (data?.length ?? 0) > 0,
+        count: data?.length ?? 0,
+        data: (data ?? []).map((item) => ({
           ...item,
           profile: item.profile_data,
-          game_plan: item.game_plan_data,
         })),
       });
     }
+
+    if (session_id) {
+      // Fetch by session ID (single assessment) - for backward compatibility
+      const { data, error } = await supabase
+        .from('assessments')
+        .select('*')
+        .eq('session_id', session_id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[Assessment API] GET error:', error);
+        return NextResponse.json(
+          { error: 'Failed to fetch assessment', details: error.message },
+          { status: 500 }
+        );
+      }
+
+      if (!data) {
+        return NextResponse.json({
+          success: true,
+          found: false,
+          data: null,
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        found: true,
+        data: {
+          ...data,
+          profile: data.profile_data,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      success: false,
+      error: 'Invalid query parameters',
+    }, { status: 400 });
   } catch (error: unknown) {
     const err = error as Error;
     console.error('[Assessment API] GET error:', err);

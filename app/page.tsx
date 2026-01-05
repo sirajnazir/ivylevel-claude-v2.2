@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -7,10 +8,21 @@ import { useSessionStore } from '@/lib/store/useSessionStore';
 import { startFreshAssessment } from '@/lib/session/sessionManager';
 import { EntryPortal } from '@/components/auth/EntryPortal';
 
-export default function HomePage() {
+function LoadingSpinner() {
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{ background: 'linear-gradient(135deg, #FFE5DF 0%, #F5E8E5 50%, #FFF8F6 100%)' }}
+    >
+      <div className="w-8 h-8 border-4 border-[#FF4A23] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
+function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated, isLoading, profile } = useAuth();
+  const { isAuthenticated, isReady, profile } = useAuth();
   const isCompleted = useSessionStore((s) => s.is_completed);
   const [mounted, setMounted] = useState(false);
 
@@ -19,7 +31,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (!mounted || isLoading) return;
+    if (!mounted || !isReady) return;
 
     // Check if user wants to start fresh (via ?fresh=1 query param)
     const shouldStartFresh = searchParams.get('fresh') === '1';
@@ -53,32 +65,26 @@ export default function HomePage() {
     }
 
     // Not authenticated - show EntryPortal (handled by render)
-  }, [router, isAuthenticated, isLoading, profile, isCompleted, mounted, searchParams]);
+  }, [router, isAuthenticated, isReady, profile, isCompleted, mounted, searchParams]);
 
   // Loading state
-  if (isLoading || !mounted) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'linear-gradient(135deg, #FFE5DF 0%, #F5E8E5 50%, #FFF8F6 100%)' }}
-      >
-        <div className="w-8 h-8 border-4 border-[#FF4A23] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+  if (!isReady || !mounted) {
+    return <LoadingSpinner />;
   }
 
   // If authenticated, show loading while redirecting
   if (isAuthenticated) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'linear-gradient(135deg, #FFE5DF 0%, #F5E8E5 50%, #FFF8F6 100%)' }}
-      >
-        <div className="w-8 h-8 border-4 border-[#FF4A23] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   // Not authenticated - show EntryPortal
   return <EntryPortal />;
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <HomePageContent />
+    </Suspense>
+  );
 }

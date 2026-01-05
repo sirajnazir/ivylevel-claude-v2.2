@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Flame, Search, Bell, LogOut, User, RefreshCw, ChevronDown,
-  BarChart3, Map, Calendar, TrendingUp, Video, Bot
+  BarChart3, Map, Calendar, TrendingUp, Video, Bot, Trash2
 } from 'lucide-react';
 import { COLORS, TABS, type TabId } from '@/lib/constants/design';
 
@@ -27,9 +27,10 @@ interface TabHeaderProps {
   studentName?: string;
   onLogout?: () => void;
   onRetakeAssessment?: () => void;
+  onDeleteUserData?: () => void;
 }
 
-export function TabHeader({ activeTab, onTabChange, studentName = 'Student', onLogout, onRetakeAssessment }: TabHeaderProps) {
+export function TabHeader({ activeTab, onTabChange, studentName = 'Student', onLogout, onRetakeAssessment, onDeleteUserData }: TabHeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showMenu, setShowMenu] = useState(false);
 
@@ -159,6 +160,19 @@ export function TabHeader({ activeTab, onTabChange, studentName = 'Student', onL
                     >
                       <RefreshCw size={16} style={{ color: COLORS.textSecondary }} />
                       Retake Assessment
+                    </button>
+                  )}
+                  {onDeleteUserData && (
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        onDeleteUserData();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-50 transition-colors border-t"
+                      style={{ color: '#dc2626', borderColor: COLORS.borderDefault }}
+                    >
+                      <Trash2 size={16} style={{ color: '#dc2626' }} />
+                      Delete User Data
                     </button>
                   )}
                   <button

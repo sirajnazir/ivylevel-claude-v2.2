@@ -8,8 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useAuth, useUserRole } from '@/lib/auth/AuthProvider';
-import type { UserRole } from '@/types/auth';
+import { useAuth, useUserRole, type UserRole } from '@/lib/auth/AuthProvider';
 import { Loader2 } from 'lucide-react';
 
 // =============================================================================
@@ -50,12 +49,12 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, isLoading, profile } = useAuth();
+  const { isAuthenticated, isReady, profile } = useAuth();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // Wait for auth to finish loading
-    if (isLoading) return;
+    // Wait for auth to be ready
+    if (!isReady) return;
 
     if (requireAuth && !isAuthenticated) {
       // Not authenticated, redirect to login
@@ -64,10 +63,10 @@ export function ProtectedRoute({
     } else {
       setIsChecking(false);
     }
-  }, [isLoading, isAuthenticated, requireAuth, pathname, redirectTo, router]);
+  }, [isReady, isAuthenticated, requireAuth, pathname, redirectTo, router]);
 
   // Show loading while checking
-  if (isLoading || isChecking) {
+  if (!isReady || isChecking) {
     return <AuthLoadingScreen message={loadingMessage} />;
   }
 
@@ -101,12 +100,12 @@ export function RoleGuard({
   redirectTo,
 }: RoleGuardProps) {
   const router = useRouter();
-  const { profile, isLoading, isAuthenticated } = useAuth();
+  const { profile, isReady, isAuthenticated } = useAuth();
   const userRole = useUserRole();
 
   useEffect(() => {
-    // Wait for auth to load
-    if (isLoading) return;
+    // Wait for auth to be ready
+    if (!isReady) return;
 
     // Must be authenticated
     if (!isAuthenticated) return;
@@ -117,10 +116,10 @@ export function RoleGuard({
         router.replace(redirectTo);
       }
     }
-  }, [isLoading, isAuthenticated, userRole, allowedRoles, redirectTo, router]);
+  }, [isReady, isAuthenticated, userRole, allowedRoles, redirectTo, router]);
 
   // Loading
-  if (isLoading) {
+  if (!isReady) {
     return <AuthLoadingScreen message="Verifying access..." />;
   }
 
@@ -224,11 +223,11 @@ interface RedirectIfAuthenticatedProps {
  */
 export function RedirectIfAuthenticated({ children }: RedirectIfAuthenticatedProps) {
   const router = useRouter();
-  const { isAuthenticated, isLoading, profile } = useAuth();
+  const { isAuthenticated, isReady, profile } = useAuth();
   const [shouldRender, setShouldRender] = useState(false);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (!isReady) return;
 
     if (isAuthenticated && profile) {
       // Redirect to appropriate dashboard
@@ -237,9 +236,9 @@ export function RedirectIfAuthenticated({ children }: RedirectIfAuthenticatedPro
     } else {
       setShouldRender(true);
     }
-  }, [isLoading, isAuthenticated, profile, router]);
+  }, [isReady, isAuthenticated, profile, router]);
 
-  if (isLoading || !shouldRender) {
+  if (!isReady || !shouldRender) {
     return <AuthLoadingScreen message="Checking session..." />;
   }
 

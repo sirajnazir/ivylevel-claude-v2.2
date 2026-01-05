@@ -4,6 +4,8 @@ import { useEffect, useMemo } from 'react';
 import { useParams, useRouter, notFound } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSessionStore } from '@/lib/store';
+import { useUserData } from '@/lib/hooks/useUserData';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { navigationLogger } from '@/lib/trace';
 import { FRAME_CONFIG } from '@/components/quest/QuestContainer';
 import { AssessmentLayout } from '@/components/layout/AssessmentLayout';
@@ -83,6 +85,8 @@ export default function FramePage() {
   const params = useParams();
   const router = useRouter();
   const { goToFrame, completeFrame, completeAssessment } = useSessionStore();
+  const { saveUserData } = useUserData();
+  const { isAuthenticated } = useAuth();
 
   const frameId = useMemo(() => {
     const id = parseInt(params.frameId as string, 10);
@@ -129,6 +133,15 @@ export default function FramePage() {
     } else {
       // Assessment complete - mark as completed and go to dashboard
       completeAssessment();
+
+      // Save to Supabase if authenticated
+      if (isAuthenticated) {
+        console.log('[Quest] Saving assessment to Supabase...');
+        saveUserData().catch((err) => {
+          console.error('[Quest] Failed to save to Supabase:', err);
+        });
+      }
+
       router.push('/dashboard');
     }
   };

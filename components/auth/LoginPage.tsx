@@ -23,8 +23,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
-import { useAuth } from '@/lib/auth/AuthProvider';
-import { USER_ROLES, type UserRole } from '@/types/auth';
+import { useAuth, USER_ROLES, type UserRole } from '@/lib/auth/AuthProvider';
 
 // =============================================================================
 // LOGIN PAGE
@@ -50,8 +49,9 @@ export function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && profile) {
-      const redirectPath = getRedirectPath(profile.role);
+    if (isAuthenticated) {
+      // Redirect based on profile role, or default to dashboard if no profile yet
+      const redirectPath = profile ? getRedirectPath(profile.role) : '/dashboard';
       router.push(redirectPath);
     }
   }, [isAuthenticated, profile, router]);
@@ -190,8 +190,8 @@ export function LoginPage() {
               </div>
             </div>
 
-            {/* Remember & Forgot */}
-            <div className="flex items-center justify-between">
+            {/* Remember me */}
+            <div className="flex items-center">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -201,13 +201,6 @@ export function LoginPage() {
                 />
                 <span className="text-sm text-gray-600">Remember me</span>
               </label>
-
-              <Link
-                href="/auth/reset-password"
-                className="text-sm text-purple-600 hover:text-purple-700"
-              >
-                Forgot password?
-              </Link>
             </div>
 
             {/* Submit */}
@@ -227,39 +220,14 @@ export function LoginPage() {
             </button>
           </form>
 
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
-              Don't have an account?{' '}
-              <Link
-                href={`/auth/signup?role=${role}`}
-                className="text-purple-600 hover:text-purple-700 font-medium"
-              >
-                Create one
-              </Link>
-            </p>
-          </div>
-
-          {/* Role switcher */}
+          {/* Beta Notice */}
           <div className="mt-6 pt-6 border-t border-gray-100">
-            <p className="text-sm text-gray-500 text-center mb-3">Sign in as a different role:</p>
-            <div className="flex justify-center gap-2">
-              {(Object.keys(USER_ROLES) as UserRole[]).map((r) => (
-                <Link
-                  key={r}
-                  href={`/auth/login?role=${r}`}
-                  className={`
-                    px-3 py-1.5 text-sm rounded-lg transition-colors
-                    ${r === role 
-                      ? 'bg-purple-100 text-purple-700' 
-                      : 'text-gray-500 hover:bg-gray-100'
-                    }
-                  `}
-                >
-                  {USER_ROLES[r].label}
-                </Link>
-              ))}
-            </div>
+            <p className="text-center text-sm text-gray-500">
+              Beta Access Only
+            </p>
+            <p className="text-center text-xs text-gray-400 mt-1">
+              Contact your administrator for account access
+            </p>
           </div>
         </div>
       </motion.div>

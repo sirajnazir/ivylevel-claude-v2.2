@@ -1,12 +1,12 @@
 /**
  * Simplified Beta Auth System
- *
+ * 
  * For beta release with 10-20 users:
  * - Admin creates accounts in Supabase Dashboard
  * - Admin sends credentials to users manually
  * - Users login with email/password
  * - No self-signup, no password reset callbacks
- *
+ * 
  * This eliminates ALL callback complexity.
  */
 
@@ -23,12 +23,6 @@ import type { User, Session } from '@supabase/supabase-js';
 
 export type UserRole = 'student' | 'coach' | 'admin';
 
-export const USER_ROLES: Record<UserRole, { label: string; color: string }> = {
-  student: { label: 'Student', color: '#8B5CF6' },
-  coach: { label: 'Coach', color: '#3B82F6' },
-  admin: { label: 'Admin', color: '#EF4444' },
-};
-
 export interface UserProfile {
   id: string;
   email: string;
@@ -43,7 +37,6 @@ interface AuthState {
   profile: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  isReady: boolean;
   error: string | null;
 }
 
@@ -81,80 +74,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profile: null,
     isLoading: true,
     isAuthenticated: false,
-    isReady: false,
     error: null,
   });
 
   // Initialize - check for existing session
   useEffect(() => {
     let mounted = true;
-
+    
     const init = async () => {
-      console.log('[Auth] Initializing...');
       const supabase = getSupabase();
-
+      
       try {
         const { data: { session } } = await supabase.auth.getSession();
-
+        
         if (!mounted) return;
-
+        
         if (session?.user) {
-          console.log('[Auth] Session found for:', session.user.email);
-
-          // Fetch profile (use maybeSingle to avoid 406 if no profile exists)
-          const { data: profile, error: profileError } = await supabase
+          // Fetch profile
+          const { data: profile } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
-            .maybeSingle();
-
+            .single();
+          
           if (!mounted) return;
-
-          if (profileError) {
-            console.warn('[Auth] Profile fetch warning:', profileError.message);
-          }
-
+          
           setState({
             user: session.user,
-            profile: profile as UserProfile | null,
+            profile: profile as UserProfile,
             isLoading: false,
             isAuthenticated: true,
-            isReady: true,
             error: null,
           });
         } else {
-          console.log('[Auth] No session found');
-          setState(prev => ({ ...prev, isLoading: false, isReady: true }));
+          setState(prev => ({ ...prev, isLoading: false }));
         }
       } catch (err) {
         console.error('[Auth] Init error:', err);
         if (mounted) {
-          setState(prev => ({ ...prev, isLoading: false, isReady: true }));
+          setState(prev => ({ ...prev, isLoading: false }));
         }
       }
     };
 
     init();
-
+    
     return () => { mounted = false; };
   }, []);
 
   // Sign In - simple email/password, no callbacks
   const signIn = useCallback(async (email: string, password: string) => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
-
+    
     const supabase = getSupabase();
-
+    
     try {
-      console.log('[Auth] Signing in:', email);
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
 
       if (error) {
-        console.error('[Auth] Sign in error:', error.message);
         setState(prev => ({ ...prev, isLoading: false, error: error.message }));
         return { error: error.message };
       }
@@ -164,32 +144,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: 'Login failed' };
       }
 
-      console.log('[Auth] Sign in successful:', data.user.email);
-
-      // Fetch profile (use maybeSingle to avoid 406 if no profile exists)
-      const { data: profile, error: profileError } = await supabase
+      // Fetch profile
+      const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.warn('[Auth] Profile fetch warning:', profileError.message);
-      }
+        .single();
 
       setState({
         user: data.user,
-        profile: profile as UserProfile | null,
+        profile: profile as UserProfile,
         isLoading: false,
         isAuthenticated: true,
-        isReady: true,
         error: null,
       });
 
       return { error: null };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';
-      console.error('[Auth] Sign in exception:', message);
       setState(prev => ({ ...prev, isLoading: false, error: message }));
       return { error: message };
     }
@@ -197,19 +169,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Sign Out
   const signOut = useCallback(async () => {
-    console.log('[Auth] Signing out...');
     const supabase = getSupabase();
     await supabase.auth.signOut();
-
+    
     setState({
       user: null,
       profile: null,
       isLoading: false,
       isAuthenticated: false,
-      isReady: true,
       error: null,
     });
-
+    
     router.push('/');
   }, [router]);
 
@@ -250,19 +220,4 @@ export function useUser() {
 export function useProfile() {
   const { profile } = useAuth();
   return profile;
-}
-
-export function useIsAuthenticated() {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated;
-}
-
-export function useUserRole() {
-  const { profile } = useAuth();
-  return profile?.role ?? null;
-}
-
-export function useAuthReady() {
-  const { isReady } = useAuth();
-  return isReady;
 }

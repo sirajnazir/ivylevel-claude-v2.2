@@ -14,6 +14,7 @@ import { useStudentStore } from '@/lib/store/useStudentStore';
 import { useResultsStore } from '@/lib/store/useResultsStore';
 import { logout, startFreshAssessment } from '@/lib/session/sessionManager';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { deleteUserData } from '@/lib/services/assessmentService';
 import { TabHeader } from '@/components/shared/TabHeader';
 import { AssessmentTab } from '@/components/tabs/AssessmentTab';
 import { GamePlanTab } from '@/components/tabs/GamePlanTab';
@@ -32,6 +33,7 @@ import {
 } from '@/lib/hooks/useScoring';
 import { useGamePlan, usePreparationData } from '@/lib/hooks/useGamePlan';
 import { useInsights } from '@/lib/hooks/useInsights';
+import { useUserData } from '@/lib/hooks/useUserData';
 
 const mockGamePlanData = {
   targetProfile: {
@@ -164,7 +166,7 @@ function DashboardLoading() {
 // Main dashboard content
 function DashboardContent() {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const is_completed = useSessionStore((s) => s.is_completed);
   const studentProfile = useStudentStore((s) => s.profile);
   const [activeTab, setActiveTab] = useState<TabId>('assessment');
@@ -201,6 +203,9 @@ function DashboardContent() {
     positiveInsights,
     isGenerating: isInsightsGenerating,
   } = useInsights();
+
+  // Load game plan from Supabase
+  const { gamePlanData: supabaseGamePlan } = useUserData();
 
   useEffect(() => {
     setMounted(true);
@@ -257,6 +262,37 @@ function DashboardContent() {
   const handleRetakeAssessment = () => {
     // Use centralized session manager to start fresh
     startFreshAssessment({ redirectTo: '/quest/1' });
+  };
+
+  const handleDeleteUserData = async () => {
+    if (!user?.id) {
+      console.warn('[Dashboard] No user ID, cannot delete data');
+      return;
+    }
+
+    // Confirm with user before deleting
+    const confirmed = window.confirm(
+      'Are you sure you want to delete all your data? This will remove your assessment, game plan, and all progress. You will need to retake the assessment.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      console.log('[Dashboard] Deleting user data from Supabase...');
+      const result = await deleteUserData(user.id);
+
+      if (result.success) {
+        console.log('[Dashboard] User data deleted:', result.deletedCounts);
+        // Clear local stores and redirect to start fresh assessment
+        startFreshAssessment({ redirectTo: '/quest/1' });
+      } else {
+        console.error('[Dashboard] Failed to delete user data:', result.error);
+        alert('Failed to delete data. Please try again.');
+      }
+    } catch (err) {
+      console.error('[Dashboard] Delete error:', err);
+      alert('An error occurred while deleting data.');
+    }
   };
 
   // === BUILD ASSESSMENT DATA FROM REAL SCORES ===
@@ -337,37 +373,107 @@ function DashboardContent() {
     };
   }, [totalScore, categoryScores, helpingFactors, holdingBackFactors, schoolProbabilities, studentProfile]);
 
-  // === BUILD GAME PLAN DATA FROM REAL ENGINE ===
+  // === BUILD GAME PLAN DATA FROM SUPABASE + REAL ENGINE ===
   const realGamePlanData = useMemo(() => {
-    if (!gamePlan) return mockGamePlanData;
+    // Get tier info from Supabase game plan or generated plan
+    const tierInfo = supabaseGamePlan?.planData?.tierInfo as { title?: string; description?: string; encouragement?: string } | undefined;
+    const storedPhases = supabaseGamePlan?.planData?.phases as Array<{ name: string; duration: string; goals: string[]; actions: string[] }> | undefined;
+    const storedQuickWins = supabaseGamePlan?.planData?.quickWins as Array<{ id: string; title: string; description?: string; category: string; priority: string; timeCommitment: string }> | undefined;
+    const storedSummary = supabaseGamePlan?.planData?.fullSummary as { strengthAreas?: string[]; improvementAreas?: string[]; focusRecommendation?: string } | undefined;
 
-    return {
-      ...mockGamePlanData,
-      phases: phases.map((phase, idx) => ({
-        id: phase.id,
-        name: phase.title,
-        dateRange: phase.timeframe,
-        goal: phase.description,
-        completionPercent: idx === 0 ? 50 : 0,
-        milestones: phase.actions.slice(0, 3).map((action) => ({
+    // Build target profile from real data
+    const targetTier = supabaseGamePlan?.targetTier || gamePlan?.tier || 'optimization';
+    const tierTitles: Record<string, string> = {
+      'fresh-start': 'Foundation Builder',
+      'emerging': 'Rising Achiever',
+      'optimization': 'Elite Optimizer',
+    };
+    const tierDescriptions: Record<string, string> = {
+      'fresh-start': 'Building a strong foundation for college admissions success.',
+      'emerging': 'Developing key strengths and expanding your profile.',
+      'optimization': 'Fine-tuning an already strong profile for maximum impact.',
+    };
+
+    // Get real target schools from student profile
+    const realTargetSchools = studentProfile?.target_schools || [];
+    const targetSchoolsFormatted = realTargetSchools.length > 0
+      ? realTargetSchools.map((school, idx) => ({
+          name: school,
+          tier: idx < 2 ? 'Reach' as const : idx < 3 ? 'Target' as const : 'Safety' as const,
+        }))
+      : mockGamePlanData.targetSchools;
+
+    // Build target profile
+    const targetProfile = {
+      name: tierInfo?.title || tierTitles[targetTier] || 'Personalized Strategy',
+      narrative: tierInfo?.description || tierDescriptions[targetTier] || 'Your customized roadmap to college admissions success.',
+    };
+
+    // Build phases from Supabase data or generated plan
+    const realPhases = storedPhases && storedPhases.length > 0
+      ? storedPhases.map((phase, idx) => ({
+          id: `phase${idx + 1}`,
+          name: phase.name,
+          dateRange: phase.duration,
+          goal: phase.goals?.[0] || '',
+          completionPercent: supabaseGamePlan?.completionPercentage || (idx === 0 ? 50 : 0),
+          milestones: phase.actions.slice(0, 3).map((action, actionIdx) => ({
+            id: `m${idx}-${actionIdx}`,
+            title: action,
+            status: 'pending' as const,
+            targetDate: '',
+          })),
+        }))
+      : phases.length > 0
+        ? phases.map((phase, idx) => ({
+            id: phase.id,
+            name: phase.title,
+            dateRange: phase.timeframe,
+            goal: phase.description,
+            completionPercent: idx === 0 ? 50 : 0,
+            milestones: phase.actions.slice(0, 3).map((action) => ({
+              id: action.id,
+              title: action.title,
+              status: 'pending' as const,
+              targetDate: action.deadline || '',
+            })),
+          }))
+        : mockGamePlanData.phases;
+
+    // Build actions from Supabase data or generated plan
+    const realActions = storedQuickWins && storedQuickWins.length > 0
+      ? storedQuickWins.slice(0, 5).map((action) => ({
           id: action.id,
           title: action.title,
-          status: 'pending' as const,
-          targetDate: action.deadline || '',
-        })),
-      })),
-      currentPhase: phases[0]?.id || 'phase1',
-      actions: quickWins.slice(0, 5).map((action) => ({
-        id: action.id,
-        title: action.title,
-        description: action.description || '',
-        category: action.category,
-        priority: action.priority as 'critical' | 'high' | 'medium',
-        edgePoints: 30,
-        timeEstimate: action.timeCommitment,
-      })),
+          description: action.description || '',
+          category: action.category,
+          priority: action.priority as 'critical' | 'high' | 'medium',
+          edgePoints: 30,
+          timeEstimate: action.timeCommitment,
+        }))
+      : quickWins.length > 0
+        ? quickWins.slice(0, 5).map((action) => ({
+            id: action.id,
+            title: action.title,
+            description: action.description || '',
+            category: action.category,
+            priority: action.priority as 'critical' | 'high' | 'medium',
+            edgePoints: 30,
+            timeEstimate: action.timeCommitment,
+          }))
+        : mockGamePlanData.actions;
+
+    return {
+      targetProfile,
+      ecStrategy: mockGamePlanData.ecStrategy, // Keep mock for now - EC strategy is complex
+      targetSchools: targetSchoolsFormatted,
+      awards: mockGamePlanData.awards, // Keep mock for now
+      summerPrograms: mockGamePlanData.summerPrograms, // Keep mock for now
+      phases: realPhases,
+      currentPhase: supabaseGamePlan?.currentPhase || phases[0]?.id || 'phase1',
+      actions: realActions,
     };
-  }, [gamePlan, phases, quickWins]);
+  }, [gamePlan, phases, quickWins, supabaseGamePlan, studentProfile]);
 
   // === BUILD PREPARATION DATA FROM REAL ENGINE ===
   const realPreparationData = useMemo(() => {
@@ -476,6 +582,7 @@ function DashboardContent() {
         studentName={studentProfile?.identity?.name || 'Student'}
         onLogout={handleLogout}
         onRetakeAssessment={handleRetakeAssessment}
+        onDeleteUserData={handleDeleteUserData}
       />
 
       {/* Error Banner */}

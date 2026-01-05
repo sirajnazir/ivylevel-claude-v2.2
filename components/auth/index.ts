@@ -1,5 +1,8 @@
 /**
- * Auth Components - Barrel Export
+ * Auth Components - Barrel Export (Simplified Beta)
+ *
+ * For beta: Simple email/password login only.
+ * No self-signup (admin creates accounts).
  */
 
 // Auth Provider & Hooks - re-export from lib
@@ -10,14 +13,17 @@ export {
   useProfile,
   useIsAuthenticated,
   useUserRole,
+  useAuthReady,
+  USER_ROLES,
+  type UserRole,
+  type UserProfile,
 } from '@/lib/auth/AuthProvider';
 
 // Entry Portal
 export { EntryPortal } from './EntryPortal';
 
-// Login & Signup
+// Login Page
 export { LoginPage } from './LoginPage';
-export { SignupPage } from './SignupPage';
 
 // Route Protection
 export {
@@ -31,13 +37,3 @@ export {
   AuthLoadingScreen,
   getDashboardPath,
 } from './ProtectedRoute';
-
-// Re-export types
-export type {
-  UserRole,
-  UserProfile,
-  AuthState,
-  AuthContextValue,
-  LoginFormData,
-  SignupFormData,
-} from '@/types/auth';

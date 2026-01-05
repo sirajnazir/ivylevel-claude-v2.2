@@ -1,19 +1,18 @@
 /**
  * Supabase Browser Client - FIXED SINGLETON
- *
+ * 
  * IMPORTANT: This module exports a function that creates the client,
  * NOT the client itself. This is because:
- *
+ * 
  * 1. Next.js App Router can run modules multiple times (SSR, client, HMR)
  * 2. Module-level singletons don't survive across different render contexts
  * 3. The ONLY reliable singleton in browser is on `window`
- *
+ * 
  * Usage:
  *   const supabase = getSupabaseBrowserClient();
  */
 
-import { createBrowserClient } from '@supabase/ssr';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { createBrowserClient, type SupabaseClient } from '@supabase/ssr';
 
 // Type for the client
 type BrowserClient = SupabaseClient;
@@ -70,12 +69,4 @@ export function clearSupabaseSingleton(): void {
   if (typeof window !== 'undefined') {
     delete window[SUPABASE_CLIENT_KEY];
   }
-}
-
-/**
- * Legacy export for backward compatibility
- * @deprecated Use getSupabaseBrowserClient() instead
- */
-export function createBrowserSupabaseClient(): BrowserClient {
-  return getSupabaseBrowserClient();
 }

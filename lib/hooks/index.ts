@@ -44,3 +44,11 @@ export { useNotificationStore } from './useInsightNotifications';
 export { usePersistence } from './usePersistence';
 export { useClearStaleData } from './useClearStaleData';
 export { useAgentAPI } from './useAgentAPI';
+
+// User data sync hooks (Supabase integration)
+export {
+  useUserData,
+  useAutoSaveAssessment,
+  useHasSupabaseData,
+} from './useUserData';
+export type { UserDataState, UseUserDataReturn } from './useUserData';

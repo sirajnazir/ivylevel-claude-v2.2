@@ -10,12 +10,14 @@
  * @version 1.0.0
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStudentStore } from '@/lib/store/useStudentStore';
 import { useSessionStore } from '@/lib/store/useSessionStore';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { generateGamePlan, getStrengthBasedRecommendations } from '@/lib/gamePlan/gamePlanEngine';
+import { saveGamePlan, type GamePlanData } from '@/lib/services/gamePlanService';
 import type { GamePlan, GamePlanAction, GamePlanPhase, ActionPriority } from '@/lib/gamePlan/gamePlanEngine';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import {
@@ -389,12 +391,18 @@ interface Frame5GamePlanProps {
   onComplete?: () => void;
 }
 
+// Feature flag for Supabase persistence
+const ENABLE_SUPABASE_PERSISTENCE =
+  process.env.NEXT_PUBLIC_ENABLE_SUPABASE_PERSISTENCE === 'true';
+
 export function Frame5GamePlan({ onComplete }: Frame5GamePlanProps) {
   const { profile } = useStudentStore();
   const { nextFrame, completeFrame } = useSessionStore();
+  const { user, isAuthenticated } = useAuth();
   const [activePhaseIndex, setActivePhaseIndex] = useState(0);
   const [expandedActions, setExpandedActions] = useState<Set<string>>(new Set());
   const [showSummary, setShowSummary] = useState(true);
+  const hasSavedRef = useRef(false);
 
   // Generate game plan with error handling
   const gamePlan = useMemo(() => {
@@ -447,13 +455,56 @@ export function Frame5GamePlan({ onComplete }: Frame5GamePlanProps) {
   }, []);
 
   const handleComplete = useCallback(() => {
+    // Save game plan to Supabase if authenticated and persistence enabled
+    if (ENABLE_SUPABASE_PERSISTENCE && isAuthenticated && user?.id && !hasSavedRef.current) {
+      hasSavedRef.current = true;
+      console.log('[Frame5GamePlan] Saving game plan to Supabase...');
+
+      // Convert game plan to the format expected by the service
+      const planData: GamePlanData = {
+        summary: {
+          target_tier: gamePlan.tier,
+          current_tier: gamePlan.tier,
+          transformation_path: gamePlan.tierInfo.description,
+        },
+        phases: gamePlan.phases.map((phase) => ({
+          name: phase.title,
+          duration: phase.timeframe,
+          goals: [phase.description],
+          actions: phase.actions.map((a) => a.title),
+        })),
+        // Store full game plan data for UI rendering
+        tierInfo: gamePlan.tierInfo,
+        quickWins: gamePlan.quickWins,
+        longTermGoals: gamePlan.longTermGoals,
+        warnings: gamePlan.warnings,
+        fullSummary: gamePlan.summary,
+        weeklyCommitment: gamePlan.weeklyCommitment,
+        totalEstimatedHours: gamePlan.totalEstimatedHours,
+      };
+
+      saveGamePlan({
+        userId: user.id,
+        planData,
+        targetTier: gamePlan.tier,
+      }).then((result) => {
+        if (result.success) {
+          console.log('[Frame5GamePlan] Game plan saved successfully');
+        } else {
+          console.error('[Frame5GamePlan] Failed to save game plan:', result.error);
+        }
+      }).catch((err) => {
+        console.error('[Frame5GamePlan] Error saving game plan:', err);
+      });
+    }
+
     completeFrame();
     if (onComplete) {
       onComplete();
     } else {
       nextFrame();
     }
-  }, [completeFrame, nextFrame, onComplete]);
+  }, [completeFrame, nextFrame, onComplete, isAuthenticated, user?.id, gamePlan]);
 
   const activePhase = gamePlan.phases[activePhaseIndex];
 
