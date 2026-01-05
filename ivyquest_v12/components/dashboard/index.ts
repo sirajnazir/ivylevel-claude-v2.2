@@ -1,1 +1,0 @@
-export { IvyScoreCard } from './IvyScoreCard';

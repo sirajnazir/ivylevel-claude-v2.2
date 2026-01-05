@@ -20,7 +20,7 @@ import { useSessionStore } from '@/lib/store/useSessionStore';
 import { useResultsStore } from '@/lib/store/useResultsStore';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { getProfileTier } from '@/lib/utils/skipLogic';
-import CircularProgress from '@/components/rings/CircularProgress';
+import { PillarScoresGrid } from '@/components/quest/PillarCard';
 import {
   TrendingUp,
   Target,
@@ -217,16 +217,6 @@ function calculateIdentityScore(profile: any): number {
 
   console.log(`Identity FINAL: ${score}%`);
   return score;
-}
-
-function getCategoryColor(color: string): string {
-  const colors: Record<string, string> = {
-    blue: '#3b82f6',
-    purple: '#a855f7',
-    green: '#22c55e',
-    amber: '#f59e0b',
-  };
-  return colors[color] || '#6b7280';
 }
 
 // ============================================================================
@@ -597,7 +587,7 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
         </p>
       </motion.div>
 
-      {/* Circular Progress Rings */}
+      {/* Animated Wave Pillar Cards - v12 */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -619,61 +609,43 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
             textAlign: 'center',
           }}
         >
-          Your Ivy+ Ready Score
+          Your Four Pillars of Excellence
         </h2>
 
-        {/* CircularProgress rings visualization */}
-        <div style={{ maxWidth: 400, margin: '0 auto', marginBottom: 24 }}>
-          <CircularProgress
-            aptitude={categoryScores.find((c) => c.name === 'Aptitude')?.score || 0}
-            passion={categoryScores.find((c) => c.name === 'Passion')?.score || 0}
-            community={categoryScores.find((c) => c.name === 'Service')?.score || 0}
-            narrative={categoryScores.find((c) => c.name === 'Identity')?.score || 0}
-            totalScore={Math.round(
-              categoryScores.reduce((sum, c) => sum + c.score, 0) / categoryScores.length
-            )}
-            size={360}
-          />
-        </div>
+        {/* PillarScoresGrid - Animated Wave Cards */}
+        <PillarScoresGrid
+          scores={{
+            aptitude: categoryScores.find((c) => c.name === 'Aptitude')?.score || 0,
+            passion: categoryScores.find((c) => c.name === 'Passion')?.score || 0,
+            service: categoryScores.find((c) => c.name === 'Service')?.score || 0,
+            identity: categoryScores.find((c) => c.name === 'Identity')?.score || 0,
+          }}
+          size="md"
+        />
 
-        {/* Category Legend */}
+        {/* Overall Score Summary */}
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: 12,
-            maxWidth: 400,
-            margin: '0 auto',
+            marginTop: 24,
+            textAlign: 'center',
+            padding: 16,
+            backgroundColor: 'rgba(0,0,0,0.02)',
+            borderRadius: 12,
           }}
         >
-          {categoryScores.map((category) => (
-            <div
-              key={category.name}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 12px',
-                backgroundColor: 'rgba(0,0,0,0.02)',
-                borderRadius: 8,
-              }}
-            >
-              <span style={{ color: getCategoryColor(category.color) }}>{category.icon}</span>
-              <span style={{ fontSize: 14, color: BRAND_COLORS.textPrimary }}>
-                {category.name}
-              </span>
-              <span
-                style={{
-                  marginLeft: 'auto',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: BRAND_COLORS.textHeading,
-                }}
-              >
-                {category.score}%
-              </span>
-            </div>
-          ))}
+          <span style={{ fontSize: 14, color: BRAND_COLORS.textPrimary }}>
+            Overall Ivy+ Ready Score:
+          </span>
+          <span
+            style={{
+              marginLeft: 8,
+              fontSize: 24,
+              fontWeight: 700,
+              color: BRAND_COLORS.primary,
+            }}
+          >
+            {Math.round(categoryScores.reduce((sum, c) => sum + c.score, 0) / categoryScores.length)}%
+          </span>
         </div>
       </motion.div>
 
