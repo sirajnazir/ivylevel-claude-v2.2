@@ -9,9 +9,8 @@ import {
   Award, AlertTriangle, Target, TrendingUp, TrendingDown,
   GraduationCap, Users, Heart, Sparkles
 } from 'lucide-react';
-import { IvyScoreCard } from '@/components/dashboard/IvyScoreCard';
-import { PillarScoresGrid } from '@/components/quest/PillarCard';
-import { CategoryScoresQuadrant } from '@/components/quest/CircularProgressRing';
+import CircularProgress from '@/components/rings/CircularProgress';
+import { PillarCards } from '@/components/rings/PillarCards';
 import { COLORS, STATUS_COLORS, GRADIENTS } from '@/lib/constants/design';
 
 interface AssessmentData {
@@ -63,19 +62,50 @@ export function AssessmentTab({ data }: AssessmentTabProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column (2fr) */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Overall Score Card */}
-          <IvyScoreCard
-            score={data.ivyReadyScore.overall}
-            changeVs180Days={data.ivyReadyScore.changeVs180Days}
-            criMultiplier={data.criMultiplier}
-          />
+          {/* Overall Ivy+ Ready Score - 5-Ring Visualization */}
+          <section className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+            <h2 className="text-lg font-semibold mb-4 text-center" style={{ color: COLORS.textHeading }}>
+              Your Ivy+ Ready Score
+            </h2>
+            <div style={{ maxWidth: 360, margin: '0 auto' }}>
+              <CircularProgress
+                aptitude={data.pillars.aptitude}
+                passion={data.pillars.passion}
+                community={data.pillars.service}
+                narrative={data.pillars.identity}
+                totalScore={data.ivyReadyScore.overall}
+                size={360}
+              />
+            </div>
+            {data.ivyReadyScore.changeVs180Days !== 0 && (
+              <div className="text-center mt-4">
+                <span
+                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium"
+                  style={{
+                    backgroundColor: data.ivyReadyScore.changeVs180Days > 0 ? '#dcfce7' : '#fee2e2',
+                    color: data.ivyReadyScore.changeVs180Days > 0 ? '#16a34a' : '#dc2626',
+                  }}
+                >
+                  {data.ivyReadyScore.changeVs180Days > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                  {data.ivyReadyScore.changeVs180Days > 0 ? '+' : ''}{data.ivyReadyScore.changeVs180Days}% vs 180 days ago
+                </span>
+              </div>
+            )}
+          </section>
 
-          {/* Pillar Scores with Animated Waves */}
-          <section>
-            <h2 className="text-lg font-semibold mb-4" style={{ color: COLORS.textHeading }}>
+          {/* Four Pillars - 2x2 Grid with Wave Animations */}
+          <section className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+            <h2 className="text-lg font-semibold mb-4 text-center" style={{ color: COLORS.textHeading }}>
               Four Pillars of Excellence
             </h2>
-            <PillarScoresGrid scores={data.pillars} size="md" />
+            <div style={{ maxWidth: 500, margin: '0 auto' }}>
+              <PillarCards
+                aptitude={data.pillars.aptitude}
+                passion={data.pillars.passion}
+                community={data.pillars.service}
+                narrative={data.pillars.identity}
+              />
+            </div>
           </section>
 
           {/* Dimensional Scores Grid */}
@@ -207,19 +237,40 @@ export function AssessmentTab({ data }: AssessmentTabProps) {
 
         {/* Right Column (1fr) */}
         <div className="space-y-6">
-          {/* Central Score Visualization */}
+          {/* Mini Score Summary */}
           <div className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <h3 className="text-sm font-medium mb-4" style={{ color: COLORS.textSecondary }}>
-              Pillar Balance
+              Score Summary
             </h3>
-            <CategoryScoresQuadrant
-              scores={{
-                aptitude: data.pillars.aptitude,
-                passion: data.pillars.passion,
-                service: data.pillars.service,
-                identity: data.pillars.identity,
-              }}
-            />
+            <div className="space-y-3">
+              {[
+                { name: 'Aptitude', score: data.pillars.aptitude, color: '#FFBB6D' },
+                { name: 'Passion', score: data.pillars.passion, color: '#FF6E6D' },
+                { name: 'Service', score: data.pillars.service, color: '#55AAAA' },
+                { name: 'Identity', score: data.pillars.identity, color: '#9698A6' },
+              ].map((pillar) => (
+                <div key={pillar.name} className="flex items-center gap-3">
+                  <span className="text-sm w-20" style={{ color: COLORS.textSecondary }}>{pillar.name}</span>
+                  <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{ width: `${pillar.score}%`, backgroundColor: pillar.color }}
+                    />
+                  </div>
+                  <span className="text-sm font-bold w-10 text-right" style={{ color: pillar.color }}>
+                    {pillar.score}%
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 pt-4 border-t" style={{ borderColor: COLORS.borderDefault }}>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium" style={{ color: COLORS.textSecondary }}>Overall</span>
+                <span className="text-xl font-bold" style={{ color: COLORS.primary }}>
+                  {data.ivyReadyScore.overall}%
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Admissions Rubric Correlation */}

@@ -20,7 +20,8 @@ import { useSessionStore } from '@/lib/store/useSessionStore';
 import { useResultsStore } from '@/lib/store/useResultsStore';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { getProfileTier } from '@/lib/utils/skipLogic';
-import { PillarScoresGrid } from '@/components/quest/PillarCard';
+import CircularProgress from '@/components/rings/CircularProgress';
+import { PillarCards } from '@/components/rings/PillarCards';
 import {
   TrendingUp,
   Target,
@@ -587,7 +588,7 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
         </p>
       </motion.div>
 
-      {/* Animated Wave Pillar Cards - v12 */}
+      {/* Ivy+ Ready Score - 5-Ring Circular Visualization */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -609,43 +610,57 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
             textAlign: 'center',
           }}
         >
-          Your Four Pillars of Excellence
+          Your Ivy+ Ready Score
         </h2>
 
-        {/* PillarScoresGrid - Animated Wave Cards */}
-        <PillarScoresGrid
-          scores={{
-            aptitude: categoryScores.find((c) => c.name === 'Aptitude')?.score || 0,
-            passion: categoryScores.find((c) => c.name === 'Passion')?.score || 0,
-            service: categoryScores.find((c) => c.name === 'Service')?.score || 0,
-            identity: categoryScores.find((c) => c.name === 'Identity')?.score || 0,
-          }}
-          size="md"
-        />
+        {/* CircularProgress - 5 concentric rings visualization */}
+        <div style={{ maxWidth: 400, margin: '0 auto' }}>
+          <CircularProgress
+            aptitude={categoryScores.find((c) => c.name === 'Aptitude')?.score || 0}
+            passion={categoryScores.find((c) => c.name === 'Passion')?.score || 0}
+            community={categoryScores.find((c) => c.name === 'Service')?.score || 0}
+            narrative={categoryScores.find((c) => c.name === 'Identity')?.score || 0}
+            totalScore={Math.round(
+              categoryScores.reduce((sum, c) => sum + c.score, 0) / categoryScores.length
+            )}
+            size={360}
+          />
+        </div>
+      </motion.div>
 
-        {/* Overall Score Summary */}
-        <div
+      {/* Four Pillars - 2x2 Grid with Wave Animations */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        style={{
+          backgroundColor: 'white',
+          border: `2px solid ${BRAND_COLORS.borderLight}`,
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 24,
+        }}
+      >
+        <h2
           style={{
-            marginTop: 24,
+            fontSize: 20,
+            fontWeight: 700,
+            color: BRAND_COLORS.textHeading,
+            marginBottom: 20,
             textAlign: 'center',
-            padding: 16,
-            backgroundColor: 'rgba(0,0,0,0.02)',
-            borderRadius: 12,
           }}
         >
-          <span style={{ fontSize: 14, color: BRAND_COLORS.textPrimary }}>
-            Overall Ivy+ Ready Score:
-          </span>
-          <span
-            style={{
-              marginLeft: 8,
-              fontSize: 24,
-              fontWeight: 700,
-              color: BRAND_COLORS.primary,
-            }}
-          >
-            {Math.round(categoryScores.reduce((sum, c) => sum + c.score, 0) / categoryScores.length)}%
-          </span>
+          Four Pillars of Excellence
+        </h2>
+
+        {/* PillarCards - 2x2 grid with SVG wave animations */}
+        <div style={{ maxWidth: 500, margin: '0 auto' }}>
+          <PillarCards
+            aptitude={categoryScores.find((c) => c.name === 'Aptitude')?.score || 0}
+            passion={categoryScores.find((c) => c.name === 'Passion')?.score || 0}
+            community={categoryScores.find((c) => c.name === 'Service')?.score || 0}
+            narrative={categoryScores.find((c) => c.name === 'Identity')?.score || 0}
+          />
         </div>
       </motion.div>
 
