@@ -631,6 +631,9 @@ class ExecutionAgent(BaseAgent):
         active_projects = [p for p in projects if p.get("status") == "active"]
         completed_projects = [p for p in projects if p.get("status") == "completed"]
 
+        # Jenny Intelligence: Detect silence
+        silence_alert = await self._detect_silence(profile_id)
+
         return {
             "success": True,
             "profile_id": profile_id,
@@ -639,4 +642,308 @@ class ExecutionAgent(BaseAgent):
             "active_projects": len(active_projects),
             "completed_projects": len(completed_projects),
             "eds_status": "healthy" if eds < 50 else "at_risk" if eds < 100 else "critical",
+            # Jenny Intelligence additions
+            "silence_alert": silence_alert,
         }
+
+    # =========================================
+    # Jenny Intelligence: Celebration Calibration
+    # =========================================
+
+    def calibrate_celebration(self, completion: Dict) -> Dict[str, Any]:
+        """
+        Jenny Intelligence: Celebration Calibration
+        Celebrate wins proportional to their difficulty level.
+
+        Levels:
+        - micro: Single step completed (brief acknowledgment)
+        - minor: Project phase completed (congratulations)
+        - major: Milestone achieved (detailed celebration)
+        - breakthrough: Significant achievement (extra recognition)
+        """
+        difficulty = completion.get("difficulty", 0.5)
+        is_milestone = completion.get("is_milestone", False)
+        was_stretch = completion.get("is_stretch_goal", False)
+        days_early = completion.get("days_early", 0)
+
+        # Calculate celebration level
+        celebration_score = difficulty
+
+        if is_milestone:
+            celebration_score *= 1.5
+
+        if was_stretch:
+            celebration_score *= 1.3
+
+        if days_early > 0:
+            celebration_score *= 1.1
+
+        # Determine celebration level
+        if celebration_score >= 1.5:
+            level = "breakthrough"
+        elif celebration_score >= 1.0:
+            level = "major"
+        elif celebration_score >= 0.5:
+            level = "minor"
+        else:
+            level = "micro"
+
+        # Generate celebration content
+        celebrations = {
+            "micro": {
+                "emoji": "✓",
+                "message": "Step completed. Keep the momentum!",
+                "action": "Continue to next step",
+            },
+            "minor": {
+                "emoji": "✨",
+                "message": "Nice work! You're making real progress.",
+                "action": "Take a brief break, then continue",
+            },
+            "major": {
+                "emoji": "🎉",
+                "message": f"Major milestone achieved! This is exactly the kind of progress that builds strong profiles.",
+                "action": "Document this achievement for your records",
+                "follow_up": "Consider how to mention this in applications",
+            },
+            "breakthrough": {
+                "emoji": "🏆",
+                "message": f"Outstanding achievement! This sets you apart. {completion.get('title', 'This accomplishment')} demonstrates genuine commitment.",
+                "action": "Celebrate properly - you've earned it",
+                "follow_up": "This should be a highlight in your applications",
+                "narrative_hook": "Consider how this connects to your overall story",
+            },
+        }
+
+        celebration = celebrations[level]
+        celebration["level"] = level
+        celebration["score"] = round(celebration_score, 2)
+
+        return celebration
+
+    async def complete_step(
+        self,
+        profile_id: str,
+        step_id: str,
+        notes: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Mark a project step as complete with celebration calibration.
+        """
+        try:
+            # Get step details
+            step = await self._get_step(step_id)
+            if not step:
+                return {"success": False, "error": "Step not found"}
+
+            # Update step status
+            await self._update_step(step_id, {
+                "status": "completed",
+                "completed_at": datetime.now().isoformat(),
+                "completion_notes": notes,
+            })
+
+            # Calculate celebration
+            completion = {
+                "title": step.get("title"),
+                "difficulty": step.get("difficulty", 0.5),
+                "is_milestone": step.get("is_milestone", False),
+                "is_stretch_goal": step.get("is_stretch_goal", False),
+                "days_early": self._calculate_days_early(step),
+            }
+
+            celebration = self.calibrate_celebration(completion)
+
+            # Version state
+            await self._version_state(
+                profile_id,
+                "step_completed",
+                {
+                    "step_id": step_id,
+                    "celebration_level": celebration["level"],
+                }
+            )
+
+            return {
+                "success": True,
+                "step_id": step_id,
+                "celebration": celebration,
+            }
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def _calculate_days_early(self, step: Dict) -> int:
+        """Calculate how many days early a step was completed."""
+        target_date = step.get("target_date")
+        if not target_date:
+            return 0
+
+        if isinstance(target_date, str):
+            try:
+                target_date = datetime.fromisoformat(target_date.replace("Z", "+00:00"))
+            except:
+                return 0
+
+        days_diff = (target_date - datetime.now(target_date.tzinfo)).days
+        return max(0, days_diff)
+
+    # =========================================
+    # Jenny Intelligence: Silence Detection
+    # =========================================
+
+    async def _detect_silence(self, profile_id: str) -> Optional[Dict]:
+        """
+        Jenny Intelligence: Silence Detection
+        Detect when a student has been quiet for too long.
+
+        Silence thresholds:
+        - warning: 3 days (gentle nudge)
+        - concern: 7 days (check-in needed)
+        - critical: 14 days (intervention required)
+        """
+        try:
+            # Get last interaction timestamp
+            result = self.db.table("events") \
+                .select("created_at") \
+                .eq("payload->profileId", profile_id) \
+                .order("created_at", desc=True) \
+                .limit(1) \
+                .execute()
+
+            if not result.data:
+                return None
+
+            last_activity = result.data[0].get("created_at")
+            if isinstance(last_activity, str):
+                last_activity = datetime.fromisoformat(last_activity.replace("Z", "+00:00"))
+
+            days_silent = (datetime.now(last_activity.tzinfo) - last_activity).days
+
+            if days_silent < 3:
+                return None
+
+            # Determine severity
+            if days_silent >= 14:
+                severity = "critical"
+                nudge = "We haven't heard from you in over 2 weeks. Is everything okay? Let's reconnect."
+            elif days_silent >= 7:
+                severity = "concern"
+                nudge = "It's been a week since we connected. What's one small thing you could do today?"
+            else:
+                severity = "warning"
+                nudge = "Just checking in! Small steps daily beat big bursts weekly."
+
+            return {
+                "detected": True,
+                "days_silent": days_silent,
+                "severity": severity,
+                "nudge_message": nudge,
+                "suggested_action": self._get_silence_action(days_silent),
+            }
+
+        except Exception as e:
+            self.logger.warning("silence_detection_failed", error=str(e))
+            return None
+
+    def _get_silence_action(self, days_silent: int) -> str:
+        """Get suggested action based on silence duration."""
+        if days_silent >= 14:
+            return "Schedule a coaching call or reach out via preferred channel"
+        elif days_silent >= 7:
+            return "Send personalized check-in with specific, low-effort task"
+        else:
+            return "Send gentle reminder about current project step"
+
+    # =========================================
+    # Jenny Intelligence: 3x Buffer
+    # =========================================
+
+    def apply_time_buffer(self, estimated_hours: float, task_type: str = "default") -> Dict[str, Any]:
+        """
+        Jenny Intelligence: 3x Buffer
+        Apply 3x time buffer to estimates for realistic planning.
+
+        Students consistently underestimate time needed.
+        Adding buffer reduces stress and improves completion rates.
+        """
+        # Buffer multipliers by task type
+        buffer_multipliers = {
+            "essay": 3.0,       # Essays take WAY longer than expected
+            "research": 2.5,   # Research has many unknowns
+            "admin": 2.0,      # Administrative tasks relatively predictable
+            "creative": 3.0,   # Creative work is hard to estimate
+            "default": 2.5,    # Safe default
+        }
+
+        multiplier = buffer_multipliers.get(task_type, buffer_multipliers["default"])
+        buffered_hours = estimated_hours * multiplier
+
+        # Calculate recommended schedule
+        hours_per_week = 3  # Sustainable pace
+        weeks_needed = buffered_hours / hours_per_week
+
+        return {
+            "original_estimate": estimated_hours,
+            "buffer_multiplier": multiplier,
+            "buffered_estimate": round(buffered_hours, 1),
+            "task_type": task_type,
+            "recommended_schedule": {
+                "hours_per_week": hours_per_week,
+                "weeks_needed": round(weeks_needed, 1),
+                "target_completion": (datetime.now() + timedelta(weeks=weeks_needed)).strftime("%Y-%m-%d"),
+            },
+            "rationale": f"Applied {multiplier}x buffer for {task_type} tasks. Original: {estimated_hours}h → Buffered: {round(buffered_hours, 1)}h",
+        }
+
+    def _generate_base_steps_with_buffer(self, project_data: Dict) -> List[Dict]:
+        """
+        Enhanced base step generation with 3x buffer applied to time estimates.
+        """
+        base_steps = self._generate_base_steps(project_data)
+        project_type = project_data.get("type", "extracurricular")
+
+        # Map project types to task types for buffer calculation
+        type_mapping = {
+            "extracurricular": "default",
+            "research": "research",
+            "essay": "essay",
+            "community": "default",
+        }
+        task_type = type_mapping.get(project_type, "default")
+
+        # Apply buffer to each step
+        for step in base_steps:
+            original_hours = step.get("estimated_hours", 2)
+            buffered = self.apply_time_buffer(original_hours, task_type)
+            step["estimated_hours"] = buffered["buffered_estimate"]
+            step["original_estimate"] = original_hours
+            step["buffer_applied"] = buffered["buffer_multiplier"]
+
+        return base_steps
+
+    async def _get_step(self, step_id: str) -> Optional[Dict]:
+        """Get step by ID."""
+        try:
+            result = self.db.table("project_steps") \
+                .select("*") \
+                .eq("id", step_id) \
+                .single() \
+                .execute()
+            return result.data
+        except:
+            return None
+
+    async def _update_step(self, step_id: str, data: Dict):
+        """Update step data."""
+        try:
+            self.db.table("project_steps") \
+                .update(data) \
+                .eq("id", step_id) \
+                .execute()
+        except Exception as e:
+            self.logger.warning("step_update_failed", error=str(e))
+
+
+# Singleton instance for convenience
+execution_agent = ExecutionAgent()

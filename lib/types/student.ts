@@ -19,7 +19,9 @@ export type CoachabilityLevel = 'HIGH' | 'MEDIUM' | 'LOW';
 export type BurnoutRisk = 'LOW' | 'MEDIUM' | 'HIGH';
 export type EffortLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 export type SchoolFit = 'BEST_FIT' | 'STRONG_FIT' | 'TOUGH' | 'WORST_FIT';
-export type Ethnicity = 'ASIAN' | 'BLACK' | 'HISPANIC' | 'WHITE' | 'NATIVE' | 'PACIFIC_ISLANDER' | 'MULTIRACIAL' | 'OTHER' | 'PREFER_NOT_SAY';
+export type Ethnicity = 'ASIAN' | 'BLACK' | 'HISPANIC' | 'WHITE' | 'NATIVE' | 'PACIFIC_ISLANDER' | 'MULTIRACIAL' | 'SOUTH_ASIAN' | 'SOUTHEAST_ASIAN' | 'MIDDLE_EASTERN' | 'OTHER' | 'PREFER_NOT_SAY';
+export type Gender = 'FEMALE' | 'MALE' | 'NON_BINARY' | 'PREFER_NOT_SAY';
+export type ImmigrationStatus = 'FIRST_GEN_IMMIGRANT' | 'PARENTS_IMMIGRATED' | 'NO' | 'PREFER_NOT_SAY';
 export type IncomeBand = 'BELOW_75K' | '75K_150K' | '150K_300K' | 'ABOVE_300K' | 'TOP_1_PERCENT' | 'PREFER_NOT_SAY';
 export type HSType = 'PUBLIC' | 'PRIVATE' | 'MAGNET' | 'CHARTER';
 export type Region = 'BAY_AREA' | 'NORTHEAST' | 'SOUTH' | 'MIDWEST' | 'SOUTHWEST' | 'NORTHWEST' | 'INTERNATIONAL' | 'OTHER';
@@ -318,6 +320,12 @@ export interface OperatingData {
   strengths?: string[]; // Selected from predefined list
   strengthExample?: string | null;
   naturalTalent?: string | null;
+
+  // Background (optional but valuable for narrative synthesis)
+  gender?: Gender;
+  culturalBackground?: Ethnicity[];  // Multi-select
+  immigrationStatus?: ImmigrationStatus;
+  religion?: string | null;  // Free text, optional
 
   // Context (mandatory)
   parent1Occupation?: string;
@@ -656,6 +664,228 @@ export type ArchetypeID =
   | 'FRESHMAN_EXPLORER'          // 9th grade + undecided
   | 'ULTRA_COMPETITIVE_ENV'      // Top feeder school
   | 'GENERIC';                   // Fallback (should rarely be used)
+
+// =============================================================================
+// RAW NARRATIVE COMPONENTS (Extracted during Assessment - DIAGNOSIS phase)
+// These are the RAW INPUTS that Game Plan Agent will SYNTHESIZE into Master Narrative
+// =============================================================================
+
+/**
+ * First Principle Passion - Jenny's core extraction of WHO the student IS
+ * Not what they DO, but what they fundamentally ARE at their core
+ *
+ * Example: Huda does CS, games, film - but fundamentally she's a BUILDER
+ */
+export type FirstPrinciplePassion =
+  | 'BUILDER'       // Creates things, makes stuff work
+  | 'STORYTELLER'   // Communicates, shares narratives
+  | 'DISCOVERER'    // Researches, finds new knowledge
+  | 'ADVOCATE'      // Fights for causes, speaks up
+  | 'CONNECTOR'     // Brings people together
+  | 'HEALER'        // Helps, cares for others
+  | 'LEADER'        // Organizes, directs, inspires
+  | 'ARTIST'        // Expresses through creative medium
+  | 'ENTREPRENEUR'  // Starts things, takes risks
+  | 'SCHOLAR';      // Loves learning for its own sake
+
+/**
+ * Raw identity facts extracted from assessment
+ * Assessment just COLLECTS these - Game Plan Agent INTERPRETS them
+ */
+export interface RawIdentityData {
+  // Direct from demographics
+  ethnicity: string | null;
+  religion: string | null;           // From assessment questions if asked
+  first_gen: boolean;
+  family_structure: string[];        // ["eldest daughter", "caregiver", etc.]
+  geographic_origin: string | null;  // "immigrant", "rural", "Bay Area"
+  socioeconomic: string | null;      // Inferred from income band
+
+  // From psychometrics
+  introversion_score: number | null; // -1 to 1
+
+  // From free-text responses (brag, spike description, etc.)
+  self_described_identity: string[]; // Keywords student uses about themselves
+}
+
+/**
+ * Raw aptitude evidence extracted from assessment
+ */
+export interface RawAptitudeData {
+  // From aptitude section
+  gpa_weighted: number | null;
+  gpa_unweighted: number | null;
+  sat_total: number | null;
+  ap_count: number;
+  rigor_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'MAXIMUM';
+
+  // Academic achievements
+  academic_awards: string[];
+  competitions_entered: string[];
+
+  // Intended direction
+  intended_major: string | null;
+
+  // Skills mentioned in brag/descriptions
+  mentioned_skills: string[];        // ["coding", "research", "writing", etc.]
+}
+
+/**
+ * Raw passion signals extracted from assessment
+ * Game Plan Agent will interpret these to find "first principles" passion
+ */
+export interface RawPassionData {
+  // From spike/passion section
+  spike_category: SpikeCategory | null;
+  spike_description: string | null;  // Free text about their spike
+  brag_text: string | null;          // What they're proud of
+
+  // Activities
+  activities: Array<{
+    name: string;
+    category: string;
+    years_committed: number;
+    leadership_role: string | null;
+  }>;
+
+  // Projects
+  projects: Array<{
+    name: string;
+    description: string;
+    impact_count: number | null;
+  }>;
+
+  // Keywords that appear in their descriptions
+  passion_keywords: string[];        // Extracted: ["games", "film", "building", etc.]
+}
+
+/**
+ * Raw service/community data extracted from assessment
+ */
+export interface RawServiceData {
+  // From community section
+  service_hours: number;
+  service_leadership: ServiceLeadership | null;
+  service_description: string | null;
+  service_cause: string | null;      // What cause they serve
+
+  // Inferred service targets
+  communities_served: string[];      // ["underrepresented in tech", "local youth", etc.]
+}
+
+/**
+ * Complete raw extraction from assessment - DIAGNOSIS output
+ * This is what Assessment outputs to Game Plan Agent
+ */
+export interface AssessmentExtraction {
+  // Rubric scores (diagnosis)
+  scores: {
+    aptitude: number;      // 0-100
+    passion: number;       // 0-100
+    community: number;     // 0-100
+    overall: number;       // Weighted composite
+  };
+
+  // Gap analysis (diagnosis)
+  gaps: Array<{
+    area: string;
+    current: number;
+    target: number;
+    priority: 'P0' | 'P1' | 'P2';
+    description: string;
+  }>;
+
+  // Raw components for narrative synthesis (NOT synthesized yet)
+  raw_identity: RawIdentityData;
+  raw_aptitude: RawAptitudeData;
+  raw_passion: RawPassionData;
+  raw_service: RawServiceData;
+
+  // Archetype detected (helpful but not the narrative itself)
+  archetype: ArchetypeID;
+  archetype_confidence: number;
+}
+
+// =============================================================================
+// MASTER NARRATIVE (Synthesized by Game Plan Agent - PRESCRIPTION phase)
+// =============================================================================
+
+/**
+ * Narrative quality scores using Jenny's assessment framework
+ * Each dimension 1-10, total 40+ = transformative application
+ */
+export interface NarrativeScores {
+  identity_clarity: number;       // 1-10: How clear is their identity?
+  aptitude_alignment: number;     // 1-10: Skills match direction?
+  passion_authenticity: number;   // 1-10: Is passion genuine/deep?
+  service_relevance: number;      // 1-10: Service connects to identity?
+  narrative_power: number;        // 1-10: Overall story strength
+}
+
+/**
+ * Master Narrative - The synthesized brand statement
+ * This is the PRESCRIPTION - the strategic identity that filters all recommendations
+ *
+ * Jenny's Formula: IDENTITY + APTITUDE + PASSION + SERVICE = UNIQUE NARRATIVE
+ */
+export interface MasterNarrative {
+  // The 4 components (synthesized, not raw)
+  identity_statement: string;      // "Indian Muslim girl who felt unseen in tech"
+  aptitude_statement: string;      // "with technology and CS skills"
+  passion_statement: string;       // "who is fundamentally a builder and storyteller"
+  service_statement: string;       // "serving underrepresented girls in tech"
+
+  // The first-principles passion (Jenny's extraction)
+  first_principle: FirstPrinciplePassion;
+  first_principle_evidence: string[];  // Why we know this is their core
+
+  // The synthesized outputs
+  brand_statement: string;         // One-sentence identity brand
+  unique_positioning: string;      // What makes this combination unique
+
+  // Filtering keywords (for matching recommendations)
+  identity_keywords: string[];
+  aptitude_keywords: string[];
+  passion_keywords: string[];
+  service_keywords: string[];
+
+  // Quality scores
+  scores: NarrativeScores;
+  total_score: number;             // Sum of scores (40+ = transformative)
+}
+
+/**
+ * Narrative alignment result for filtering recommendations
+ */
+export interface NarrativeAlignment {
+  alignment_score: number;         // 0-10 overall alignment
+  serves_narrative: boolean;       // true if score >= 3
+  alignment_reasons: string[];     // Why it aligns (or doesn't)
+  serves_components: {
+    identity: boolean;
+    aptitude: boolean;
+    passion: boolean;
+    service: boolean;
+  };
+  components_served_count: number;
+}
+
+/**
+ * Coherence validation for entire game plan
+ */
+export interface NarrativeCoherence {
+  coherence_score: number;         // 0-100 percentage aligned
+  total_recommendations: number;
+  aligned_count: number;
+  strongly_aligned_count: number;  // alignment_score >= 6
+  weak_recommendations: Array<{
+    name: string;
+    issue: string;
+    score: number;
+  }>;
+  verdict: string;                 // "Excellent", "Good", "Fair", "Weak"
+  master_narrative: string;        // The brand statement being validated against
+}
 
 // ============================================================================
 // KAHOOT QUIZ SYSTEM

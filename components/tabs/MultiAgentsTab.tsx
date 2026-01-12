@@ -1,6 +1,7 @@
 /**
- * MultiAgentsTab - Multi-Agent Chat Interface
- * v13.0 - Integrated with real backend agents via useMultiAgentChat hook
+ * MultiAgentsTab - Multi-Agent Chat Interface + v13.0 Dashboard
+ * v13.0 - Full agent card suite with ReAct + Memory integration
+ * v2.0 - TimeAudit, AwardsPortfolio, CrisisAlchemy features
  */
 'use client';
 
@@ -8,10 +9,23 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Bot, User, Loader2, Sparkles,
-  Brain, Target, Award, BookOpen, Lightbulb
+  Brain, Target, Award, BookOpen, Lightbulb, Flame, Clock, Activity
 } from 'lucide-react';
 import { COLORS, GRADIENTS } from '@/lib/constants/design';
 import { useMultiAgentChat, type AgentType } from '@/lib/hooks/useAgents';
+
+// v2.0 Components
+import { TimeAuditCardV2 } from '@/components/agents/TimeAuditCardV2';
+import { AwardsPortfolioCardV2 } from '@/components/agents/AwardsPortfolioCardV2';
+import { CrisisAlchemyModal } from '@/components/agents/CrisisAlchemyModal';
+import { useAgentV2Health } from '@/lib/hooks/useAgentV2';
+import { useProfileId } from '@/lib/store/useSessionStore';
+
+// v13.0 Components
+import { NarrativeSynthesisCard } from '@/components/agents/NarrativeSynthesisCard';
+import { WeeklyPlanCard } from '@/components/agents/WeeklyPlanCard';
+import { NCWITStrategyCard } from '@/components/agents/NCWITStrategyCard';
+import { OpportunitiesCard } from '@/components/agents/OpportunitiesCard';
 
 interface Agent {
   id: AgentType;
@@ -42,6 +56,12 @@ export function MultiAgentsTab() {
 
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // v2.0 Features
+  const [showCrisisModal, setShowCrisisModal] = useState(false);
+  const [activeView, setActiveView] = useState<'dashboard' | 'chat'>('dashboard');
+  const v2Health = useAgentV2Health();
+  const profileId = useProfileId();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -75,7 +95,92 @@ export function MultiAgentsTab() {
   }));
 
   return (
-    <div className="h-[calc(100vh-64px)] flex">
+    <div className="min-h-[calc(100vh-64px)]">
+      {/* v2.0 Header with Backend Status and View Toggle */}
+      <div className="bg-white border-b px-6 py-4" style={{ borderColor: COLORS.borderDefault }}>
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-bold" style={{ color: COLORS.textHeading }}>
+              Multi-Agent Intelligence
+            </h2>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg">
+              <div className={`w-2 h-2 rounded-full ${
+                v2Health.data?.status === 'healthy' ? 'bg-green-500' :
+                v2Health.isLoading ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
+              }`} />
+              <span className="text-xs text-gray-600">
+                v2.0: {v2Health.data?.status || (v2Health.isLoading ? 'connecting...' : 'offline')}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowCrisisModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+            >
+              <Flame size={16} />
+              Crisis Help
+            </button>
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setActiveView('dashboard')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeView === 'dashboard' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600'
+                }`}
+              >
+                Dashboard
+              </button>
+              <button
+                onClick={() => setActiveView('chat')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeView === 'chat' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600'
+                }`}
+              >
+                Chat
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* v13.0 Dashboard View */}
+      {activeView === 'dashboard' && (
+        <div className="p-6 max-w-6xl mx-auto space-y-6">
+          {/* Row 1: Narrative + Awards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <NarrativeSynthesisCard />
+            <AwardsPortfolioCardV2
+              studentProfile={{
+                spike: 'general',
+                identity: [],
+                activities: [],
+                has_working_project: false,
+              }}
+            />
+          </div>
+
+          {/* Row 2: Time Audit + Weekly Plan */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TimeAuditCardV2 />
+            <WeeklyPlanCard />
+          </div>
+
+          {/* Row 3: NCWIT + Opportunities */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <NCWITStrategyCard />
+            <OpportunitiesCard
+              studentProfile={{
+                spike: 'general',
+                primary_project: undefined,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Chat View */}
+      {activeView === 'chat' && (
+    <div className="h-[calc(100vh-140px)] flex">
       {/* Agent Selector Sidebar */}
       <div className="w-64 border-r bg-gray-50 p-4" style={{ borderColor: COLORS.borderDefault }}>
         <h3 className="text-sm font-semibold mb-4" style={{ color: COLORS.textHeading }}>
@@ -194,6 +299,15 @@ export function MultiAgentsTab() {
           </div>
         </div>
       </div>
+    </div>
+      )}
+
+      {/* Crisis Alchemy Modal */}
+      <CrisisAlchemyModal
+        isOpen={showCrisisModal}
+        onClose={() => setShowCrisisModal(false)}
+        studentProfile={{ spike: 'general' }}
+      />
     </div>
   );
 }

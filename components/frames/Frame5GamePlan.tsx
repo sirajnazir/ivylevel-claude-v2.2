@@ -15,6 +15,7 @@ import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStudentStore } from '@/lib/store/useStudentStore';
 import { useSessionStore } from '@/lib/store/useSessionStore';
+import { useResultsStore } from '@/lib/store/useResultsStore';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { generateGamePlan, getStrengthBasedRecommendations } from '@/lib/gamePlan/gamePlanEngine';
 import { saveGamePlan, type GamePlanData } from '@/lib/services/gamePlanService';
@@ -399,6 +400,7 @@ export function Frame5GamePlan({ onComplete }: Frame5GamePlanProps) {
   const { profile } = useStudentStore();
   const { nextFrame, completeFrame } = useSessionStore();
   const { user, isAuthenticated } = useAuth();
+  const existingResults = useResultsStore((s) => s.results);
   const [activePhaseIndex, setActivePhaseIndex] = useState(0);
   const [expandedActions, setExpandedActions] = useState<Set<string>>(new Set());
   const [showSummary, setShowSummary] = useState(true);
@@ -409,6 +411,57 @@ export function Frame5GamePlan({ onComplete }: Frame5GamePlanProps) {
     try {
       console.log('Frame5GamePlan: Generating game plan with profile:', profile);
       const plan = generateGamePlan(profile);
+
+      // Override summary with API-based scores if available
+      if (existingResults?.ivy_ready_score?.category_scores) {
+        const scores = existingResults.ivy_ready_score.category_scores;
+        const STRENGTH_THRESHOLD = 75;
+        const IMPROVEMENT_THRESHOLD = 60;
+
+        const strengthAreas: string[] = [];
+        const improvementAreas: string[] = [];
+
+        // Aptitude
+        if (scores.aptitude >= STRENGTH_THRESHOLD) {
+          strengthAreas.push('Academic foundation');
+          strengthAreas.push('Test scores');
+        } else if (scores.aptitude < IMPROVEMENT_THRESHOLD) {
+          improvementAreas.push('Academic performance');
+        }
+
+        // Passion
+        if (scores.passion >= STRENGTH_THRESHOLD) {
+          strengthAreas.push('Extracurricular involvement');
+          strengthAreas.push('Leadership experience');
+          strengthAreas.push('Awards & recognition');
+        } else if (scores.passion < IMPROVEMENT_THRESHOLD) {
+          improvementAreas.push('Extracurricular depth');
+        }
+
+        // Community/Service
+        if (scores.community >= STRENGTH_THRESHOLD) {
+          strengthAreas.push('Community service');
+        } else if (scores.community < IMPROVEMENT_THRESHOLD) {
+          improvementAreas.push('Community engagement');
+        }
+
+        // Narrative/Identity
+        if (scores.narrative >= STRENGTH_THRESHOLD) {
+          strengthAreas.push('Personal narrative clarity');
+        } else if (scores.narrative < IMPROVEMENT_THRESHOLD) {
+          improvementAreas.push('Personal narrative development');
+        }
+
+        plan.summary.strengthAreas = strengthAreas;
+        plan.summary.improvementAreas = improvementAreas;
+
+        console.log('Frame5GamePlan: Overrode summary with API scores:', {
+          scores,
+          strengthAreas,
+          improvementAreas,
+        });
+      }
+
       console.log('Frame5GamePlan: Generated game plan:', plan);
       return plan;
     } catch (error) {
@@ -434,7 +487,7 @@ export function Frame5GamePlan({ onComplete }: Frame5GamePlanProps) {
         },
       };
     }
-  }, [profile]);
+  }, [profile, existingResults]);
 
   // Get strength-based recommendations
   const strengthRecs = useMemo(

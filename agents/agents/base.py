@@ -3,10 +3,20 @@ IvyQuest v10.0 Base Agent Class
 ===============================
 Abstract base class for all IvyQuest agents.
 Provides common functionality: state versioning, event publishing, HITL.
+
+v2.0 Update: Autonomous-First Design
+- Agents are FULLY AUTONOMOUS first
+- Jenny intelligence is ENHANCEMENT, not CONSTRAINT
+- 4-layer intelligence model:
+  Layer 1: LLM Foundation (Claude/GPT-4)
+  Layer 2: Agentic Layer (Agno workflows)
+  Layer 3: Domain Layer (college admissions)
+  Layer 4: Jenny Enhancement (voice, techniques, insights)
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, List
+from dataclasses import dataclass, field
+from typing import Dict, Any, Optional, List, Callable
 from datetime import datetime, timedelta
 import structlog
 
@@ -18,7 +28,113 @@ from tools.database import (
     get_latest_state,
 )
 
+# Import Jenny intelligence modules
+from modules import (
+    TimeAuditModule,
+    AwardsProbabilityEngine,
+    ProgramRedirectModule,
+    NCWITStrategyModule,
+    CrisisAlchemyModule,
+)
+from validation import JennyVoiceValidator, validate_jenny_voice
+
 logger = structlog.get_logger()
+
+
+# =====================================================
+# Autonomous Agent Data Structures
+# =====================================================
+
+@dataclass
+class JennyEnhancement:
+    """Enhancement from Jenny's coaching intelligence."""
+    technique_used: Optional[str] = None
+    voice_validated: bool = False
+    voice_score: float = 0.0
+    signature_phrase: Optional[str] = None
+    coaching_insight: Optional[str] = None
+    reframe_applied: bool = False
+
+
+@dataclass
+class AgentContext:
+    """Context for autonomous agent processing."""
+    profile_id: str
+    profile_data: Dict[str, Any] = field(default_factory=dict)
+    session_history: List[Dict] = field(default_factory=list)
+    user_request: Optional[str] = None
+    urgency: int = 2  # 1=low, 2=normal, 3=urgent
+    requires_jenny_voice: bool = True
+
+
+@dataclass
+class AgentResult:
+    """Result from autonomous agent processing."""
+    success: bool
+    output: Dict[str, Any]
+    confidence: float = 0.0
+    reasoning: str = ""
+    jenny_enhancement: Optional[JennyEnhancement] = None
+    requires_hitl: bool = False
+    hitl_reason: Optional[str] = None
+
+
+class JennyKnowledgeBase:
+    """
+    Jenny Duan's coaching knowledge base.
+
+    Provides access to Jenny's techniques, insights, and patterns
+    for enhancing autonomous agent outputs.
+    """
+
+    def __init__(self):
+        self.time_audit = TimeAuditModule()
+        self.awards_probability = AwardsProbabilityEngine()
+        self.program_redirect = ProgramRedirectModule()
+        self.ncwit_strategy = NCWITStrategyModule()
+        self.crisis_alchemy = CrisisAlchemyModule()
+        self.voice_validator = JennyVoiceValidator()
+
+    def get_relevant_technique(self, context: AgentContext) -> Optional[str]:
+        """Identify which Jenny technique is most relevant."""
+        request = (context.user_request or "").lower()
+
+        # Check for crisis keywords
+        crisis_type = self.crisis_alchemy.detect_crisis_type(request)
+        if crisis_type != "general":
+            return f"crisis_alchemy:{crisis_type}"
+
+        # Check for time management
+        if any(kw in request for kw in ["time", "hours", "schedule", "busy", "overwhelmed"]):
+            return "168_hour_framework"
+
+        # Check for awards/competitions
+        if any(kw in request for kw in ["award", "competition", "ncwit", "prize"]):
+            return "2_2_1_portfolio"
+
+        # Check for expensive programs
+        if any(kw in request for kw in ["program", "camp", "summer", "expensive"]):
+            return "just_be_one"
+
+        return None
+
+    def validate_voice(self, text: str) -> JennyEnhancement:
+        """Validate text matches Jenny's voice."""
+        result = self.voice_validator.validate(text)
+        return JennyEnhancement(
+            voice_validated=result.passed,
+            voice_score=result.score,
+            signature_phrase=result.signature_phrase_used,
+            coaching_insight=None,
+            reframe_applied=False
+        )
+
+    def fix_voice(self, text: str) -> str:
+        """Fix text to match Jenny's voice patterns."""
+        result = self.voice_validator.validate(text)
+        if result.fixed_text:
+            return result.fixed_text
+        return text
 
 
 class BaseAgent(ABC):
@@ -329,3 +445,229 @@ class BaseAgent(ABC):
     def _log_error(self, operation: str, error: Exception, **kwargs):
         """Log operation error."""
         self.logger.error(f"{operation}_error", error=str(error), **kwargs)
+
+
+# =====================================================
+# Autonomous Agent Base Class (v2.0)
+# =====================================================
+
+class AutonomousAgent(BaseAgent):
+    """
+    Autonomous-first agent with Jenny enhancement layer.
+
+    Processing Flow (autonomous-first):
+    1. UNDERSTAND: Parse context and user intent autonomously
+    2. ENHANCE: Apply Jenny techniques if relevant (Layer 4)
+    3. PLAN: Determine action strategy
+    4. EXECUTE: Perform actions
+    5. VALIDATE: Jenny voice check on output
+
+    Key Principle: The agent is FULLY AUTONOMOUS.
+    Jenny intelligence ENHANCES but never CONSTRAINS.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        autonomy_level: str = AutonomyLevel.HIGH,
+        enable_jenny_enhancement: bool = True
+    ):
+        super().__init__(name, autonomy_level)
+        self.enable_jenny_enhancement = enable_jenny_enhancement
+        self.jenny = JennyKnowledgeBase() if enable_jenny_enhancement else None
+
+    async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
+        """
+        Main processing with autonomous-first design.
+
+        Override _autonomous_process for agent-specific logic.
+        """
+        self._log_start("autonomous_process", profile_id=profile_id)
+
+        try:
+            # Build context
+            context = await self._build_context(profile_id, **kwargs)
+
+            # Phase 1: UNDERSTAND - Fully autonomous understanding
+            understanding = await self._understand(context)
+
+            # Phase 2: ENHANCE - Apply Jenny techniques if relevant
+            enhancement = None
+            if self.enable_jenny_enhancement and self.jenny:
+                enhancement = self._apply_jenny_enhancement(context, understanding)
+
+            # Phase 3: PLAN - Determine action strategy
+            plan = await self._plan(context, understanding, enhancement)
+
+            # Phase 4: EXECUTE - Perform actions
+            result = await self._execute(context, plan)
+
+            # Phase 5: VALIDATE - Jenny voice check
+            if self.enable_jenny_enhancement and result.success:
+                result = self._validate_voice(result)
+
+            # Version state if successful
+            if result.success:
+                await self._version_state(
+                    profile_id=profile_id,
+                    event_type=f"{self.name.lower()}_processed",
+                    state=result.output,
+                    rationale=result.reasoning
+                )
+
+            self._log_complete("autonomous_process", profile_id=profile_id)
+            return self._format_result(result)
+
+        except Exception as e:
+            self._log_error("autonomous_process", e, profile_id=profile_id)
+            return {
+                "success": False,
+                "error": str(e),
+                "agent": self.name
+            }
+
+    async def _build_context(self, profile_id: str, **kwargs) -> AgentContext:
+        """Build agent context from profile and kwargs."""
+        profile = await self._get_profile(profile_id)
+        return AgentContext(
+            profile_id=profile_id,
+            profile_data=profile or {},
+            user_request=kwargs.get("user_request"),
+            urgency=kwargs.get("urgency", 2),
+            requires_jenny_voice=kwargs.get("requires_jenny_voice", True)
+        )
+
+    async def _understand(self, context: AgentContext) -> Dict[str, Any]:
+        """
+        Phase 1: Autonomous understanding of context.
+
+        Override in subclass for agent-specific understanding.
+        """
+        return {
+            "profile_id": context.profile_id,
+            "has_profile": bool(context.profile_data),
+            "request": context.user_request,
+            "urgency": context.urgency
+        }
+
+    def _apply_jenny_enhancement(
+        self,
+        context: AgentContext,
+        understanding: Dict[str, Any]
+    ) -> Optional[JennyEnhancement]:
+        """
+        Phase 2: Apply Jenny's coaching intelligence.
+
+        This ENHANCES the autonomous output, never constrains it.
+        """
+        if not self.jenny:
+            return None
+
+        technique = self.jenny.get_relevant_technique(context)
+        if not technique:
+            return None
+
+        return JennyEnhancement(
+            technique_used=technique,
+            coaching_insight=f"Applying {technique} technique"
+        )
+
+    async def _plan(
+        self,
+        context: AgentContext,
+        understanding: Dict[str, Any],
+        enhancement: Optional[JennyEnhancement]
+    ) -> Dict[str, Any]:
+        """
+        Phase 3: Plan action strategy.
+
+        Override in subclass for agent-specific planning.
+        """
+        return {
+            "action": "process",
+            "enhancement": enhancement.technique_used if enhancement else None
+        }
+
+    async def _execute(
+        self,
+        context: AgentContext,
+        plan: Dict[str, Any]
+    ) -> AgentResult:
+        """
+        Phase 4: Execute the plan.
+
+        Override in subclass for agent-specific execution.
+        """
+        return AgentResult(
+            success=True,
+            output={"processed": True},
+            confidence=0.8,
+            reasoning="Default autonomous processing"
+        )
+
+    def _validate_voice(self, result: AgentResult) -> AgentResult:
+        """
+        Phase 5: Validate output matches Jenny's voice.
+
+        Auto-fixes if possible, adds enhancement metadata.
+        """
+        if not self.jenny:
+            return result
+
+        # Get text content from output
+        text_content = self._extract_text_content(result.output)
+        if not text_content:
+            return result
+
+        # Validate voice
+        enhancement = self.jenny.validate_voice(text_content)
+
+        # Auto-fix if not passed
+        if not enhancement.voice_validated:
+            fixed_text = self.jenny.fix_voice(text_content)
+            result.output["response_text"] = fixed_text
+            enhancement.voice_validated = True
+
+        result.jenny_enhancement = enhancement
+        return result
+
+    def _extract_text_content(self, output: Dict[str, Any]) -> Optional[str]:
+        """Extract text content from output for voice validation."""
+        # Look for common text fields
+        for key in ["response_text", "message", "text", "full_response", "coaching_script"]:
+            if key in output and isinstance(output[key], str):
+                return output[key]
+        return None
+
+    def _format_result(self, result: AgentResult) -> Dict[str, Any]:
+        """Format AgentResult for API response."""
+        response = {
+            "success": result.success,
+            "data": result.output,
+            "confidence": result.confidence,
+            "reasoning": result.reasoning
+        }
+
+        if result.jenny_enhancement:
+            response["jenny_enhancement"] = {
+                "technique_used": result.jenny_enhancement.technique_used,
+                "voice_validated": result.jenny_enhancement.voice_validated,
+                "voice_score": result.jenny_enhancement.voice_score,
+                "signature_phrase": result.jenny_enhancement.signature_phrase
+            }
+
+        if result.requires_hitl:
+            response["requires_hitl"] = True
+            response["hitl_reason"] = result.hitl_reason
+
+        return response
+
+
+__all__ = [
+    'BaseAgent',
+    'AutonomousAgent',
+    'AgentContext',
+    'AgentResult',
+    'JennyEnhancement',
+    'JennyKnowledgeBase'
+]

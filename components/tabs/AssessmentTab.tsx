@@ -49,6 +49,11 @@ interface AssessmentData {
     targetSchools: string[];
   };
   criMultiplier?: number;
+  // Narrative synthesis from agents
+  brandStatement?: string | null;
+  narrativeThemes?: string[];
+  narrativeDna?: string | null;
+  firstPrinciple?: string | null;
 }
 
 interface AssessmentTabProps {
@@ -58,6 +63,57 @@ interface AssessmentTabProps {
 export function AssessmentTab({ data }: AssessmentTabProps) {
   return (
     <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8 space-y-6">
+      {/* Brand Statement - Narrative Synthesis Result */}
+      {data.brandStatement && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="rounded-2xl p-6 text-center"
+          style={{
+            background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+            border: '2px solid #f59e0b',
+          }}
+        >
+          <h2
+            className="text-sm font-semibold mb-3 uppercase tracking-wider"
+            style={{ color: '#92400e' }}
+          >
+            Your Brand Statement
+          </h2>
+          <p
+            className="text-xl md:text-2xl font-bold leading-relaxed"
+            style={{ color: '#78350f' }}
+          >
+            "{data.brandStatement}"
+          </p>
+          {data.narrativeThemes && data.narrativeThemes.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2 mt-4">
+              {data.narrativeThemes.slice(0, 4).map((theme, i) => (
+                <span
+                  key={i}
+                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  style={{
+                    backgroundColor: 'rgba(120, 53, 15, 0.1)',
+                    color: '#78350f',
+                  }}
+                >
+                  {theme}
+                </span>
+              ))}
+            </div>
+          )}
+          {data.firstPrinciple && (
+            <p
+              className="mt-4 text-sm italic"
+              style={{ color: '#92400e' }}
+            >
+              Core Principle: {data.firstPrinciple}
+            </p>
+          )}
+        </motion.section>
+      )}
+
       {/* Row 1: Ivy+ Ready Score (Rings) + Four Pillars - Side by Side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Ivy+ Ready Score - 5-Ring Visualization */}

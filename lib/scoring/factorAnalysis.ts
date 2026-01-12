@@ -31,7 +31,7 @@ export const FACTOR_THRESHOLDS = {
     grit: 0.60,
     category_score: 50,        // Above 50% = above average
   },
-  // Weak = below these values
+  // Weak = below these values (aligned with P2 threshold of 75%)
   weak: {
     gpa_normalized: 0.40,      // Bottom 40% = needs work
     sat_normalized: 0.40,
@@ -39,7 +39,7 @@ export const FACTOR_THRESHOLDS = {
     awards_normalized: 0.10,   // No awards
     project_normalized: 0.30,
     service_normalized: 0.25,
-    category_score: 40,        // Below 40% = gap
+    category_score: 60,        // Below 60% = needs improvement (P1/P2 range)
   },
 } as const;
 
@@ -226,6 +226,149 @@ export const HOLDING_BACK_DEFINITIONS: FactorDefinition[] = [
     priority: 35,
   },
 ];
+
+// =============================================================================
+// JENNY INTELLIGENCE: WEAKNESS TRANSFORMATION
+// =============================================================================
+
+/**
+ * Jenny Intelligence: Weakness Transformation Pattern
+ * Converts raw weaknesses into narrative opportunities with actionable reframes
+ */
+export interface WeaknessTransformation {
+  originalWeakness: string;
+  narrativeReframe: string;
+  actionableStep: string;
+  confidenceBoost: number;  // 0-1 scale: how much this reframe helps
+  timeToAddress: string;    // e.g., "3 months", "1 semester"
+  exampleNarrative?: string;
+}
+
+/**
+ * Weakness transformation mappings
+ * Each weakness ID maps to a transformation strategy
+ */
+const WEAKNESS_TRANSFORMATIONS: Record<string, Omit<WeaknessTransformation, 'originalWeakness'>> = {
+  no_awards: {
+    narrativeReframe: 'You are a builder, not a collector. Focus your narrative on CREATING impact rather than collecting accolades.',
+    actionableStep: 'Enter 2-3 competitions aligned with your spike this semester. Document your process regardless of outcome.',
+    confidenceBoost: 0.7,
+    timeToAddress: '6 months',
+    exampleNarrative: '"I haven\'t won major awards because I\'ve been focused on building [project] that has reached [X] people..."',
+  },
+  low_project_impact: {
+    narrativeReframe: 'Quality depth often beats quantity. Your focused effort signals genuine commitment.',
+    actionableStep: 'Scale one existing project by 3x. Document measurable outcomes (users, hours, dollars raised).',
+    confidenceBoost: 0.75,
+    timeToAddress: '4 months',
+    exampleNarrative: '"Rather than spreading thin, I went deep on [activity], transforming it from [before] to [after]..."',
+  },
+  weak_community: {
+    narrativeReframe: 'This is your most improvable dimension. Service with authenticity creates compelling stories.',
+    actionableStep: 'Find ONE cause that intersects with your interests. Commit to 4 hrs/week for 6 months.',
+    confidenceBoost: 0.8,
+    timeToAddress: '6 months',
+    exampleNarrative: '"I discovered my passion for [cause] through [experience], which led me to..."',
+  },
+  no_research: {
+    narrativeReframe: 'Formal research is one path. Independent investigation and project-based learning count equally.',
+    actionableStep: 'Cold-email 5 professors at local universities about shadowing opportunities. Start a research blog.',
+    confidenceBoost: 0.65,
+    timeToAddress: '3 months to start, 1 year for results',
+    exampleNarrative: '"While I haven\'t done formal lab research, my independent project on [topic] involved..."',
+  },
+  low_leadership: {
+    narrativeReframe: 'Titles are proxies. Impact is the real signal. Create leadership through initiative.',
+    actionableStep: 'Launch one new initiative within an existing activity. Document before/after metrics.',
+    confidenceBoost: 0.7,
+    timeToAddress: '3-6 months',
+    exampleNarrative: '"Without holding a formal title, I led the effort to [achievement] which resulted in..."',
+  },
+  cs_penalty: {
+    narrativeReframe: 'Reframe your narrative around the APPLICATION of CS rather than CS itself.',
+    actionableStep: 'Identify how your CS skills solve problems in underrepresented domains (healthcare, education, arts).',
+    confidenceBoost: 0.6,
+    timeToAddress: 'Immediate (narrative adjustment)',
+    exampleNarrative: '"I use computer science as a tool to address [problem in domain X]..."',
+  },
+  high_saturation: {
+    narrativeReframe: 'Competition breeds excellence. Your environment has sharpened you.',
+    actionableStep: 'Identify and emphasize unique aspects that differentiate you from local peers.',
+    confidenceBoost: 0.5,
+    timeToAddress: 'Immediate (narrative adjustment)',
+    exampleNarrative: '"Growing up in [competitive area] taught me to [unique lesson/approach]..."',
+  },
+  moderate_gpa: {
+    narrativeReframe: 'Show upward trend. Admissions officers love growth stories.',
+    actionableStep: 'Focus on getting A\'s in remaining courses. Highlight any semester-over-semester improvement.',
+    confidenceBoost: 0.6,
+    timeToAddress: '1 semester for visible trend',
+    exampleNarrative: '"After struggling in [subject], I developed [strategy] that improved my grades by [X]..."',
+  },
+  short_commitment: {
+    narrativeReframe: 'Recent but intense engagement can be compelling. Show rapid growth and deep commitment.',
+    actionableStep: 'Document your accelerated growth trajectory. Highlight meaningful moments of transformation.',
+    confidenceBoost: 0.55,
+    timeToAddress: 'Immediate (narrative framing)',
+    exampleNarrative: '"In just [X months], I went from [beginner state] to [achievement] because..."',
+  },
+};
+
+/**
+ * Transform a weakness into a narrative opportunity
+ */
+export function transformWeakness(weaknessId: string, originalMessage: string): WeaknessTransformation | null {
+  const transformation = WEAKNESS_TRANSFORMATIONS[weaknessId];
+  if (!transformation) return null;
+
+  return {
+    originalWeakness: originalMessage,
+    ...transformation,
+  };
+}
+
+/**
+ * Generate transformed weakness narratives for a profile
+ * Returns both the raw weaknesses AND their transformations
+ */
+export function analyzeWeaknessesWithTransformations(
+  profile: StudentProfile,
+  categoryScores: IvyReadyScore['category_scores']
+): Array<{
+  id: string;
+  message: string;
+  transformation: WeaknessTransformation | null;
+}> {
+  const results: Array<{
+    id: string;
+    message: string;
+    transformation: WeaknessTransformation | null;
+  }> = [];
+
+  for (const def of HOLDING_BACK_DEFINITIONS) {
+    try {
+      if (def.check(profile, categoryScores)) {
+        const message = def.getMessage(profile, categoryScores);
+        results.push({
+          id: def.id,
+          message,
+          transformation: transformWeakness(def.id, message),
+        });
+      }
+    } catch {
+      // Skip factors that can't be evaluated
+    }
+  }
+
+  // Sort by priority and return top 5 with transformations
+  results.sort((a, b) => {
+    const defA = HOLDING_BACK_DEFINITIONS.find(d => d.id === a.id);
+    const defB = HOLDING_BACK_DEFINITIONS.find(d => d.id === b.id);
+    return (defB?.priority ?? 0) - (defA?.priority ?? 0);
+  });
+
+  return results.slice(0, 5);
+}
 
 // =============================================================================
 // FACTOR ANALYSIS FUNCTIONS

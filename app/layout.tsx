@@ -6,6 +6,7 @@ import { FeedbackProvider, ToastContainer } from '@/lib/feedback';
 import { InsightsProvider } from '@/components/insights';
 import { NotificationInsightCard } from '@/components/insights/NotificationInsightCard';
 import { ClearStaleData } from '@/components/common/ClearStaleData';
+import { QueryProvider } from '@/lib/providers/QueryProvider';
 import './globals.css';
 
 const inter = Inter({
@@ -36,6 +37,7 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen antialiased`}>
         {/* Clear stale localStorage on version changes */}
         <ClearStaleData />
+        <QueryProvider>
         <AuthProvider>
           <AnalyticsProvider
             config={{
@@ -64,6 +66,7 @@ export default function RootLayout({
             </FeedbackProvider>
           </AnalyticsProvider>
         </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

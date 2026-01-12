@@ -34,6 +34,7 @@ import {
 import { useGamePlan, usePreparationData } from '@/lib/hooks/useGamePlan';
 import { useInsights } from '@/lib/hooks/useInsights';
 import { useUserData } from '@/lib/hooks/useUserData';
+import { agentV2Api } from '@/lib/api/agentV2Client';
 
 const mockGamePlanData = {
   targetProfile: {
@@ -186,6 +187,13 @@ function DashboardContent() {
   const { archetype, label: archetypeLabel, tagline } = useArchetype();
   const { helping: helpingFactors, holdingBack: holdingBackFactors } = useFactors();
 
+  // Get narrative from results store (populated by Frame 6 or agent call)
+  const brandStatement = useResultsStore((s) => s.brand_statement);
+  const narrativeThemes = useResultsStore((s) => s.narrative_themes);
+  const narrativeDna = useResultsStore((s) => s.narrative_dna);
+  const firstPrinciple = useResultsStore((s) => s.first_principle);
+  const setNarrative = useResultsStore((s) => s.setNarrative);
+
   // Game Plan and Insights from real engines
   const {
     gamePlan,
@@ -230,6 +238,30 @@ function DashboardContent() {
           await calculateScore();
         }
 
+        // Generate narrative synthesis if not exists
+        if (!brandStatement && studentProfile) {
+          console.log('[Dashboard] Generating narrative synthesis...');
+          try {
+            // Get profile_id from session store or use a temp one
+            const profileId = useSessionStore.getState().profile_id || useSessionStore.getState().session_id;
+            const narrativeResult = await agentV2Api.synthesizeNarrative({
+              profile_id: profileId,
+              assessment_contract: studentProfile as Record<string, unknown>,
+            });
+            if (narrativeResult.success) {
+              setNarrative({
+                brand_statement: narrativeResult.brand_statement || 'Your unique story awaits discovery.',
+                narrative_dna: narrativeResult.narrative_dna || '',
+                first_principle: narrativeResult.first_principle || '',
+                themes: narrativeResult.themes || [],
+                confidence: narrativeResult.confidence || 0.8,
+              });
+            }
+          } catch (narrativeErr) {
+            console.warn('[Dashboard] Narrative synthesis failed:', narrativeErr);
+          }
+        }
+
         // Generate game plan if not exists
         if (!gamePlan) {
           console.log('[Dashboard] Generating game plan...');
@@ -250,7 +282,8 @@ function DashboardContent() {
     };
 
     initializeDashboard();
-  }, [mounted, is_completed, hasResults, gamePlan, insights.length, calculateScore, generatePlan, generateInsights]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, is_completed, hasResults, gamePlan, insights.length, brandStatement]);
 
   const handleLogout = async () => {
     // Sign out from Supabase first
@@ -319,6 +352,13 @@ function DashboardContent() {
         ].filter(Boolean) as Array<{ title: string; roi: number; impact: string }>;
 
     // Generate weak spots from real holding back factors
+    // Priority thresholds aligned with Frame 6: P0 (<40%), P1 (40-60%), P2 (60-75%)
+    const getPriority = (score: number): 'P0' | 'P1' | 'P2' => {
+      if (score < 40) return 'P0';
+      if (score < 60) return 'P1';
+      return 'P2';
+    };
+
     const weakSpots = holdingBackFactors.length > 0
       ? holdingBackFactors.slice(0, 3).map((factor, i) => ({
           title: factor,
@@ -326,9 +366,10 @@ function DashboardContent() {
           description: `Address this to improve your overall profile`,
         }))
       : [
-          aptitudeScore < 50 && { title: 'Academic Profile Needs Development', priority: 'P0' as const, description: 'Focus on GPA and test scores' },
-          passionScore < 40 && { title: 'Extracurricular Depth', priority: 'P1' as const, description: 'Develop sustained activity involvement' },
-          identityScore < 50 && { title: 'Personal Narrative', priority: 'P2' as const, description: 'Clarify your unique story and direction' },
+          aptitudeScore < 75 && { title: 'Academic Profile Needs Development', priority: getPriority(aptitudeScore), description: 'Focus on GPA and test scores' },
+          passionScore < 75 && { title: 'Extracurricular Depth', priority: getPriority(passionScore), description: 'Develop sustained activity involvement' },
+          serviceScore < 75 && { title: 'Community Impact', priority: getPriority(serviceScore), description: 'Increase service hours and leadership' },
+          identityScore < 75 && { title: 'Personal Narrative', priority: getPriority(identityScore), description: 'Clarify your unique story and direction' },
         ].filter(Boolean) as Array<{ title: string; priority: 'P0' | 'P1' | 'P2'; description: string }>;
 
     // Get target schools from real probabilities
@@ -360,7 +401,7 @@ function DashboardContent() {
         { dimension: 'Personal Story', score: identityScore, tier: identityScore >= 85 ? 'Excellent' : identityScore >= 70 ? 'Strong' : identityScore >= 50 ? 'Good' : 'Developing' },
       ],
       strengths: strengths.length > 0 ? strengths : [{ title: 'Building Your Foundation', roi: 2.0, impact: 'Starting fresh with potential' }],
-      weakSpots: weakSpots.length > 0 ? weakSpots : [{ title: 'Complete Your Profile', priority: 'P0' as const, description: 'Add more information to get personalized insights' }],
+      weakSpots: weakSpots.length > 0 ? weakSpots : [{ title: 'Strong Foundation — Focus on Polish', priority: 'P2' as const, description: 'Your profile is well-rounded. Focus on differentiation and narrative clarity.' }],
       admissionsRubric: {
         academicIndex: aptitudeScore,
         extracurricularRating: passionScore,
@@ -370,8 +411,13 @@ function DashboardContent() {
         targetSchools,
       },
       criMultiplier: studentProfile?.demographics?.first_gen ? 1.3 : 1.0,
+      // Narrative synthesis data from agents
+      brandStatement: brandStatement || null,
+      narrativeThemes: narrativeThemes || [],
+      narrativeDna: narrativeDna || null,
+      firstPrinciple: firstPrinciple || null,
     };
-  }, [totalScore, categoryScores, helpingFactors, holdingBackFactors, schoolProbabilities, studentProfile]);
+  }, [totalScore, categoryScores, helpingFactors, holdingBackFactors, schoolProbabilities, studentProfile, brandStatement, narrativeThemes, narrativeDna, firstPrinciple]);
 
   // === BUILD GAME PLAN DATA FROM SUPABASE + REAL ENGINE ===
   const realGamePlanData = useMemo(() => {

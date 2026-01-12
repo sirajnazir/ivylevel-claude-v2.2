@@ -45,6 +45,23 @@ export type ActionCategory =
   | 'research'
   | 'summer';
 
+/**
+ * Jenny Intelligence: Quantified Goals Pattern
+ * Every action has specific numeric targets with confidence intervals
+ */
+export interface QuantifiedGoal {
+  metric: string;           // e.g., "GPA", "SAT Score", "Service Hours"
+  current: number;          // Current value
+  target: number;           // Target value
+  unit: string;             // e.g., "points", "hours", "%"
+  confidence: number;       // 0-1 probability of achieving
+  timeframe: string;        // e.g., "3 months", "by end of junior year"
+  milestones?: {
+    value: number;
+    label: string;          // e.g., "Week 4", "Midpoint"
+  }[];
+}
+
 export interface GamePlanAction {
   id: string;
   title: string;
@@ -64,6 +81,8 @@ export interface GamePlanAction {
     name: string;
     url?: string;
   }[];
+  // Jenny Intelligence: Quantified Goals
+  quantifiedGoals?: QuantifiedGoal[];
 }
 
 export interface GamePlanPhase {
@@ -92,6 +111,20 @@ export interface GamePlan {
     improvementAreas: string[];
     focusRecommendation: string;
   };
+  // Jenny Intelligence: Phase Calibration
+  phaseCalibration?: {
+    runway: string;
+    monthsRemaining: number;
+    strategicPhase: string;
+    priorities: readonly string[];
+    constraints: readonly string[];
+  };
+  // Jenny Intelligence: Strategic Overwhelm
+  strategicOverwhelm?: {
+    totalProposed: number;
+    recommendedMax: number;
+    ratio: number;
+  };
 }
 
 // ============================================================================
@@ -99,6 +132,154 @@ export interface GamePlan {
 // ============================================================================
 
 const DEFAULT_WEEKLY_HOURS = 10;
+
+// ============================================================================
+// SCORE CALCULATION HELPERS
+// Used to determine strengths vs improvement areas based on actual scores
+// ============================================================================
+
+const hasValue = (val: unknown) => val !== null && val !== undefined && val !== 0 && val !== '';
+
+function calculateAptitudeScore(profile: StudentProfile): number {
+  const apt = profile.aptitude;
+  if (!apt) return 0;
+
+  let total = 0;
+  let count = 0;
+
+  // GPA component
+  const gpa = apt.gpa_weighted ?? apt.gpa_unweighted;
+  if (hasValue(gpa) && typeof gpa === 'number' && gpa > 0) {
+    const gpaMax = apt.gpa_weighted ? 5.0 : 4.0;
+    total += (gpa / gpaMax) * 100;
+    count++;
+  }
+
+  // SAT component
+  if (hasValue(apt.sat_total) && typeof apt.sat_total === 'number' && apt.sat_total > 0) {
+    total += (apt.sat_total / 1600) * 100;
+    count++;
+  }
+
+  // ACT component
+  if (hasValue(apt.act_total) && typeof apt.act_total === 'number' && apt.act_total > 0) {
+    total += (apt.act_total / 36) * 100;
+    count++;
+  }
+
+  // AP component
+  if (hasValue(apt.ap_count) && typeof apt.ap_count === 'number' && apt.ap_count > 0) {
+    total += Math.min((apt.ap_count / 12) * 100, 100);
+    count++;
+  }
+
+  return count > 0 ? Math.round(total / count) : 0;
+}
+
+function calculatePassionScore(profile: StudentProfile): number {
+  const pass = profile.passion;
+  if (!pass) return 0;
+
+  let score = 0;
+
+  // EC Commitment (40 points max)
+  const ecYears = pass.ec_commitment_years;
+  if (hasValue(ecYears) && typeof ecYears === 'number' && ecYears > 0) {
+    score += Math.min((ecYears / 4) * 40, 40);
+  }
+
+  // Leadership (30 points)
+  if (pass.leadership_level && pass.leadership_level !== 'PARTICIPANT') {
+    score += 30;
+  }
+
+  // Awards (30 points)
+  if (Array.isArray(pass.ec_awards) && pass.ec_awards.length > 0) {
+    score += 30;
+  }
+
+  return Math.round(score);
+}
+
+function calculateServiceScore(profile: StudentProfile): number {
+  const community = profile.community;
+  if (!community || !hasValue(community.service_hours)) return 0;
+
+  const hours = typeof community.service_hours === 'number' ? community.service_hours : 0;
+  return Math.round(Math.min((hours / 300) * 100, 100));
+}
+
+function calculateIdentityScore(profile: StudentProfile): number {
+  let score = 0;
+
+  // Favorite subject (25 pts)
+  if (hasValue(profile.operating?.favoriteSubject)) score += 25;
+
+  // Strengths (25 pts)
+  if (Array.isArray(profile.operating?.strengths) && profile.operating.strengths.length > 0) {
+    score += 25;
+  }
+
+  // Career direction (25 pts)
+  const career = profile.operating?.careerDirection;
+  if (career && career !== 'no-idea') score += 25;
+
+  // First gen (25 pts)
+  if (profile.demographics?.first_gen === true) score += 25;
+
+  return score;
+}
+
+/**
+ * Jenny Intelligence: Phase Calibration
+ * Maps grade level to available runway and strategic priorities
+ */
+export const PHASE_CALIBRATION = {
+  // Grade 9: Maximum runway - exploration phase
+  '9': {
+    runway: 'LONG',          // 3+ years until applications
+    monthsRemaining: 40,
+    strategicPhase: 'EXPLORATION',
+    priorities: ['discover_interests', 'establish_foundations', 'try_activities'],
+    constraints: [],
+    multipliers: { building: 1.5, exploration: 1.3, packaging: 0.5 },
+  },
+  // Grade 10: Building phase - commit to 2-3 activities
+  '10': {
+    runway: 'MEDIUM_LONG',   // 2+ years until applications
+    monthsRemaining: 30,
+    strategicPhase: 'BUILDING',
+    priorities: ['deepen_activities', 'seek_leadership', 'start_projects'],
+    constraints: ['avoid_activity_sprawl'],
+    multipliers: { building: 1.4, exploration: 1.0, packaging: 0.6 },
+  },
+  // Grade 11: Critical building - last chance for major initiatives
+  '11': {
+    runway: 'SHORT',         // 1 year until applications
+    monthsRemaining: 18,
+    strategicPhase: 'ACCELERATION',
+    priorities: ['maximize_impact', 'launch_final_initiatives', 'prep_testing'],
+    constraints: ['no_new_clubs', 'focus_on_spike'],
+    multipliers: { building: 1.0, exploration: 0.5, packaging: 1.2 },
+  },
+  // Grade 12: Packaging phase - no new activities
+  '12': {
+    runway: 'NONE',          // Applications imminent
+    monthsRemaining: 6,
+    strategicPhase: 'PACKAGING',
+    priorities: ['polish_narrative', 'complete_applications', 'maintain_grades'],
+    constraints: ['no_new_activities', 'essay_focus'],
+    multipliers: { building: 0.3, exploration: 0.2, packaging: 1.5 },
+  },
+} as const;
+
+export type PhaseCalibration = typeof PHASE_CALIBRATION[keyof typeof PHASE_CALIBRATION];
+
+/**
+ * Jenny Intelligence: Strategic Overwhelm Ratio
+ * Propose 1.3-1.5x more activities than can be done to empower choice
+ */
+const STRATEGIC_OVERWHELM_RATIO = 1.4;
 
 // v11: Icon identifiers map to lucide-react icons in UI layer
 // This allows the engine to remain data-only while UI handles rendering
@@ -430,6 +611,131 @@ function determinePriority(
 }
 
 /**
+ * Jenny Intelligence: Generate quantified goals for an action
+ * Returns specific numeric targets based on profile data
+ */
+function generateQuantifiedGoals(
+  templateKey: string,
+  profile: StudentProfile,
+  gradeStr: string,
+): QuantifiedGoal[] {
+  const goals: QuantifiedGoal[] = [];
+  const grade = typeof gradeStr === 'number' ? gradeStr : parseInt(gradeStr as string) || 12;
+  const phaseConfig = PHASE_CALIBRATION[gradeStr as keyof typeof PHASE_CALIBRATION] || PHASE_CALIBRATION['12'];
+
+  switch (templateKey) {
+    case 'IMPROVE_GPA': {
+      const currentGPA = profile.aptitude?.gpa_weighted || 3.0;
+      const targetGPA = Math.min(4.0, currentGPA + 0.3);
+      goals.push({
+        metric: 'GPA',
+        current: currentGPA,
+        target: targetGPA,
+        unit: 'points',
+        confidence: currentGPA >= 3.5 ? 0.85 : 0.75,
+        timeframe: 'end of next semester',
+        milestones: [
+          { value: currentGPA + 0.1, label: 'First progress report' },
+          { value: currentGPA + 0.2, label: 'Midterm' },
+        ],
+      });
+      break;
+    }
+    case 'PREP_SAT': {
+      const currentSAT = profile.aptitude?.sat_total || 0;
+      const baseSAT = currentSAT || 1100;
+      const targetSAT = Math.min(1600, baseSAT + 150);
+      goals.push({
+        metric: 'SAT Score',
+        current: currentSAT,
+        target: targetSAT,
+        unit: 'points',
+        confidence: 0.70,
+        timeframe: '6 months',
+        milestones: [
+          { value: baseSAT + 50, label: 'Month 2' },
+          { value: baseSAT + 100, label: 'Month 4' },
+        ],
+      });
+      break;
+    }
+    case 'START_SERVICE':
+    case 'DEEPEN_SERVICE': {
+      const currentHours = profile.community?.service_hours || 0;
+      const targetHours = templateKey === 'START_SERVICE'
+        ? Math.max(50, currentHours + 50)
+        : Math.max(150, currentHours + 100);
+      goals.push({
+        metric: 'Service Hours',
+        current: currentHours,
+        target: targetHours,
+        unit: 'hours',
+        confidence: 0.90,
+        timeframe: grade <= 11 ? 'end of school year' : '3 months',
+      });
+      break;
+    }
+    case 'START_PASSION_PROJECT':
+    case 'DEEPEN_ACTIVITY': {
+      const currentImpact = profile.passion?.project_impact || 0;
+      const targetImpact = currentImpact < 100 ? 200 : currentImpact * 2;
+      goals.push({
+        metric: 'People Impacted',
+        current: currentImpact,
+        target: targetImpact,
+        unit: 'people',
+        confidence: 0.65,
+        timeframe: `${phaseConfig.monthsRemaining > 12 ? 12 : phaseConfig.monthsRemaining} months`,
+        milestones: [
+          { value: Math.round(currentImpact + (targetImpact - currentImpact) * 0.3), label: 'Initial launch' },
+          { value: Math.round(currentImpact + (targetImpact - currentImpact) * 0.6), label: 'Growth phase' },
+        ],
+      });
+      break;
+    }
+    case 'SEEK_LEADERSHIP': {
+      goals.push({
+        metric: 'Leadership Position',
+        current: 0,
+        target: 1,
+        unit: 'position',
+        confidence: 0.70,
+        timeframe: 'next election cycle',
+      });
+      break;
+    }
+    case 'PURSUE_AWARDS': {
+      goals.push({
+        metric: 'Competition Entries',
+        current: 0,
+        target: 3,
+        unit: 'competitions',
+        confidence: 0.85,
+        timeframe: 'this school year',
+      });
+      break;
+    }
+    case 'SUMMER_RESEARCH':
+    case 'SUMMER_PROGRAM': {
+      goals.push({
+        metric: 'Applications Submitted',
+        current: 0,
+        target: 5,
+        unit: 'applications',
+        confidence: 0.95,
+        timeframe: 'by March 1',
+      });
+      break;
+    }
+    default:
+      // Generic goal for actions without specific metrics
+      break;
+  }
+
+  return goals;
+}
+
+/**
  * Create an action from a template
  */
 function createAction(
@@ -441,10 +747,15 @@ function createAction(
   const template = ACTION_TEMPLATES[templateKey];
   if (!template) return null;
 
+  const grade = profile.identity?.grade || '12';
+  const gradeStr = String(grade);
+
   return {
     id: `action-${templateKey.toLowerCase()}-${Date.now()}`,
     ...template,
     priority: determinePriority(template, profile, tier, urgencyLevel),
+    // Jenny Intelligence: Add quantified goals
+    quantifiedGoals: generateQuantifiedGoals(templateKey, profile, gradeStr),
   };
 }
 
@@ -665,27 +976,73 @@ export function generateGamePlan(profile: StudentProfile): GamePlan {
   }
 
   // ============================================================================
-  // GENERATE SUMMARY
+  // GENERATE SUMMARY - Based on SCORES not just data existence
   // ============================================================================
 
   const strengthAreas: string[] = [];
   const improvementAreas: string[] = [];
 
-  // Analyze strengths based on what's NOT skipped
-  if (!gpaSkip.show) strengthAreas.push('Academic foundation');
-  if (!testSkip.show) strengthAreas.push('Test scores');
-  if (!ecSkip.show) strengthAreas.push('Extracurricular involvement');
-  if (!leadershipSkip.show) strengthAreas.push('Leadership experience');
-  if (!serviceSkip.show) strengthAreas.push('Community service');
-  if (!awardsSkip.show) strengthAreas.push('Awards & recognition');
+  // Calculate actual scores for each pillar
+  const aptitudeScore = calculateAptitudeScore(profile);
+  const passionScore = calculatePassionScore(profile);
+  const serviceScore = calculateServiceScore(profile);
+  const identityScore = calculateIdentityScore(profile);
 
-  // Analyze improvement areas based on what IS skipped
-  if (gpaSkip.show) improvementAreas.push('Academic performance');
-  if (testSkip.show) improvementAreas.push('Standardized testing');
-  if (ecSkip.show) improvementAreas.push('Extracurricular activities');
-  if (leadershipSkip.show) improvementAreas.push('Leadership roles');
-  if (serviceSkip.show) improvementAreas.push('Community engagement');
-  if (awardsSkip.show) improvementAreas.push('Awards & competitions');
+  console.log('[GamePlanEngine] Score-based summary calculation:', {
+    aptitudeScore,
+    passionScore,
+    serviceScore,
+    identityScore,
+  });
+  console.log('[GamePlanEngine] Profile data used:', {
+    service_hours: profile.community?.service_hours,
+    first_gen: profile.demographics?.first_gen,
+    careerDirection: profile.operating?.careerDirection,
+    strengths: profile.operating?.strengths,
+    favoriteSubject: profile.operating?.favoriteSubject,
+  });
+
+  // Thresholds: >= 75% = strength, < 60% = improvement needed
+  const STRENGTH_THRESHOLD = 75;
+  const IMPROVEMENT_THRESHOLD = 60;
+
+  // Aptitude components
+  if (aptitudeScore >= STRENGTH_THRESHOLD) {
+    strengthAreas.push('Academic foundation');
+    if (!testSkip.show) strengthAreas.push('Test scores');
+  } else if (aptitudeScore < IMPROVEMENT_THRESHOLD) {
+    improvementAreas.push('Academic performance');
+    if (testSkip.show) improvementAreas.push('Standardized testing');
+  }
+
+  // Passion components
+  if (passionScore >= STRENGTH_THRESHOLD) {
+    strengthAreas.push('Extracurricular involvement');
+    if (!leadershipSkip.show) strengthAreas.push('Leadership experience');
+    if (!awardsSkip.show) strengthAreas.push('Awards & recognition');
+  } else if (passionScore < IMPROVEMENT_THRESHOLD) {
+    improvementAreas.push('Extracurricular depth');
+    if (leadershipSkip.show) improvementAreas.push('Leadership roles');
+  }
+
+  // Service score
+  if (serviceScore >= STRENGTH_THRESHOLD) {
+    strengthAreas.push('Community service');
+  } else if (serviceScore < IMPROVEMENT_THRESHOLD) {
+    improvementAreas.push('Community engagement');
+  }
+
+  // Identity score
+  if (identityScore >= STRENGTH_THRESHOLD) {
+    strengthAreas.push('Personal narrative clarity');
+  } else if (identityScore < IMPROVEMENT_THRESHOLD) {
+    improvementAreas.push('Personal narrative development');
+  }
+
+  console.log('[GamePlanEngine] Summary result:', {
+    strengthAreas,
+    improvementAreas,
+  });
 
   // Generate focus recommendation
   let focusRecommendation: string;
@@ -713,6 +1070,18 @@ export function generateGamePlan(profile: StudentProfile): GamePlan {
     return total + 12; // Default 3hrs/week * 4 weeks
   }, 0);
 
+  // Jenny Intelligence: Get phase calibration for current grade
+  const gradeStr = String(grade);
+  const phaseConfig = PHASE_CALIBRATION[gradeStr as keyof typeof PHASE_CALIBRATION] || PHASE_CALIBRATION['12'];
+
+  // Jenny Intelligence: Calculate strategic overwhelm ratio
+  const recommendedMax = Math.ceil(availableHours / 3); // ~3 hrs per activity
+  const strategicOverwhelm = {
+    totalProposed: allActions.length,
+    recommendedMax,
+    ratio: allActions.length / Math.max(recommendedMax, 1),
+  };
+
   return {
     tier,
     tierInfo,
@@ -727,6 +1096,16 @@ export function generateGamePlan(profile: StudentProfile): GamePlan {
       improvementAreas,
       focusRecommendation,
     },
+    // Jenny Intelligence: Phase Calibration
+    phaseCalibration: {
+      runway: phaseConfig.runway,
+      monthsRemaining: phaseConfig.monthsRemaining,
+      strategicPhase: phaseConfig.strategicPhase,
+      priorities: phaseConfig.priorities,
+      constraints: phaseConfig.constraints,
+    },
+    // Jenny Intelligence: Strategic Overwhelm
+    strategicOverwhelm,
   };
 }
 

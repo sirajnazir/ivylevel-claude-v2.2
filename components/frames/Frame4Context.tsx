@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { STRENGTH_ICONS, ICON_COLORS } from '@/lib/constants/icons';
+import type { Gender, Ethnicity, ImmigrationStatus } from '@/lib/types/student';
 
 // ============================================================================
 // CONSTANTS
@@ -94,6 +95,36 @@ const OCCUPATION_OPTIONS = [
   'Retired',
   'Other',
   'Prefer not to say',
+];
+
+// Background options for narrative synthesis
+const CULTURAL_BACKGROUND_OPTIONS = [
+  { id: 'SOUTH_ASIAN', label: 'South Asian (Indian, Pakistani, Bangladeshi, etc.)' },
+  { id: 'SOUTHEAST_ASIAN', label: 'Southeast Asian (Vietnamese, Filipino, Thai, etc.)' },
+  { id: 'ASIAN', label: 'East Asian (Chinese, Korean, Japanese, etc.)' },
+  { id: 'MIDDLE_EASTERN', label: 'Middle Eastern / North African' },
+  { id: 'BLACK', label: 'Black / African American' },
+  { id: 'HISPANIC', label: 'Hispanic / Latino' },
+  { id: 'WHITE', label: 'White / Caucasian' },
+  { id: 'NATIVE', label: 'Native American / Indigenous' },
+  { id: 'PACIFIC_ISLANDER', label: 'Pacific Islander' },
+  { id: 'MULTIRACIAL', label: 'Mixed / Multiracial' },
+  { id: 'OTHER', label: 'Other' },
+  { id: 'PREFER_NOT_SAY', label: 'Prefer not to say' },
+];
+
+const GENDER_OPTIONS = [
+  { id: 'FEMALE', label: 'Female' },
+  { id: 'MALE', label: 'Male' },
+  { id: 'NON_BINARY', label: 'Non-binary' },
+  { id: 'PREFER_NOT_SAY', label: 'Prefer not to say' },
+];
+
+const IMMIGRATION_OPTIONS = [
+  { id: 'FIRST_GEN_IMMIGRANT', label: "Yes, I'm a first-generation immigrant" },
+  { id: 'PARENTS_IMMIGRATED', label: 'Yes, my parents immigrated' },
+  { id: 'NO', label: 'No' },
+  { id: 'PREFER_NOT_SAY', label: 'Prefer not to say' },
 ];
 
 // ============================================================================
@@ -542,15 +573,136 @@ export function Frame4Context({ onComplete }: Frame4ContextProps) {
           <Info className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#f59e0b' }} />
           <div>
             <h3 className="font-semibold mb-1" style={{ color: '#92400e' }}>
-              Why we ask about context
+              Why we ask about your background
             </h3>
             <p className="text-sm" style={{ color: '#92400e' }}>
-              Admissions officers evaluate you relative to your opportunities and resources.
-              This context is part of your story and affects how your profile is viewed.
+              Your background is part of your unique story. Admissions officers evaluate you
+              relative to your opportunities and context. This helps us craft a narrative
+              that authentically represents who you are.
             </p>
           </div>
         </div>
       </div>
+
+      {/* Gender */}
+      <div className="space-y-3">
+        <label className="block text-sm font-medium" style={{ color: BRAND_COLORS.textHeading }}>
+          Gender
+        </label>
+        <p className="text-xs" style={{ color: BRAND_COLORS.textMuted }}>
+          (Helps match you with relevant scholarships and opportunities)
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {GENDER_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              onClick={() => updateOperating('gender', option.id as Gender)}
+              className="px-4 py-2 border-2 rounded-full text-sm font-medium transition-all"
+              style={{
+                borderColor: operating.gender === option.id ? BRAND_COLORS.primary : BRAND_COLORS.borderLight,
+                backgroundColor: operating.gender === option.id ? `${BRAND_COLORS.primary}10` : 'white',
+                color: operating.gender === option.id ? BRAND_COLORS.primary : BRAND_COLORS.textPrimary,
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Cultural Background */}
+      <div className="space-y-3">
+        <label className="block text-sm font-medium" style={{ color: BRAND_COLORS.textHeading }}>
+          How would you describe your cultural background?
+        </label>
+        <p className="text-xs" style={{ color: BRAND_COLORS.textMuted }}>
+          (Select all that apply - this helps personalize your narrative)
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {CULTURAL_BACKGROUND_OPTIONS.map((option) => {
+            const isSelected = (operating.culturalBackground || []).includes(option.id as Ethnicity);
+            return (
+              <label
+                key={option.id}
+                className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50"
+                style={{
+                  borderColor: isSelected ? BRAND_COLORS.primary : BRAND_COLORS.borderLight,
+                  backgroundColor: isSelected ? `${BRAND_COLORS.primary}08` : 'white',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={(e) => {
+                    const current = operating.culturalBackground || [];
+                    // If selecting "Prefer not to say", clear others
+                    if (option.id === 'PREFER_NOT_SAY' && e.target.checked) {
+                      updateOperating('culturalBackground', ['PREFER_NOT_SAY'] as Ethnicity[]);
+                    } else {
+                      const filtered = current.filter(id => id !== 'PREFER_NOT_SAY');
+                      const updated = e.target.checked
+                        ? [...filtered, option.id as Ethnicity]
+                        : filtered.filter((id) => id !== option.id);
+                      updateOperating('culturalBackground', updated);
+                    }
+                  }}
+                  className="w-4 h-4 rounded"
+                  style={{ accentColor: BRAND_COLORS.primary }}
+                />
+                <span style={{ color: BRAND_COLORS.textPrimary }}>{option.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Immigration Status */}
+      <div className="space-y-3">
+        <label className="block text-sm font-medium" style={{ color: BRAND_COLORS.textHeading }}>
+          Is your family from another country?
+        </label>
+        <div className="space-y-2">
+          {IMMIGRATION_OPTIONS.map((option) => (
+            <label
+              key={option.id}
+              className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50"
+              style={{ borderColor: BRAND_COLORS.borderLight }}
+            >
+              <input
+                type="radio"
+                name="immigrationStatus"
+                value={option.id}
+                checked={operating.immigrationStatus === option.id}
+                onChange={(e) => updateOperating('immigrationStatus', e.target.value as ImmigrationStatus)}
+                className="w-4 h-4"
+                style={{ accentColor: BRAND_COLORS.primary }}
+              />
+              <span style={{ color: BRAND_COLORS.textPrimary }}>{option.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Religion/Traditions */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium" style={{ color: BRAND_COLORS.textHeading }}>
+          Any religious or cultural traditions important to you? (Optional)
+        </label>
+        <p className="text-xs" style={{ color: BRAND_COLORS.textMuted }}>
+          This can be part of your unique story if you choose to share it
+        </p>
+        <input
+          type="text"
+          value={operating.religion || ''}
+          onChange={(e) => updateOperating('religion', e.target.value || null)}
+          placeholder="E.g., Muslim, Hindu, Jewish, Christian, Buddhist..."
+          className="w-full p-3 border rounded-lg focus:ring-2 focus:outline-none"
+          style={{ borderColor: BRAND_COLORS.borderLight }}
+        />
+      </div>
+
+      {/* Divider */}
+      <hr className="my-6" style={{ borderColor: BRAND_COLORS.borderLight }} />
 
       {/* Parent Occupations */}
       <div className="space-y-4">

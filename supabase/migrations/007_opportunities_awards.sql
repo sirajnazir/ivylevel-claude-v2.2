@@ -7,31 +7,52 @@
 -- =====================================================
 
 -- =====================================================
+-- PREREQUISITE: Ensure trigger function exists
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =====================================================
 -- AWARDS TABLE (200+ awards database)
 -- =====================================================
 
-CREATE TYPE award_level AS ENUM (
-  'school',       -- School-level recognition
-  'local',        -- City/county level
-  'regional',     -- Multi-county/state region
-  'state',        -- State-level
-  'national',     -- National recognition
-  'international' -- International recognition
-);
+-- Create ENUMs only if they don't exist
+DO $$ BEGIN
+  CREATE TYPE award_level AS ENUM (
+    'school',
+    'local',
+    'regional',
+    'state',
+    'national',
+    'international'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE award_category AS ENUM (
-  'stem',           -- Science, Technology, Engineering, Math
-  'humanities',     -- Writing, History, Languages
-  'arts',           -- Visual arts, Music, Theater, Film
-  'leadership',     -- Leadership awards
-  'service',        -- Community service recognition
-  'academic',       -- Academic achievement (GPA, test scores)
-  'entrepreneurship', -- Business/startup awards
-  'athletics',      -- Athletic recognition
-  'journalism',     -- Writing, reporting, media
-  'debate',         -- Speech and debate
-  'research'        -- Research competitions
-);
+DO $$ BEGIN
+  CREATE TYPE award_category AS ENUM (
+    'stem',
+    'humanities',
+    'arts',
+    'leadership',
+    'service',
+    'academic',
+    'entrepreneurship',
+    'athletics',
+    'journalism',
+    'debate',
+    'research'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS awards (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -109,18 +130,22 @@ CREATE TRIGGER update_awards_updated_at
 -- OPPORTUNITIES TABLE (500+ opportunities database)
 -- =====================================================
 
-CREATE TYPE opportunity_type AS ENUM (
-  'summer_program',   -- RSI, SSP, TASP, etc.
-  'internship',       -- Summer/semester internships
-  'research',         -- Research opportunities
-  'competition',      -- Competitions (not awards)
-  'conference',       -- Student conferences
-  'fellowship',       -- Fellowships
-  'scholarship',      -- Merit/need scholarships
-  'mentorship',       -- Mentorship programs
-  'leadership',       -- Leadership programs
-  'study_abroad'      -- Study abroad opportunities
-);
+DO $$ BEGIN
+  CREATE TYPE opportunity_type AS ENUM (
+    'summer_program',
+    'internship',
+    'research',
+    'competition',
+    'conference',
+    'fellowship',
+    'scholarship',
+    'mentorship',
+    'leadership',
+    'study_abroad'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS opportunities (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -196,16 +221,20 @@ CREATE TRIGGER update_opportunities_updated_at
 -- STUDENT AWARD/OPPORTUNITY APPLICATIONS
 -- =====================================================
 
-CREATE TYPE application_status AS ENUM (
-  'interested',    -- Student marked as interested
-  'planning',      -- Planning to apply
-  'in_progress',   -- Application in progress
-  'submitted',     -- Application submitted
-  'waitlisted',    -- On waitlist
-  'accepted',      -- Accepted!
-  'rejected',      -- Rejected
-  'withdrawn'      -- Student withdrew
-);
+DO $$ BEGIN
+  CREATE TYPE application_status AS ENUM (
+    'interested',
+    'planning',
+    'in_progress',
+    'submitted',
+    'waitlisted',
+    'accepted',
+    'rejected',
+    'withdrawn'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS student_applications (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,

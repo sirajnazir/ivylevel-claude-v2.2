@@ -232,8 +232,12 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
   const { profile } = useStudentStore();
   const { nextFrame, completeFrame } = useSessionStore();
   const setResults = useResultsStore((s) => s.setResults);
+  const setNarrative = useResultsStore((s) => s.setNarrative);
   const existingResults = useResultsStore((s) => s.results);
+  const existingNarrative = useResultsStore((s) => s.narrative);
+  const brandStatement = useResultsStore((s) => s.brand_statement);
   const [isScoring, setIsScoring] = useState(false);
+  const [isSynthesizingNarrative, setIsSynthesizingNarrative] = useState(false);
 
   // Debug logging
   useEffect(() => {
@@ -280,6 +284,69 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
 
     runScoring();
   }, [profile, existingResults, isScoring, setResults]);
+
+  // Run narrative synthesis after scoring is complete
+  useEffect(() => {
+    // Skip if no results, already have narrative, or currently synthesizing
+    if (!existingResults || existingNarrative || isSynthesizingNarrative) return;
+
+    // Skip if agents are not enabled (narrative synthesis requires agent service)
+    const runNarrativeSynthesis = async () => {
+      setIsSynthesizingNarrative(true);
+      try {
+        // Build assessment contract from results and profile
+        const assessmentContract = {
+          profile_data: {
+            operating: profile.operating,
+            aptitude: profile.aptitude,
+            passion: profile.passion,
+            community: profile.community,
+            demographics: profile.demographics,
+            intended_major: profile.operating?.careerInterest || profile.intended_major,
+          },
+          scores: existingResults.ivy_ready_score?.category_scores || {},
+          archetype: {
+            id: existingResults.archetype_detected,
+            label: existingResults.archetype_label,
+            rationale: '',
+          },
+        };
+
+        const response = await fetch('/api/agents/narrative/synthesize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            profile_id: profile.identity?.student_id || profile.session_id || 'local',
+            assessment_contract: assessmentContract,
+          }),
+        });
+
+        const data = await response.json();
+        console.log('Frame6ProfileReveal: Narrative synthesis response:', {
+          success: data.success,
+          hasBrandStatement: !!data.brand_statement,
+        });
+
+        if (response.ok && data.success && data.brand_statement) {
+          setNarrative({
+            brand_statement: data.brand_statement,
+            narrative_dna: data.narrative_dna,
+            first_principle: data.first_principle,
+            themes: data.themes || [],
+            confidence: data.confidence || 0.7,
+            synthesis_inputs: data.synthesis_inputs,
+          });
+        }
+      } catch (error) {
+        console.warn('Frame6ProfileReveal: Narrative synthesis error (non-blocking):', error);
+        // Non-blocking - continue even if synthesis fails
+      } finally {
+        setIsSynthesizingNarrative(false);
+      }
+    };
+
+    runNarrativeSynthesis();
+  }, [profile, existingResults, existingNarrative, isSynthesizingNarrative, setNarrative]);
 
   // Calculate category scores - USE API RESULTS when available, fallback to local
   const categoryScores = useMemo(
@@ -444,40 +511,64 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
     return result.length > 0 ? result : ['Starting fresh - building from a clean slate!'];
   }, [profile]);
 
-  // Extract gaps - based on ACTUAL data
+  // Extract gaps - based on SCORES not raw thresholds
+  // Gap = any pillar below 70% is a priority gap
   const gaps = useMemo(() => {
-    const result: string[] = [];
+    const result: Array<{ text: string; score: number; priority: 'P0' | 'P1' | 'P2' }> = [];
 
-    // Check for MISSING academics
-    const hasAnyAcademics =
-      (profile.aptitude?.gpa_weighted != null && profile.aptitude.gpa_weighted > 0) ||
-      (profile.aptitude?.sat_total != null && profile.aptitude.sat_total > 0);
-    if (!hasAnyAcademics) {
-      result.push('Track academic data (GPA, test scores)');
+    // Get scores for each pillar
+    const aptitudeScore = categoryScores.find((c) => c.name === 'Aptitude')?.score || 0;
+    const passionScore = categoryScores.find((c) => c.name === 'Passion')?.score || 0;
+    const serviceScore = categoryScores.find((c) => c.name === 'Service')?.score || 0;
+    const identityScore = categoryScores.find((c) => c.name === 'Identity')?.score || 0;
+
+    // Priority thresholds: P0 = < 40%, P1 = 40-60%, P2 = 60-75%
+    const getPriority = (score: number): 'P0' | 'P1' | 'P2' => {
+      if (score < 40) return 'P0';
+      if (score < 60) return 'P1';
+      return 'P2';
+    };
+
+    // Check each pillar against threshold
+    if (aptitudeScore < 75) {
+      const gapText = aptitudeScore < 50
+        ? 'Strengthen academic foundation (GPA, test scores)'
+        : 'Add course rigor or improve test scores';
+      result.push({ text: gapText, score: aptitudeScore, priority: getPriority(aptitudeScore) });
     }
 
-    const ecYears = profile.passion?.ec_commitment_years;
-    if (ecYears == null || ecYears < 2) {
-      result.push('Need more sustained activity involvement');
+    if (passionScore < 75) {
+      const gapText = passionScore < 50
+        ? 'Build sustained extracurricular involvement'
+        : 'Deepen leadership roles and activity impact';
+      result.push({ text: gapText, score: passionScore, priority: getPriority(passionScore) });
     }
 
-    const leadershipGap = profile.passion?.leadership_level;
-    if (!leadershipGap || leadershipGap === 'PARTICIPANT') {
-      result.push('Need leadership roles');
+    if (serviceScore < 75) {
+      const gapText = serviceScore < 50
+        ? 'Increase community service hours significantly'
+        : 'Add leadership to service activities';
+      result.push({ text: gapText, score: serviceScore, priority: getPriority(serviceScore) });
     }
 
-    const apCount = profile.aptitude?.ap_count;
-    if (apCount == null || apCount < 3) {
-      result.push('Consider adding course rigor (APs/honors)');
+    if (identityScore < 75) {
+      const gapText = identityScore < 50
+        ? 'Develop clearer personal narrative and direction'
+        : 'Articulate unique identity and story';
+      result.push({ text: gapText, score: identityScore, priority: getPriority(identityScore) });
     }
 
-    const serviceHours = profile.community?.service_hours;
-    if (serviceHours == null || serviceHours < 50) {
-      result.push('Increase community service hours');
-    }
+    // Sort by priority (P0 first) then by score (lowest first)
+    result.sort((a, b) => {
+      const priorityOrder = { P0: 0, P1: 1, P2: 2 };
+      if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      }
+      return a.score - b.score;
+    });
 
     return result.slice(0, 4);
-  }, [profile]);
+  }, [categoryScores]);
 
   // Quick wins
   const quickWins = useMemo(() => {
@@ -624,6 +715,86 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
           Archetype: <strong style={{ color: BRAND_COLORS.textPrimary }}>{archetype}</strong>
         </p>
       </motion.div>
+
+      {/* Brand Statement - Narrative Synthesis Result */}
+      {(brandStatement || isSynthesizingNarrative) && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          style={{
+            background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+            border: '2px solid #f59e0b',
+            borderRadius: 16,
+            padding: 24,
+            marginBottom: 24,
+            textAlign: 'center',
+          }}
+        >
+          <h3
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: '#92400e',
+              marginBottom: 8,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Your Brand Statement
+          </h3>
+          {isSynthesizingNarrative ? (
+            <p
+              style={{
+                fontSize: 18,
+                fontStyle: 'italic',
+                color: '#92400e',
+              }}
+            >
+              Synthesizing your unique narrative...
+            </p>
+          ) : (
+            <p
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: '#78350f',
+                lineHeight: 1.4,
+                margin: 0,
+              }}
+            >
+              "{brandStatement}"
+            </p>
+          )}
+          {existingNarrative?.themes && existingNarrative.themes.length > 0 && (
+            <div
+              style={{
+                marginTop: 16,
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              {existingNarrative.themes.slice(0, 4).map((theme, i) => (
+                <span
+                  key={i}
+                  style={{
+                    backgroundColor: 'rgba(120, 53, 15, 0.1)',
+                    color: '#78350f',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    padding: '4px 12px',
+                    borderRadius: 12,
+                  }}
+                >
+                  {theme}
+                </span>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {/* Score Cards Row - Rings (left) + Pillars (right) - Responsive */}
       <div
@@ -796,22 +967,41 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
             Priority Gaps
           </h3>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {gaps.map((gap, i) => (
-              <li
-                key={i}
-                style={{
-                  color: '#9a3412',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 8,
-                  marginBottom: 8,
-                  fontSize: 14,
-                }}
-              >
-                <ChevronRight size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-                {gap}
+            {gaps.length === 0 ? (
+              <li style={{ color: '#166534', fontSize: 14 }}>
+                Great job! No critical gaps identified.
               </li>
-            ))}
+            ) : (
+              gaps.map((gap, i) => (
+                <li
+                  key={i}
+                  style={{
+                    color: '#9a3412',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                    marginBottom: 10,
+                    fontSize: 14,
+                  }}
+                >
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      backgroundColor: gap.priority === 'P0' ? '#dc2626' : gap.priority === 'P1' ? '#f97316' : '#fbbf24',
+                      color: 'white',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      marginTop: 1,
+                    }}
+                  >
+                    {gap.priority}
+                  </span>
+                  <span>{gap.text}</span>
+                </li>
+              ))
+            )}
           </ul>
         </motion.div>
       </div>

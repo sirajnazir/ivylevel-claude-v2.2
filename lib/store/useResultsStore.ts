@@ -17,6 +17,21 @@ import type {
   ArchetypeID,
 } from '../types/student';
 
+// Narrative Synthesis result type
+interface NarrativeSynthesis {
+  brand_statement: string;
+  narrative_dna: string;
+  first_principle: string;
+  themes: string[];
+  confidence: number;
+  synthesis_inputs?: {
+    identity: Record<string, unknown>;
+    aptitude: Record<string, unknown>;
+    passion: Record<string, unknown>;
+    service: Record<string, unknown>;
+  };
+}
+
 interface ResultsStoreState {
   // Scoring results
   results: AssessmentResults | null;
@@ -27,6 +42,14 @@ interface ResultsStoreState {
   archetype: ArchetypeID | null;
   archetype_label: string;
   narrative_tagline: string;
+
+  // Narrative Synthesis (Jenny's Formula)
+  narrative: NarrativeSynthesis | null;
+  brand_statement: string;
+  narrative_dna: string;
+  first_principle: string;
+  narrative_themes: string[];
+  narrative_confidence: number;
 
   // Boosters
   booster_recommendations: BoosterRecommendations | null;
@@ -40,10 +63,12 @@ interface ResultsStoreState {
 
   // Meta
   scored_at: string | null;
+  narrative_synthesized_at: string | null;
   is_stale: boolean;
 
   // Actions
   setResults: (results: AssessmentResults) => void;
+  setNarrative: (narrative: NarrativeSynthesis) => void;
   setBoosters: (boosters: BoosterRecommendations) => void;
   setTwinFleet: (fleet: TwinFleet) => void;
   markStale: () => void;
@@ -64,6 +89,14 @@ export const useResultsStore = create<ResultsStoreState>()(
         archetype: null,
         archetype_label: '',
         narrative_tagline: '',
+        // Narrative Synthesis (Jenny's Formula)
+        narrative: null,
+        brand_statement: '',
+        narrative_dna: '',
+        first_principle: '',
+        narrative_themes: [],
+        narrative_confidence: 0,
+        // Other
         booster_recommendations: null,
         top_3_boosters: [],
         all_boosters: [],
@@ -71,6 +104,7 @@ export const useResultsStore = create<ResultsStoreState>()(
         base_twin: null,
         school_twins: [],
         scored_at: null,
+        narrative_synthesized_at: null,
         is_stale: false,
 
         setResults: (results) =>
@@ -85,6 +119,17 @@ export const useResultsStore = create<ResultsStoreState>()(
             state.narrative_tagline = results.narrative_tagline;
             state.scored_at = new Date().toISOString();
             state.is_stale = false;
+          }),
+
+        setNarrative: (narrative) =>
+          set((state) => {
+            state.narrative = narrative;
+            state.brand_statement = narrative.brand_statement;
+            state.narrative_dna = narrative.narrative_dna;
+            state.first_principle = narrative.first_principle;
+            state.narrative_themes = narrative.themes;
+            state.narrative_confidence = narrative.confidence;
+            state.narrative_synthesized_at = new Date().toISOString();
           }),
 
         setBoosters: (boosters) =>
@@ -116,6 +161,15 @@ export const useResultsStore = create<ResultsStoreState>()(
             state.archetype = null;
             state.archetype_label = '';
             state.narrative_tagline = '';
+            // Clear narrative
+            state.narrative = null;
+            state.brand_statement = '';
+            state.narrative_dna = '';
+            state.first_principle = '';
+            state.narrative_themes = [];
+            state.narrative_confidence = 0;
+            state.narrative_synthesized_at = null;
+            // Clear others
             state.booster_recommendations = null;
             state.top_3_boosters = [];
             state.all_boosters = [];
@@ -143,9 +197,11 @@ export const useResultsStore = create<ResultsStoreState>()(
         name: 'ivyquest-results',
         partialize: (state) => ({
           results: state.results,
+          narrative: state.narrative,
           booster_recommendations: state.booster_recommendations,
           twin_fleet: state.twin_fleet,
           scored_at: state.scored_at,
+          narrative_synthesized_at: state.narrative_synthesized_at,
         }),
       }
     ),

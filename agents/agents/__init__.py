@@ -12,11 +12,12 @@ Agents:
 """
 
 from .base import BaseAgent
-from .execution import ExecutionAgent
-from .assessment import AssessmentAgent
-from .gameplan import GamePlanAgent
-from .awards import AwardsAgent
-from .opportunity import OpportunityAgent
+from .execution import ExecutionAgent, execution_agent
+from .assessment import AssessmentAgent, assessment_agent
+from .gameplan import GamePlanAgent, gameplan_agent
+from .awards import AwardsAgent, awards_agent
+from .opportunity import OpportunityAgent, opportunity_agent
+from .narrative_synthesis import NarrativeSynthesisAgent, narrative_synthesis_agent
 
 __all__ = [
     "BaseAgent",
@@ -25,4 +26,12 @@ __all__ = [
     "GamePlanAgent",
     "AwardsAgent",
     "OpportunityAgent",
+    "NarrativeSynthesisAgent",
+    # Singleton instances
+    "execution_agent",
+    "assessment_agent",
+    "gameplan_agent",
+    "awards_agent",
+    "opportunity_agent",
+    "narrative_synthesis_agent",
 ]

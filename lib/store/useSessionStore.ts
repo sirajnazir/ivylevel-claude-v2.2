@@ -63,6 +63,9 @@ interface SessionStoreState {
   // v10.0 User type for DualView
   userType: UserType;
 
+  // v2.0 Profile persistence for agent API calls
+  profile_id: string | null;
+
   // v10.0 Agent data cache
   agentDataCache: AgentDataCache;
   agentDataLoading: boolean;
@@ -93,6 +96,10 @@ interface SessionStoreState {
   setAgentDataLoading: (loading: boolean) => void;
   setAgentDataError: (error: string | null) => void;
   setAssessmentComplete: (complete: boolean) => void; // Alias for v10 components
+
+  // v2.0 Actions
+  setProfileId: (id: string) => void;
+  clearProfileId: () => void;
 }
 
 const createEmptyFrameProgress = (frame_id: FrameId): FrameProgress => ({
@@ -142,6 +149,9 @@ export const useSessionStore = create<SessionStoreState>()(
         agentDataCache: {},
         agentDataLoading: false,
         agentDataError: null,
+
+        // v2.0 defaults
+        profile_id: null,
 
         setUserId: (userId) =>
           set((state) => {
@@ -300,6 +310,17 @@ export const useSessionStore = create<SessionStoreState>()(
               state.completed_at = new Date().toISOString();
             }
           }),
+
+        // v2.0 Profile ID management
+        setProfileId: (id) =>
+          set((state) => {
+            state.profile_id = id;
+          }),
+
+        clearProfileId: () =>
+          set((state) => {
+            state.profile_id = null;
+          }),
       })),
       {
         name: 'ivyquest-session-v10',
@@ -315,6 +336,8 @@ export const useSessionStore = create<SessionStoreState>()(
           // v10.0 fields
           userType: state.userType,
           agentDataCache: state.agentDataCache,
+          // v2.0 fields
+          profile_id: state.profile_id,
         }),
       }
     ),
@@ -339,3 +362,6 @@ export const useNarrativeData = () => useSessionStore((s) => ({
   themes: s.agentDataCache.narrativeThemes,
   archetype: s.agentDataCache.archetype,
 }));
+
+// v2.0 Selector hooks
+export const useProfileId = () => useSessionStore((s) => s.profile_id);

@@ -317,3 +317,315 @@ export function detectArchetype(
 export function getArchetypeById(id: ArchetypeID): ArchetypeDefinition | undefined {
   return ARCHETYPES.find(a => a.id === id);
 }
+
+// =============================================================================
+// JENNY INTELLIGENCE: NARRATIVE FORMULA
+// =============================================================================
+
+/**
+ * Jenny Intelligence: Narrative Formula
+ * Each archetype has a proven essay structure that resonates
+ */
+export interface NarrativeFormula {
+  archetype: ArchetypeID;
+  essayStructure: {
+    hook: string;
+    development: string;
+    turn: string;
+    resolution: string;
+  };
+  keyThemes: string[];
+  avoidThemes: string[];
+  exemplarOpeners: string[];
+  powerWords: string[];
+  narrativeArc: 'hero_journey' | 'transformation' | 'discovery' | 'impact' | 'connection';
+}
+
+/**
+ * Narrative formulas by archetype
+ * Based on successful essay patterns from Jenny's coaching data
+ */
+const NARRATIVE_FORMULAS: Record<ArchetypeID, NarrativeFormula> = {
+  SCHOLAR: {
+    archetype: 'SCHOLAR',
+    essayStructure: {
+      hook: 'Start with a moment of intellectual fascination—when you first fell down the rabbit hole',
+      development: 'Show the progression of your curiosity: from question to investigation to deeper questions',
+      turn: 'Reveal the limitation you discovered, or the unexpected connection you made',
+      resolution: 'Connect your intellectual journey to who you want to become at [university]',
+    },
+    keyThemes: ['intellectual curiosity', 'depth over breadth', 'questions over answers', 'knowledge as joy'],
+    avoidThemes: ['listing achievements', 'genius narrative', 'proving intelligence'],
+    exemplarOpeners: [
+      'The footnote changed everything.',
+      'I\'ve read the same paper 47 times, and I still find something new.',
+      'The question kept me up at night for three weeks.',
+    ],
+    powerWords: ['discovered', 'questioned', 'uncovered', 'fascinated', 'puzzled'],
+    narrativeArc: 'discovery',
+  },
+  RESEARCHER: {
+    archetype: 'RESEARCHER',
+    essayStructure: {
+      hook: 'Begin with the problem that hooked you—make the reader feel its urgency',
+      development: 'Walk through your methodology: the failures, the pivots, the breakthroughs',
+      turn: 'Show what you learned beyond the data—about yourself, about science, about persistence',
+      resolution: 'Connect to the bigger questions you want to pursue',
+    },
+    keyThemes: ['methodical curiosity', 'failure as data', 'persistence', 'contribution to field'],
+    avoidThemes: ['just describing research', 'technical jargon', 'name-dropping mentors'],
+    exemplarOpeners: [
+      'The experiment failed. Again. But this time, I noticed something different.',
+      '347 hours in the lab, and the answer was in the 348th.',
+      'My hypothesis was wrong. That\'s when the real research began.',
+    ],
+    powerWords: ['hypothesized', 'tested', 'discovered', 'persisted', 'contributed'],
+    narrativeArc: 'hero_journey',
+  },
+  LEADER: {
+    archetype: 'LEADER',
+    essayStructure: {
+      hook: 'Start with a moment of difficult leadership—when you had to make a hard choice',
+      development: 'Show how you navigated the challenge while bringing others along',
+      turn: 'Reveal what you learned about leadership that you didn\'t expect',
+      resolution: 'Connect to the kind of leader you\'re becoming',
+    },
+    keyThemes: ['servant leadership', 'building others up', 'difficult decisions', 'growth through responsibility'],
+    avoidThemes: ['listing positions held', 'being the hero', 'others as backdrop'],
+    exemplarOpeners: [
+      'I didn\'t want to fire my friend. But I had to.',
+      'The team was falling apart, and everyone was looking at me.',
+      'Leading isn\'t about the title. I learned that the hard way.',
+    ],
+    powerWords: ['unified', 'empowered', 'navigated', 'transformed', 'built'],
+    narrativeArc: 'transformation',
+  },
+  ENTREPRENEUR: {
+    archetype: 'ENTREPRENEUR',
+    essayStructure: {
+      hook: 'Start with the problem you couldn\'t ignore—the gap you saw that others missed',
+      development: 'Show the journey from idea to reality: the risks, the pivots, the growth',
+      turn: 'Reveal what you learned about creating value and yourself',
+      resolution: 'Connect to the problems you want to solve next',
+    },
+    keyThemes: ['problem-solving', 'creating value', 'learning from failure', 'bias toward action'],
+    avoidThemes: ['startup jargon', 'revenue bragging', 'disruption rhetoric'],
+    exemplarOpeners: [
+      'I saw the problem every day. One day, I stopped complaining and started building.',
+      'My first customer was my mom. My second customer changed everything.',
+      'The startup failed. The lesson didn\'t.',
+    ],
+    powerWords: ['built', 'launched', 'solved', 'created', 'scaled'],
+    narrativeArc: 'hero_journey',
+  },
+  CHANGEMAKER: {
+    archetype: 'CHANGEMAKER',
+    essayStructure: {
+      hook: 'Start with the moment you couldn\'t look away—when someone\'s story became your cause',
+      development: 'Show how you moved from awareness to action to impact',
+      turn: 'Reveal how the work changed you as much as you changed the situation',
+      resolution: 'Connect to the systemic change you want to drive',
+    },
+    keyThemes: ['empathy to action', 'sustainable impact', 'learning from communities', 'systemic thinking'],
+    avoidThemes: ['savior complex', 'tragedy porn', 'counting hours'],
+    exemplarOpeners: [
+      'She asked me why I was really there. I didn\'t have a good answer.',
+      'The community taught me more than I ever gave them.',
+      'I went to help. I left transformed.',
+    ],
+    powerWords: ['served', 'learned', 'partnered', 'sustained', 'amplified'],
+    narrativeArc: 'transformation',
+  },
+  ADVOCATE: {
+    archetype: 'ADVOCATE',
+    essayStructure: {
+      hook: 'Start with the injustice that sparked your fire—make it personal',
+      development: 'Show how you found your voice and learned to use it effectively',
+      turn: 'Reveal the complexity you discovered—advocacy isn\'t simple',
+      resolution: 'Connect to the change you\'re committed to pursuing',
+    },
+    keyThemes: ['voice for others', 'learning complexity', 'coalition building', 'persistence'],
+    avoidThemes: ['political preaching', 'us vs them', 'simplistic solutions'],
+    exemplarOpeners: [
+      'I used to think I knew what was right. Then I listened.',
+      'The system failed my neighbor. I decided to understand why.',
+      'Advocacy, I learned, is 90% listening and 10% speaking.',
+    ],
+    powerWords: ['advocated', 'amplified', 'organized', 'challenged', 'united'],
+    narrativeArc: 'discovery',
+  },
+  CREATOR: {
+    archetype: 'CREATOR',
+    essayStructure: {
+      hook: 'Start with something you made—the artifact that reveals who you are',
+      development: 'Show the creative process: the iterations, the dead ends, the breakthroughs',
+      turn: 'Reveal what creating taught you about yourself',
+      resolution: 'Connect to what you want to create next and why it matters',
+    },
+    keyThemes: ['making things', 'iteration and craft', 'process over product', 'creative problem-solving'],
+    avoidThemes: ['describing the thing', 'technical how-to', 'awards won'],
+    exemplarOpeners: [
+      'Version 23 was terrible. Version 24 changed everything.',
+      'I didn\'t know what I was making until it was finished.',
+      'The code didn\'t work. So I stayed up all night until it did.',
+    ],
+    powerWords: ['created', 'iterated', 'designed', 'crafted', 'built'],
+    narrativeArc: 'hero_journey',
+  },
+  PERFORMER: {
+    archetype: 'PERFORMER',
+    essayStructure: {
+      hook: 'Start with a moment on stage—when performance revealed something true',
+      development: 'Show the discipline behind the performance: the practice, the sacrifice, the growth',
+      turn: 'Reveal what performing taught you beyond the performance itself',
+      resolution: 'Connect to how you\'ll bring this energy to [university]',
+    },
+    keyThemes: ['discipline and craft', 'vulnerability', 'connection through performance', 'growth through pressure'],
+    avoidThemes: ['trophy listing', 'natural talent narrative', 'performance description'],
+    exemplarOpeners: [
+      'I forgot my lines. In front of 500 people. Best thing that ever happened.',
+      'Practice isn\'t about perfection. I learned that the hard way.',
+      'The standing ovation meant nothing. One person\'s tears meant everything.',
+    ],
+    powerWords: ['performed', 'practiced', 'connected', 'expressed', 'evolved'],
+    narrativeArc: 'transformation',
+  },
+  POLYMATH: {
+    archetype: 'POLYMATH',
+    essayStructure: {
+      hook: 'Start with an unexpected connection—when two different interests illuminated each other',
+      development: 'Show how your diverse interests create unique perspective',
+      turn: 'Reveal the synthesis that emerges from your breadth',
+      resolution: 'Connect to how you\'ll bring this integrative thinking to [university]',
+    },
+    keyThemes: ['synthesis', 'unexpected connections', 'breadth as strength', 'integrative thinking'],
+    avoidThemes: ['listing interests', 'jack of all trades', 'scattered focus'],
+    exemplarOpeners: [
+      'My physics class and my poetry seminar were talking about the same thing.',
+      'Everyone told me to pick one thing. I found something better.',
+      'The connection was there all along. I just had to learn to see it.',
+    ],
+    powerWords: ['connected', 'synthesized', 'integrated', 'bridged', 'unified'],
+    narrativeArc: 'discovery',
+  },
+  EMERGING: {
+    archetype: 'EMERGING',
+    essayStructure: {
+      hook: 'Start with a moment of awakening—when you started becoming who you\'re meant to be',
+      development: 'Show the journey of discovery: what you\'re exploring and why',
+      turn: 'Reveal what you\'ve learned about yourself through exploration',
+      resolution: 'Connect to the potential you\'re excited to develop at [university]',
+    },
+    keyThemes: ['potential', 'growth mindset', 'curiosity', 'authentic exploration'],
+    avoidThemes: ['apologizing for inexperience', 'false certainty', 'resume padding'],
+    exemplarOpeners: [
+      'I don\'t know exactly who I\'ll become. And that excites me.',
+      'The question changed from "what am I good at?" to "what do I care about?"',
+      'I\'m still figuring it out. Here\'s what I\'ve learned so far.',
+    ],
+    powerWords: ['exploring', 'discovering', 'growing', 'becoming', 'learning'],
+    narrativeArc: 'discovery',
+  },
+  EXPLORER: {
+    archetype: 'EXPLORER',
+    essayStructure: {
+      hook: 'Start with a moment of genuine curiosity—when you followed a thread',
+      development: 'Show the exploration process: what you tried, what surprised you',
+      turn: 'Reveal what exploration itself has taught you',
+      resolution: 'Connect to how you\'ll continue exploring at [university]',
+    },
+    keyThemes: ['curiosity', 'openness', 'learning from experience', 'authentic seeking'],
+    avoidThemes: ['pretending to have answers', 'indecision as weakness', 'scattered narrative'],
+    exemplarOpeners: [
+      'I didn\'t know what I was looking for until I found it.',
+      'Every answer led to ten more questions. I loved it.',
+      'The best discoveries happened when I stopped planning.',
+    ],
+    powerWords: ['explored', 'discovered', 'wondered', 'ventured', 'sought'],
+    narrativeArc: 'discovery',
+  },
+};
+
+/**
+ * Get narrative formula for an archetype
+ */
+export function getNarrativeFormula(archetypeId: ArchetypeID): NarrativeFormula | undefined {
+  return NARRATIVE_FORMULAS[archetypeId];
+}
+
+/**
+ * Generate narrative guidance based on detected archetype
+ */
+export function generateNarrativeGuidance(
+  profile: StudentProfile,
+  categoryScores: IvyReadyScore['category_scores']
+): {
+  archetype: ArchetypeResult;
+  primaryFormula: NarrativeFormula;
+  alternateFormulas: NarrativeFormula[];
+  personalizedTips: string[];
+} {
+  const archetype = detectArchetype(profile, categoryScores);
+  const primaryFormula = NARRATIVE_FORMULAS[archetype.id];
+
+  // Get alternate formulas from alternate archetypes
+  const alternateFormulas = archetype.alternates
+    .map(alt => NARRATIVE_FORMULAS[alt.id])
+    .filter((f): f is NarrativeFormula => f !== undefined);
+
+  // Generate personalized tips based on profile
+  const personalizedTips = generatePersonalizedTips(profile, archetype, primaryFormula);
+
+  return {
+    archetype,
+    primaryFormula,
+    alternateFormulas,
+    personalizedTips,
+  };
+}
+
+function generatePersonalizedTips(
+  profile: StudentProfile,
+  archetype: ArchetypeResult,
+  formula: NarrativeFormula
+): string[] {
+  const tips: string[] = [];
+  const profileData = profile as Record<string, unknown>;
+
+  // Tip based on archetype confidence
+  if (archetype.confidence >= 80) {
+    tips.push(`Your ${archetype.label} identity is clear. Lean into this narrative confidently.`);
+  } else if (archetype.confidence >= 60) {
+    tips.push(`You show strong ${archetype.label} tendencies. Consider how your alternate archetypes (${archetype.alternates.map(a => a.label).join(', ')}) might add depth.`);
+  } else {
+    tips.push(`You're a blend of archetypes. This is a strength—use it to show complexity.`);
+  }
+
+  // Tip based on formula's narrative arc
+  switch (formula.narrativeArc) {
+    case 'hero_journey':
+      tips.push('Your essay should follow a challenge → struggle → triumph → wisdom arc.');
+      break;
+    case 'transformation':
+      tips.push('Focus on showing clear before/after change. Make the transformation visible.');
+      break;
+    case 'discovery':
+      tips.push('Center your essay on moments of realization. The "aha" moments are your gold.');
+      break;
+    case 'impact':
+      tips.push('Show the ripple effects of your work. Use specific numbers and stories.');
+      break;
+    case 'connection':
+      tips.push('Emphasize relationships and how others have shaped (and been shaped by) you.');
+      break;
+  }
+
+  // Add a theme-based tip
+  const randomTheme = formula.keyThemes[Math.floor(Math.random() * formula.keyThemes.length)];
+  tips.push(`Key theme to weave throughout: "${randomTheme}"`);
+
+  // Add a power word tip
+  tips.push(`Power words for your archetype: ${formula.powerWords.slice(0, 3).join(', ')}`);
+
+  return tips;
+}

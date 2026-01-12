@@ -66,6 +66,8 @@ export class InsightEngine {
     insights.push(...this.generatePassionInsights(profile, isEarly, isSenior));
     insights.push(...this.generatePsychometricInsights(profile));
     insights.push(...this.generateInstitutionalInsights(profile, isEarly));
+    // Jenny Intelligence: Identity Insights
+    insights.push(...this.generateIdentityInsights(profile));
 
     // Deduplicate and prioritize
     const uniqueInsights = this.deduplicateInsights(insights);
@@ -671,6 +673,219 @@ export class InsightEngine {
     }
 
     return insights;
+  }
+
+  // ==========================================================================
+  // JENNY INTELLIGENCE: IDENTITY INSIGHTS
+  // ==========================================================================
+
+  /**
+   * Jenny Intelligence: Identity Insights
+   * Surface deep identity-level patterns that reveal the student's core narrative
+   */
+  private static generateIdentityInsights(profile: StudentProfile): Insight[] {
+    const insights: Insight[] = [];
+
+    // Identity Pattern 1: The "Hidden Why"
+    // What truly drives this student beyond surface-level activities?
+    const hiddenWhy = this.detectHiddenWhy(profile);
+    if (hiddenWhy) {
+      insights.push({
+        id: `identity-hidden-why-${Date.now()}`,
+        category: 'PSYCHOMETRIC',
+        title: 'Your Hidden "Why"',
+        message: hiddenWhy.message,
+        severity: 'positive',
+        priority: 8,
+        dataSource: 'Jenny Intelligence: Identity Pattern Analysis',
+        data: hiddenWhy.data,
+      });
+    }
+
+    // Identity Pattern 2: The "Contradiction Opportunity"
+    // Apparent contradictions in profile that can become unique strengths
+    const contradiction = this.detectContradiction(profile);
+    if (contradiction) {
+      insights.push({
+        id: `identity-contradiction-${Date.now()}`,
+        category: 'CONTEXT',
+        title: 'Your Unique Contradiction',
+        message: contradiction.message,
+        severity: 'positive',
+        priority: 7,
+        dataSource: 'Jenny Intelligence: Narrative Pattern Analysis',
+        data: contradiction.data,
+      });
+    }
+
+    // Identity Pattern 3: The "Growth Arc"
+    // Evidence of transformation over time
+    const growthArc = this.detectGrowthArc(profile);
+    if (growthArc) {
+      insights.push({
+        id: `identity-growth-arc-${Date.now()}`,
+        category: 'TEMPORAL',
+        title: 'Your Growth Story',
+        message: growthArc.message,
+        severity: growthArc.strength === 'strong' ? 'positive' : 'neutral',
+        priority: growthArc.strength === 'strong' ? 8 : 6,
+        dataSource: 'Jenny Intelligence: Transformation Analysis',
+        data: growthArc.data,
+      });
+    }
+
+    // Identity Pattern 4: The "Bridge Builder"
+    // Connections between seemingly unrelated activities
+    const bridges = this.detectBridges(profile);
+    if (bridges.length > 0) {
+      insights.push({
+        id: `identity-bridges-${Date.now()}`,
+        category: 'PASSION',
+        title: 'Your Connecting Threads',
+        message: `You have ${bridges.length} potential narrative thread(s) connecting your activities: ${bridges.join(', ')}. These bridges are goldmines for essays.`,
+        severity: 'positive',
+        priority: 7,
+        dataSource: 'Jenny Intelligence: Narrative Threading',
+        data: { bridges },
+      });
+    }
+
+    return insights;
+  }
+
+  private static detectHiddenWhy(profile: StudentProfile): { message: string; data: Record<string, unknown> } | null {
+    const activities = profile.activities || [];
+    const major = profile.intended_major;
+    const serviceHours = profile.service_hours || 0;
+    const firstGen = profile.first_gen;
+
+    // Pattern: Service-to-Major connection
+    if (serviceHours > 100 && major) {
+      const serviceConnection = this.findServiceConnection(major);
+      if (serviceConnection) {
+        return {
+          message: `Your ${serviceHours}+ service hours suggest a deeper purpose beyond academics. Your interest in ${major} combined with community engagement reveals you're driven by ${serviceConnection}. This "why" is your essay gold.`,
+          data: { serviceHours, major, connection: serviceConnection },
+        };
+      }
+    }
+
+    // Pattern: First-gen drive
+    if (firstGen) {
+      return {
+        message: `As a first-generation college applicant, you carry the weight and honor of opening doors for your family. This isn't just about you—it's about everyone who came before. Admissions officers know this story is real.`,
+        data: { firstGen: true },
+      };
+    }
+
+    // Pattern: Activity depth over breadth
+    const deepActivities = activities.filter(a => (a.years || 0) >= 3);
+    if (deepActivities.length >= 2) {
+      return {
+        message: `You've invested 3+ years in ${deepActivities.length} activities. This depth signals that you're not chasing credentials—you're pursuing genuine passion. Your "why" is authenticity itself.`,
+        data: { deepActivities: deepActivities.length },
+      };
+    }
+
+    return null;
+  }
+
+  private static findServiceConnection(major: string): string | null {
+    const connections: Record<string, string> = {
+      'Computer Science': 'using technology to solve real human problems',
+      'Medicine': 'healing and helping others at their most vulnerable',
+      'Engineering': 'building solutions that improve lives',
+      'Business': 'creating value that benefits communities',
+      'Education': 'empowering others to reach their potential',
+      'Psychology': 'understanding and supporting human wellbeing',
+      'Political Science': 'advocating for systemic change',
+      'Environmental Science': 'protecting the planet for future generations',
+    };
+    return connections[major] || null;
+  }
+
+  private static detectContradiction(profile: StudentProfile): { message: string; data: Record<string, unknown> } | null {
+    const major = profile.intended_major;
+    const activities = profile.activities || [];
+    const activityTypes = activities.map(a => a.type || '').filter(Boolean);
+
+    // Pattern: STEM + Arts
+    const hasStem = major?.match(/Science|Engineering|Math|CS|Computer/i) || activityTypes.some(t => t.match(/STEM|science|tech/i));
+    const hasArts = activityTypes.some(t => t.match(/art|music|theater|creative|writing/i));
+
+    if (hasStem && hasArts) {
+      return {
+        message: `You bridge the STEM-Arts divide—a rare combination. While others specialize, you synthesize. This "contradiction" is actually your superpower: you can communicate technical concepts creatively, or bring analytical rigor to creative work.`,
+        data: { hasStem: true, hasArts: true },
+      };
+    }
+
+    // Pattern: Competitive + Service
+    const hasCompetitive = activityTypes.some(t => t.match(/competition|olympiad|tournament|debate/i));
+    const hasService = activityTypes.some(t => t.match(/volunteer|service|community|nonprofit/i));
+
+    if (hasCompetitive && hasService) {
+      return {
+        message: `You're both fiercely competitive and deeply service-oriented. This isn't a contradiction—it's a sign that you compete not for ego, but to maximize your ability to give back. Frame this in your essays.`,
+        data: { hasCompetitive: true, hasService: true },
+      };
+    }
+
+    return null;
+  }
+
+  private static detectGrowthArc(profile: StudentProfile): { message: string; strength: 'strong' | 'emerging'; data: Record<string, unknown> } | null {
+    const grit = profile.grit_resilience || 0.5;
+    const activities = profile.activities || [];
+
+    // Look for progression evidence
+    const hasProgression = activities.some(a =>
+      a.description?.match(/grew|improved|transformed|evolved|built|founded|started/i)
+    );
+
+    if (grit > 0.7 && hasProgression) {
+      return {
+        message: `Your profile shows clear evidence of transformation. You don't just participate—you grow, adapt, and level up. This growth arc is exactly what admissions officers look for: someone who will continue evolving at their institution.`,
+        strength: 'strong',
+        data: { grit, hasProgression: true },
+      };
+    }
+
+    if (grit > 0.5) {
+      return {
+        message: `Your profile hints at a growth story waiting to be told. Consider: what challenges have shaped you? What did you try, fail at, then master? Mining these moments will strengthen your narrative.`,
+        strength: 'emerging',
+        data: { grit },
+      };
+    }
+
+    return null;
+  }
+
+  private static detectBridges(profile: StudentProfile): string[] {
+    const bridges: string[] = [];
+    const activities = profile.activities || [];
+    const major = profile.intended_major;
+
+    // Look for thematic connections
+    const themes = {
+      leadership: activities.filter(a => a.role?.match(/president|founder|captain|leader|director/i)),
+      innovation: activities.filter(a => a.description?.match(/created|launched|built|designed|invented/i)),
+      teaching: activities.filter(a => a.description?.match(/taught|mentored|tutored|coached|trained/i)),
+      impact: activities.filter(a => a.description?.match(/helped|served|raised|donated|impacted/i)),
+    };
+
+    if (themes.leadership.length >= 2) bridges.push('Leadership across contexts');
+    if (themes.innovation.length >= 2) bridges.push('Creative problem-solving');
+    if (themes.teaching.length >= 2) bridges.push('Passion for empowering others');
+    if (themes.impact.length >= 2) bridges.push('Measurable community impact');
+
+    // Major-activity bridge
+    if (major && activities.some(a => a.description?.toLowerCase().includes(major.toLowerCase()))) {
+      bridges.push(`${major} connects to extracurriculars`);
+    }
+
+    return bridges;
   }
 
   // ==========================================================================
