@@ -10,6 +10,7 @@ interface CrisisAlchemyModalProps {
   studentProfile?: {
     spike?: string;
     primary_project?: string;
+    profile_id?: string;
   };
 }
 

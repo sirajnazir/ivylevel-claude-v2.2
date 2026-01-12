@@ -118,7 +118,7 @@ function extractFamilyStructure(profile: StudentProfile): string[] {
 function mapRegionToOrigin(region: string | undefined): string | null {
   if (!region) return null;
 
-  const originMap: Record<string, string> = {
+  const originMap: Record<string, string | null> = {
     INTERNATIONAL: 'international',
     BAY_AREA: 'Bay Area',
     NORTHEAST: 'Northeast',
@@ -135,10 +135,10 @@ function mapRegionToOrigin(region: string | undefined): string | null {
 /**
  * Infer socioeconomic status from income band
  */
-function inferSocioeconomic(incomeBand: IncomeBand | undefined): string | null {
+function inferSocioeconomic(incomeBand: IncomeBand | undefined | null): string | null {
   if (!incomeBand) return null;
 
-  const socioMap: Record<string, string> = {
+  const socioMap: Record<string, string | null> = {
     BELOW_75K: 'working class',
     '75K_150K': 'middle class',
     '150K_300K': 'upper middle class',

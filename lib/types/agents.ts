@@ -98,6 +98,16 @@ export interface GamePlanResult {
   requires_handoff: boolean;
 }
 
+export interface FilteredActivitiesData {
+  activities: Activity[];
+  count: number;
+}
+
+export interface IdentitySeedsData {
+  seeds: IdentitySeed[];
+  count: number;
+}
+
 export interface Microstep {
   id: string;
   title: string;
@@ -127,6 +137,19 @@ export interface ExecutionDebtScore {
   status: 'healthy' | 'at_risk' | 'critical';
   threshold: number;
   contributing_factors?: string[];
+}
+
+export interface Blocker {
+  id: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  category?: string;
+  created_at?: string;
+}
+
+export interface BlockersData {
+  blockers: Blocker[];
+  count: number;
 }
 
 export interface AwardMatch {
@@ -231,4 +254,65 @@ export interface AgentHealthResponse {
   status: string;
   version: string;
   agents_enabled: boolean;
+}
+
+// ============================================================
+// v13.3 NOTIFICATION TYPES
+// ============================================================
+
+export type NotificationType =
+  | 'silence_nudge'      // From SilenceDetector workflow
+  | 'deadline_low'       // 30 days out
+  | 'deadline_medium'    // 7 days out
+  | 'deadline_high'      // 3 days out
+  | 'urgent'             // 1 day out
+  | 'opportunity_match'  // From WeeklyScout
+  | 'checkin_reminder'   // From DailyCheckin
+  | 'crisis_pending'     // HITL approval needed
+  | 'award_match'        // New award matched
+  | 'milestone_complete' // Progress milestone
+  | 'agent_insight';     // Agent-generated insight
+
+export interface Notification {
+  id: string;
+  profile_id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  metadata?: Record<string, unknown>;
+  read: boolean;
+  created_at: string;
+  read_at?: string;
+  source_agent?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  action_url?: string;
+}
+
+export interface NotificationCount {
+  unread_count: number;
+  total_count: number;
+}
+
+export interface NotificationListResponse {
+  notifications: Notification[];
+  total: number;
+  unread: number;
+}
+
+// ============================================================
+// v13.3 ENHANCED HEALTH RESPONSE
+// ============================================================
+
+export interface AgentV13HealthResponse {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  version: string;
+  react_enabled: boolean;
+  memory_enabled: boolean;
+  hitl_enabled: boolean;
+  thresholds?: {
+    min_quality: number;
+    min_voice: number;
+    min_golden: number;
+    max_cycles: number;
+  };
 }

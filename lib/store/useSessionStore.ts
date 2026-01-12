@@ -66,6 +66,9 @@ interface SessionStoreState {
   // v2.0 Profile persistence for agent API calls
   profile_id: string | null;
 
+  // v13.3 Profile status tracking
+  profile_status: 'none' | 'creating' | 'ready' | 'error';
+
   // v10.0 Agent data cache
   agentDataCache: AgentDataCache;
   agentDataLoading: boolean;
@@ -100,6 +103,9 @@ interface SessionStoreState {
   // v2.0 Actions
   setProfileId: (id: string) => void;
   clearProfileId: () => void;
+
+  // v13.3 Actions
+  setProfileStatus: (status: 'none' | 'creating' | 'ready' | 'error') => void;
 }
 
 const createEmptyFrameProgress = (frame_id: FrameId): FrameProgress => ({
@@ -152,6 +158,9 @@ export const useSessionStore = create<SessionStoreState>()(
 
         // v2.0 defaults
         profile_id: null,
+
+        // v13.3 defaults
+        profile_status: 'none',
 
         setUserId: (userId) =>
           set((state) => {
@@ -321,6 +330,12 @@ export const useSessionStore = create<SessionStoreState>()(
           set((state) => {
             state.profile_id = null;
           }),
+
+        // v13.3 Profile status management
+        setProfileStatus: (status) =>
+          set((state) => {
+            state.profile_status = status;
+          }),
       })),
       {
         name: 'ivyquest-session-v10',
@@ -338,6 +353,8 @@ export const useSessionStore = create<SessionStoreState>()(
           agentDataCache: state.agentDataCache,
           // v2.0 fields
           profile_id: state.profile_id,
+          // v13.3 fields
+          profile_status: state.profile_status,
         }),
       }
     ),
@@ -365,3 +382,6 @@ export const useNarrativeData = () => useSessionStore((s) => ({
 
 // v2.0 Selector hooks
 export const useProfileId = () => useSessionStore((s) => s.profile_id);
+
+// v13.3 Selector hooks
+export const useProfileStatus = () => useSessionStore((s) => s.profile_status);

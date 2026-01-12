@@ -193,7 +193,7 @@ export function MicroEditPanel({ text, onTextChange, essayType = 'common_app', a
   }, [text, onTextChange, handleAnalyze]);
 
   const handleDismissChange = useCallback((change: MicroEditChange) => {
-    setDismissedChanges((prev) => new Set([...prev, change.original]));
+    setDismissedChanges((prev) => new Set([...Array.from(prev), change.original]));
   }, []);
 
   const handleCopyEdited = useCallback(() => {

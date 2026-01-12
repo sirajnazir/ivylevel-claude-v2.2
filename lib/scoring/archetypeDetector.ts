@@ -344,8 +344,9 @@ export interface NarrativeFormula {
 /**
  * Narrative formulas by archetype
  * Based on successful essay patterns from Jenny's coaching data
+ * Note: Not all archetypes have formulas defined yet - using Partial<Record>
  */
-const NARRATIVE_FORMULAS: Record<ArchetypeID, NarrativeFormula> = {
+const NARRATIVE_FORMULAS: Partial<Record<ArchetypeID, NarrativeFormula>> = {
   SCHOLAR: {
     archetype: 'SCHOLAR',
     essayStructure: {
@@ -561,7 +562,7 @@ export function generateNarrativeGuidance(
   categoryScores: IvyReadyScore['category_scores']
 ): {
   archetype: ArchetypeResult;
-  primaryFormula: NarrativeFormula;
+  primaryFormula: NarrativeFormula | undefined;
   alternateFormulas: NarrativeFormula[];
   personalizedTips: string[];
 } {
@@ -587,10 +588,11 @@ export function generateNarrativeGuidance(
 function generatePersonalizedTips(
   profile: StudentProfile,
   archetype: ArchetypeResult,
-  formula: NarrativeFormula
+  formula: NarrativeFormula | undefined
 ): string[] {
   const tips: string[] = [];
-  const profileData = profile as Record<string, unknown>;
+  if (!formula) return tips; // Return empty tips if no formula defined
+  const profileData = profile as unknown as Record<string, unknown>;
 
   // Tip based on archetype confidence
   if (archetype.confidence >= 80) {

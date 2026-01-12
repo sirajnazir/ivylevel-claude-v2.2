@@ -99,7 +99,7 @@ export function useAwardsPortfolioQuery(profileId: string | undefined, studentPr
       profile_id: profileId,
       student_profile: studentProfile,
     }),
-    enabled: !!profileId && !!studentProfile.spike,
+    enabled: !!profileId && !!studentProfile?.spike,
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 }

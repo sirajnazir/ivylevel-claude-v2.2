@@ -21,7 +21,7 @@ import {
 import { TimeAuditCardV2 } from '@/components/agents/TimeAuditCardV2';
 import { AwardsPortfolioCardV2 } from '@/components/agents/AwardsPortfolioCardV2';
 import { CrisisAlchemyModal } from '@/components/agents/CrisisAlchemyModal';
-import { useV2Health } from '@/lib/hooks/useAgentV2';
+import { useAgentV2Health } from '@/lib/hooks/useAgentV2';
 
 interface MultiAgentTabProps {
   profileId: string | null;
@@ -226,7 +226,7 @@ function OpportunitiesSection({ profileId }: { profileId: string }) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 text-center">
-              <p className="text-2xl font-bold text-teal-600">{data.total_matches || data.matches?.length || 0}</p>
+              <p className="text-2xl font-bold text-teal-600">{data.matches?.length || 0}</p>
               <p className="text-xs text-gray-500">Matches</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 text-center">
@@ -255,7 +255,7 @@ function OpportunitiesSection({ profileId }: { profileId: string }) {
 
 export function MultiAgentTab({ profileId }: MultiAgentTabProps) {
   const health = useAgentHealth();
-  const v2Health = useV2Health();
+  const v2Health = useAgentV2Health();
   const { refetchAll, isLoading } = useDashboardData(profileId);
   const [showCrisisModal, setShowCrisisModal] = useState(false);
 

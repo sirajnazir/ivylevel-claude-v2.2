@@ -759,26 +759,4 @@ export function createMinimalContract(
 // =============================================================================
 // EXPORTS
 // =============================================================================
-
-export type {
-  AssessmentContract,
-  IdentityPillar,
-  AptitudePillar,
-  PassionPillar,
-  ServicePillar,
-  SynthesisOutput,
-  AnalysisOutput,
-  AwardsDelegation,
-  OpportunityDelegation,
-  HiddenCalculations,
-  AgentMetadata,
-  GapItem,
-  Factor,
-  FirstPrinciple,
-  ActivityData,
-  ProjectData,
-  GoldenExample,
-  EvaluationResult,
-  WorkflowState,
-  Notification,
-};
+// Note: All types are already exported inline with their declarations

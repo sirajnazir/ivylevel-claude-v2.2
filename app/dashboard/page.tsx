@@ -246,7 +246,7 @@ function DashboardContent() {
             const profileId = useSessionStore.getState().profile_id || useSessionStore.getState().session_id;
             const narrativeResult = await agentV2Api.synthesizeNarrative({
               profile_id: profileId,
-              assessment_contract: studentProfile as Record<string, unknown>,
+              assessment_contract: studentProfile as unknown as Record<string, unknown>,
             });
             if (narrativeResult.success) {
               setNarrative({

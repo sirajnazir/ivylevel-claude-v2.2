@@ -1,31 +1,24 @@
 /**
- * MultiAgentsTab - Multi-Agent Chat Interface + v13.0 Dashboard
- * v13.0 - Full agent card suite with ReAct + Memory integration
- * v2.0 - TimeAudit, AwardsPortfolio, CrisisAlchemy features
+ * MultiAgentsTab - Multi-Agent Chat Interface + v13.3 Dashboard
+ * v13.3 - 6-agent dashboard with ReAct, Memory, HITL integration
+ * v2.0 - TimeAudit, AwardsPortfolio, CrisisAlchemy features (legacy)
  */
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Send, Bot, User, Loader2, Sparkles,
-  Brain, Target, Award, BookOpen, Lightbulb, Flame, Clock, Activity
+  Send, Loader2, Sparkles,
+  Brain, Target, Award, BookOpen, Lightbulb
 } from 'lucide-react';
 import { COLORS, GRADIENTS } from '@/lib/constants/design';
+import { BRAND_COLORS } from '@/lib/constants/brand';
 import { useMultiAgentChat, type AgentType } from '@/lib/hooks/useAgents';
 
-// v2.0 Components
-import { TimeAuditCardV2 } from '@/components/agents/TimeAuditCardV2';
-import { AwardsPortfolioCardV2 } from '@/components/agents/AwardsPortfolioCardV2';
-import { CrisisAlchemyModal } from '@/components/agents/CrisisAlchemyModal';
-import { useAgentV2Health } from '@/lib/hooks/useAgentV2';
+// v13.3 Components
+import { AgentDashboardV13 } from '@/components/agents/AgentDashboardV13';
+import { NotificationBell } from '@/components/shared/NotificationBell';
 import { useProfileId } from '@/lib/store/useSessionStore';
-
-// v13.0 Components
-import { NarrativeSynthesisCard } from '@/components/agents/NarrativeSynthesisCard';
-import { WeeklyPlanCard } from '@/components/agents/WeeklyPlanCard';
-import { NCWITStrategyCard } from '@/components/agents/NCWITStrategyCard';
-import { OpportunitiesCard } from '@/components/agents/OpportunitiesCard';
 
 interface Agent {
   id: AgentType;
@@ -57,10 +50,8 @@ export function MultiAgentsTab() {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // v2.0 Features
-  const [showCrisisModal, setShowCrisisModal] = useState(false);
+  // v13.3 Features
   const [activeView, setActiveView] = useState<'dashboard' | 'chat'>('dashboard');
-  const v2Health = useAgentV2Health();
   const profileId = useProfileId();
 
   const scrollToBottom = () => {
@@ -96,45 +87,51 @@ export function MultiAgentsTab() {
 
   return (
     <div className="min-h-[calc(100vh-64px)]">
-      {/* v2.0 Header with Backend Status and View Toggle */}
-      <div className="bg-white border-b px-6 py-4" style={{ borderColor: COLORS.borderDefault }}>
-        <div className="flex items-center justify-between max-w-6xl mx-auto">
+      {/* v13.3 Header with View Toggle and Notifications */}
+      <div
+        className="border-b px-6 py-4"
+        style={{ backgroundColor: BRAND_COLORS.bgPrimary, borderColor: BRAND_COLORS.borderLight }}
+      >
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-4">
-            <h2 className="text-xl font-bold" style={{ color: COLORS.textHeading }}>
+            <h2 className="text-xl font-bold" style={{ color: BRAND_COLORS.textHeading }}>
               Multi-Agent Intelligence
             </h2>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg">
-              <div className={`w-2 h-2 rounded-full ${
-                v2Health.data?.status === 'healthy' ? 'bg-green-500' :
-                v2Health.isLoading ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
-              }`} />
-              <span className="text-xs text-gray-600">
-                v2.0: {v2Health.data?.status || (v2Health.isLoading ? 'connecting...' : 'offline')}
-              </span>
-            </div>
+            <span
+              className="text-xs px-2 py-1 rounded-full"
+              style={{ backgroundColor: BRAND_COLORS.primaryBg, color: BRAND_COLORS.primary }}
+            >
+              v13.3
+            </span>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowCrisisModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+            {/* Notifications */}
+            <NotificationBell profileId={profileId} />
+
+            {/* View Toggle */}
+            <div
+              className="flex rounded-lg p-1"
+              style={{ backgroundColor: BRAND_COLORS.bgSecondary }}
             >
-              <Flame size={16} />
-              Crisis Help
-            </button>
-            <div className="flex bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setActiveView('dashboard')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeView === 'dashboard' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600'
-                }`}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: activeView === 'dashboard' ? BRAND_COLORS.bgPrimary : 'transparent',
+                  color: activeView === 'dashboard' ? BRAND_COLORS.textHeading : BRAND_COLORS.textMuted,
+                  boxShadow: activeView === 'dashboard' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                }}
               >
                 Dashboard
               </button>
               <button
                 onClick={() => setActiveView('chat')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeView === 'chat' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600'
-                }`}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: activeView === 'chat' ? BRAND_COLORS.bgPrimary : 'transparent',
+                  color: activeView === 'chat' ? BRAND_COLORS.textHeading : BRAND_COLORS.textMuted,
+                  boxShadow: activeView === 'chat' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                }}
               >
                 Chat
               </button>
@@ -143,39 +140,15 @@ export function MultiAgentsTab() {
         </div>
       </div>
 
-      {/* v13.0 Dashboard View */}
+      {/* v13.3 Dashboard View */}
       {activeView === 'dashboard' && (
-        <div className="p-6 max-w-6xl mx-auto space-y-6">
-          {/* Row 1: Narrative + Awards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <NarrativeSynthesisCard />
-            <AwardsPortfolioCardV2
-              studentProfile={{
-                spike: 'general',
-                identity: [],
-                activities: [],
-                has_working_project: false,
-              }}
-            />
-          </div>
-
-          {/* Row 2: Time Audit + Weekly Plan */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TimeAuditCardV2 />
-            <WeeklyPlanCard />
-          </div>
-
-          {/* Row 3: NCWIT + Opportunities */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <NCWITStrategyCard />
-            <OpportunitiesCard
-              studentProfile={{
-                spike: 'general',
-                primary_project: undefined,
-              }}
-            />
-          </div>
-        </div>
+        <AgentDashboardV13
+          profileId={profileId}
+          onAgentChat={(agentType) => {
+            setActiveAgent(agentType as AgentType);
+            setActiveView('chat');
+          }}
+        />
       )}
 
       {/* Chat View */}
@@ -302,12 +275,6 @@ export function MultiAgentsTab() {
     </div>
       )}
 
-      {/* Crisis Alchemy Modal */}
-      <CrisisAlchemyModal
-        isOpen={showCrisisModal}
-        onClose={() => setShowCrisisModal(false)}
-        studentProfile={{ spike: 'general' }}
-      />
     </div>
   );
 }

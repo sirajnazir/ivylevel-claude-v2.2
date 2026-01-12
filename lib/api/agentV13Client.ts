@@ -261,7 +261,7 @@ class AgentV13Client {
    * Store a new memory.
    */
   async storeMemory(params: MemoryStoreParams): Promise<MemoryStoreResult> {
-    return this.request('POST', '/v13/memory/store', params);
+    return this.request('POST', '/v13/memory/store', params as unknown as Record<string, unknown>);
   }
 
   /**
@@ -321,7 +321,7 @@ class AgentV13Client {
     requestId: string,
     decision: HITLReviewDecision
   ): Promise<HITLRequest> {
-    return this.request('POST', `/v13/hitl/${requestId}/review`, decision);
+    return this.request('POST', `/v13/hitl/${requestId}/review`, decision as unknown as Record<string, unknown>);
   }
 
   /**
@@ -401,8 +401,187 @@ class AgentV13Client {
     memory_enabled: boolean;
     hitl_enabled: boolean;
     react_enabled: boolean;
+    thresholds?: {
+      min_quality: number;
+      min_voice: number;
+      min_golden: number;
+      max_cycles: number;
+    };
   }> {
     return this.request('GET', '/v13/health');
+  }
+
+  // ============================================================
+  // v13.3 NOTIFICATION OPERATIONS
+  // ============================================================
+
+  /**
+   * Get notifications for a profile.
+   */
+  async getNotifications(
+    profileId: string,
+    limit: number = 20,
+    unreadOnly: boolean = false
+  ): Promise<{
+    notifications: Array<{
+      id: string;
+      type: string;
+      title: string;
+      message: string;
+      read: boolean;
+      created_at: string;
+      priority?: string;
+      source_agent?: string;
+    }>;
+    total: number;
+    unread: number;
+  }> {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      unread_only: unreadOnly.toString(),
+    });
+    return this.request('GET', `/v13/notifications/${profileId}?${params}`);
+  }
+
+  /**
+   * Get notification count for a profile.
+   */
+  async getNotificationCount(profileId: string): Promise<{
+    unread_count: number;
+    total_count: number;
+  }> {
+    return this.request('GET', `/v13/notifications/${profileId}/count`);
+  }
+
+  /**
+   * Mark a notification as read.
+   */
+  async markNotificationRead(
+    profileId: string,
+    notificationId: string
+  ): Promise<{ success: boolean }> {
+    return this.request('POST', `/v13/notifications/${profileId}/read`, {
+      notification_id: notificationId,
+    });
+  }
+
+  /**
+   * Mark all notifications as read for a profile.
+   */
+  async markAllNotificationsRead(profileId: string): Promise<{
+    success: boolean;
+    marked_count: number;
+  }> {
+    return this.request('POST', `/v13/notifications/${profileId}/read-all`, {});
+  }
+
+  // ============================================================
+  // v13.3 PROFILE EVOLUTION
+  // ============================================================
+
+  /**
+   * Get profile evolution history (snapshots over time).
+   */
+  async getProfileEvolution(
+    profileId: string,
+    days: number = 90
+  ): Promise<{
+    snapshots: Array<{
+      snapshot_id: string;
+      created_at: string;
+      ivy_score: number;
+      pillar_scores: Record<string, number>;
+      milestone?: string;
+    }>;
+    evolution_summary: {
+      score_trend: 'improving' | 'stable' | 'declining';
+      biggest_improvement: string;
+      focus_area: string;
+    };
+  }> {
+    return this.request('GET', `/v13/profile/${profileId}/evolution?days=${days}`);
+  }
+
+  /**
+   * Get interaction history for a profile.
+   */
+  async getInteractionHistory(
+    profileId: string,
+    limit: number = 20
+  ): Promise<{
+    interactions: Array<{
+      id: string;
+      agent_id: string;
+      interaction_type: string;
+      summary: string;
+      created_at: string;
+    }>;
+  }> {
+    return this.request('GET', `/v13/interactions/${profileId}/recent?limit=${limit}`);
+  }
+
+  /**
+   * Recall interactions by semantic query.
+   */
+  async recallInteractions(
+    profileId: string,
+    query: string,
+    limit: number = 5
+  ): Promise<{
+    interactions: Array<{
+      id: string;
+      agent_id: string;
+      summary: string;
+      relevance: number;
+      created_at: string;
+    }>;
+  }> {
+    const params = new URLSearchParams({
+      query,
+      limit: limit.toString(),
+    });
+    return this.request('GET', `/v13/interactions/${profileId}/recall?${params}`);
+  }
+
+  // ============================================================
+  // v13.3 AGENT HANDOFF
+  // ============================================================
+
+  /**
+   * Get handoff context for agent-to-agent communication.
+   */
+  async getHandoffContext(
+    profileId: string,
+    toAgent: string
+  ): Promise<{
+    context: Record<string, unknown>;
+    from_agent: string;
+    to_agent: string;
+    created_at: string;
+    ttl_remaining: number;
+  }> {
+    return this.request('GET', `/v13/memory/handoff/${profileId}/${toAgent}`);
+  }
+
+  /**
+   * Search knowledge base semantically.
+   */
+  async searchKnowledge(
+    query: string,
+    limit: number = 5
+  ): Promise<{
+    results: Array<{
+      id: string;
+      content: string;
+      relevance: number;
+      source: string;
+    }>;
+  }> {
+    const params = new URLSearchParams({
+      query,
+      limit: limit.toString(),
+    });
+    return this.request('GET', `/v13/knowledge/search?${params}`);
   }
 }
 

@@ -90,7 +90,8 @@ export interface AwardProbability {
 }
 
 export interface AwardsPortfolioInput {
-  profile_id: string;
+  profile_id?: string;
+  student_profile?: Record<string, unknown>;
   awards?: Array<Record<string, unknown>>;
 }
 
@@ -177,8 +178,14 @@ export interface ProgramRecommendResult {
 }
 
 export interface CrisisAlchemyInput {
-  profile_id: string;
+  profile_id?: string;
+  crisis_type?: string;
   crisis_description: string;
+  student_profile?: {
+    spike?: string;
+    primary_project?: string;
+    profile_id?: string;
+  };
   student_data?: {
     spike?: string;
     primary_project?: string;
@@ -314,11 +321,11 @@ class AgentV2Client {
   // ============================================================
 
   async runTimeAudit(input: TimeAuditInput): Promise<TimeAuditResult> {
-    return this.request('POST', '/agents/time-audit', input as Record<string, unknown>);
+    return this.request('POST', '/agents/time-audit', input as unknown as Record<string, unknown>);
   }
 
   async generateWeeklyPlan(input: WeeklyPlanInput): Promise<WeeklyPlanResult> {
-    return this.request('POST', '/agents/weekly-plan', input as Record<string, unknown>);
+    return this.request('POST', '/agents/weekly-plan', input as unknown as Record<string, unknown>);
   }
 
   // ============================================================
@@ -326,7 +333,7 @@ class AgentV2Client {
   // ============================================================
 
   async buildAwardsPortfolio(input: AwardsPortfolioInput): Promise<AwardsPortfolioResult> {
-    return this.request('POST', '/agents/awards/portfolio', input as Record<string, unknown>);
+    return this.request('POST', '/agents/awards/portfolio', input as unknown as Record<string, unknown>);
   }
 
   // ============================================================
@@ -334,7 +341,7 @@ class AgentV2Client {
   // ============================================================
 
   async getNCWITStrategy(input: NCWITStrategyInput): Promise<NCWITStrategyResult> {
-    return this.request('POST', '/agents/ncwit-strategy', input as Record<string, unknown>);
+    return this.request('POST', '/agents/ncwit-strategy', input as unknown as Record<string, unknown>);
   }
 
   // ============================================================
@@ -342,7 +349,7 @@ class AgentV2Client {
   // ============================================================
 
   async recommendOpportunities(input: ProgramRecommendInput): Promise<ProgramRecommendResult> {
-    return this.request('POST', '/agents/opportunities/recommend', input as Record<string, unknown>);
+    return this.request('POST', '/agents/opportunities/recommend', input as unknown as Record<string, unknown>);
   }
 
   // ============================================================
@@ -350,7 +357,7 @@ class AgentV2Client {
   // ============================================================
 
   async handleCrisis(input: CrisisAlchemyInput): Promise<CrisisAlchemyResult> {
-    return this.request('POST', '/agents/crisis-alchemy', input as Record<string, unknown>);
+    return this.request('POST', '/agents/crisis-alchemy', input as unknown as Record<string, unknown>);
   }
 
   // ============================================================
@@ -358,7 +365,7 @@ class AgentV2Client {
   // ============================================================
 
   async validateVoice(input: JennyVoiceInput): Promise<JennyVoiceResult> {
-    return this.request('POST', '/validation/jenny-voice', input as Record<string, unknown>);
+    return this.request('POST', '/validation/jenny-voice', input as unknown as Record<string, unknown>);
   }
 
   // ============================================================
@@ -366,7 +373,7 @@ class AgentV2Client {
   // ============================================================
 
   async synthesizeNarrative(input: NarrativeSynthesisInput): Promise<NarrativeSynthesisResult> {
-    return this.request('POST', '/agents/narrative/synthesize', input as Record<string, unknown>);
+    return this.request('POST', '/agents/narrative/synthesize', input as unknown as Record<string, unknown>);
   }
 }
 

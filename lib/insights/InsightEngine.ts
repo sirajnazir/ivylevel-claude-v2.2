@@ -754,10 +754,16 @@ export class InsightEngine {
   }
 
   private static detectHiddenWhy(profile: StudentProfile): { message: string; data: Record<string, unknown> } | null {
-    const activities = profile.activities || [];
+    // Access properties flexibly (v13.3 type fix)
+    type ActivityWithYears = { years?: number; [key: string]: unknown };
+    const profileAny = profile as unknown as Record<string, unknown>;
+    const activities = ((profileAny.activities as ActivityWithYears[]) ||
+                       ((profileAny.passion as Record<string, unknown>)?.activities as ActivityWithYears[]) || []) as ActivityWithYears[];
     const major = profile.intended_major;
-    const serviceHours = profile.service_hours || 0;
-    const firstGen = profile.first_gen;
+    const serviceHours = (profileAny.service_hours as number) ||
+                         ((profileAny.community as Record<string, unknown>)?.service_hours as number) || 0;
+    const firstGen = (profileAny.first_gen as boolean) ||
+                     (profileAny.demographics as Record<string, unknown>)?.first_gen || false;
 
     // Pattern: Service-to-Major connection
     if (serviceHours > 100 && major) {
@@ -805,8 +811,11 @@ export class InsightEngine {
   }
 
   private static detectContradiction(profile: StudentProfile): { message: string; data: Record<string, unknown> } | null {
+    type ActivityWithType = { type?: string; [key: string]: unknown };
+    const profileAny = profile as unknown as Record<string, unknown>;
     const major = profile.intended_major;
-    const activities = profile.activities || [];
+    const activities = ((profileAny.activities as ActivityWithType[]) ||
+                       ((profileAny.passion as Record<string, unknown>)?.activities as ActivityWithType[]) || []) as ActivityWithType[];
     const activityTypes = activities.map(a => a.type || '').filter(Boolean);
 
     // Pattern: STEM + Arts
@@ -835,8 +844,11 @@ export class InsightEngine {
   }
 
   private static detectGrowthArc(profile: StudentProfile): { message: string; strength: 'strong' | 'emerging'; data: Record<string, unknown> } | null {
-    const grit = profile.grit_resilience || 0.5;
-    const activities = profile.activities || [];
+    type ActivityRecord = { description?: string; [key: string]: unknown };
+    const profileAny = profile as unknown as Record<string, unknown>;
+    const grit = (profileAny.grit_resilience as number) || 0.5;
+    const activities = ((profileAny.activities as ActivityRecord[]) ||
+                       ((profileAny.passion as Record<string, unknown>)?.activities as ActivityRecord[]) || []) as ActivityRecord[];
 
     // Look for progression evidence
     const hasProgression = activities.some(a =>
@@ -863,8 +875,11 @@ export class InsightEngine {
   }
 
   private static detectBridges(profile: StudentProfile): string[] {
+    type ActivityRecord = { role?: string; description?: string; [key: string]: unknown };
+    const profileAny = profile as unknown as Record<string, unknown>;
     const bridges: string[] = [];
-    const activities = profile.activities || [];
+    const activities = ((profileAny.activities as ActivityRecord[]) ||
+                       ((profileAny.passion as Record<string, unknown>)?.activities as ActivityRecord[]) || []) as ActivityRecord[];
     const major = profile.intended_major;
 
     // Look for thematic connections
