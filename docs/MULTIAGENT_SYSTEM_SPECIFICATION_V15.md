@@ -11,15 +11,18 @@
 ## Table of Contents
 
 1. [System Overview](#part-1-system-overview)
-2. [Agent Architecture](#part-2-agent-architecture)
-3. [UI/UX Design](#part-3-uiux-design)
-4. [Data Flow Architecture](#part-4-data-flow-architecture)
-5. [Message Sequence Diagrams](#part-5-message-sequence-diagrams)
-6. [Individual Agent Specifications](#part-6-individual-agent-specifications)
-7. [Inter-Agent Communication](#part-7-inter-agent-communication)
-8. [Frontend Component Specifications](#part-8-frontend-component-specifications)
-9. [API Reference](#part-9-api-reference)
-10. [Testing & Validation](#part-10-testing--validation)
+2. [Complete Tech Stack](#part-2-complete-tech-stack)
+3. [3P Architecture (Three-Tier Persistence)](#part-3-3p-architecture)
+4. [System Layers](#part-4-system-layers)
+5. [Agent Architecture](#part-5-agent-architecture)
+6. [UI/UX Design](#part-6-uiux-design)
+7. [Data Flow Architecture](#part-7-data-flow-architecture)
+8. [Message Sequence Diagrams](#part-8-message-sequence-diagrams)
+9. [Individual Agent Specifications](#part-9-individual-agent-specifications)
+10. [Inter-Agent Communication](#part-10-inter-agent-communication)
+11. [Frontend Component Specifications](#part-11-frontend-component-specifications)
+12. [API Reference](#part-12-api-reference)
+13. [Testing & Validation](#part-13-testing--validation)
 
 ---
 
@@ -102,7 +105,678 @@ IvyQuest v15.0 implements a **6-agent parallel processing architecture** designe
 
 ---
 
-## PART 2: AGENT ARCHITECTURE
+## PART 2: COMPLETE TECH STACK
+
+### 2.1 Technology Stack Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                      IvyQuest v15.0 Technology Stack                              │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │                         PRESENTATION LAYER                                   │ │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │ │
+│  │  │   Next.js    │ │    React     │ │  TailwindCSS │ │ Framer Motion│       │ │
+│  │  │    14.2.14   │ │    18.3.1    │ │    3.4.1     │ │   11.11.9    │       │ │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘       │ │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │ │
+│  │  │  Zustand     │ │ React Query  │ │  Lucide React│ │  Three.js    │       │ │
+│  │  │    4.5.5     │ │    5.59.20   │ │   0.454.0    │ │   0.169.0    │       │ │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘       │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                       │                                           │
+│                                       ▼                                           │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │                          API GATEWAY LAYER                                   │ │
+│  │  ┌──────────────────────────────────────────────────────────────────────┐   │ │
+│  │  │              Next.js API Routes + FastAPI Backend                    │   │ │
+│  │  │                                                                       │   │ │
+│  │  │  /api/agents/*  ───▶  :8001/v13/*  (Agent Service)                   │   │ │
+│  │  │  /api/auth/*    ───▶  Supabase Auth                                   │   │ │
+│  │  │  /api/profiles/*───▶  Supabase REST                                   │   │ │
+│  │  └──────────────────────────────────────────────────────────────────────┘   │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                       │                                           │
+│                                       ▼                                           │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │                        AGENT SERVICE LAYER                                   │ │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │ │
+│  │  │   FastAPI    │ │    Agno      │ │  LangGraph   │ │   AutoGen    │       │ │
+│  │  │   0.115.0    │ │   0.1.0+     │ │    0.2.0+    │ │    0.2.0+    │       │ │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘       │ │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │ │
+│  │  │   Uvicorn    │ │   Pydantic   │ │   Tenacity   │ │  APScheduler │       │ │
+│  │  │   0.32.0+    │ │   2.10.0+    │ │    9.0.0+    │ │    3.10.0+   │       │ │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘       │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                       │                                           │
+│                                       ▼                                           │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │                           LLM PROVIDER LAYER                                 │ │
+│  │  ┌────────────────────────────┐  ┌────────────────────────────┐             │ │
+│  │  │    Google Gemini (Primary) │  │   OpenAI GPT-4 (Fallback)  │             │ │
+│  │  │    gemini-2.0-flash        │  │   gpt-4-turbo / gpt-4o     │             │ │
+│  │  │                            │  │   gpt-4o-mini (fast model) │             │ │
+│  │  └────────────────────────────┘  └────────────────────────────┘             │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                       │                                           │
+│                                       ▼                                           │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │                         PERSISTENCE LAYER (3P)                               │ │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │ │
+│  │  │Working Memory│ │    Redis     │ │   Supabase   │ │   pgvector   │       │ │
+│  │  │  In-Process  │ │  5.0.0+      │ │   2.10.0+    │ │  Semantic    │       │ │
+│  │  │  (Python)    │ │  (TTL: 24h)  │ │  (Postgres)  │ │  Search      │       │ │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘       │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 2.2 Frontend Dependencies (package.json)
+
+| Category | Package | Version | Purpose |
+|----------|---------|---------|---------|
+| **Framework** | next | 14.2.14 | React framework with SSR/SSG |
+| **UI Library** | react / react-dom | 18.3.1 | Component library |
+| **Styling** | tailwindcss | 3.4.1 | Utility-first CSS |
+| **Animation** | framer-motion | 11.11.9 | Animation library |
+| **State** | zustand | 4.5.5 | Global state management |
+| **Data Fetching** | @tanstack/react-query | 5.59.20 | Server state management |
+| **Forms** | react-hook-form | 7.53.0 | Form handling |
+| **Validation** | zod | 3.23.8 | Schema validation |
+| **HTTP** | axios | 1.13.2 | HTTP client |
+| **Icons** | lucide-react | 0.454.0 | Icon library |
+| **3D** | three / @react-three/fiber | 0.169.0 | 3D visualization |
+| **PDF** | @react-pdf/renderer | 4.3.1 | PDF generation |
+| **Database** | @supabase/supabase-js | 2.89.0 | Supabase client |
+| **AI** | @google/generative-ai | 0.24.1 | Gemini SDK |
+| **Dates** | date-fns | 4.1.0 | Date utilities |
+| **Immutability** | immer | 10.1.1 | Immutable state updates |
+| **Classes** | clsx, tailwind-merge | 2.1.1 / 2.5.4 | Class utilities |
+
+### 2.3 Backend Dependencies (requirements.txt)
+
+| Category | Package | Version | Purpose |
+|----------|---------|---------|---------|
+| **3P Agent Stack** | agno | 0.1.0+ | Core agent framework |
+|  | langgraph | 0.2.0+ | Deliberation graphs |
+|  | langchain | 0.3.0+ | LLM orchestration |
+|  | pyautogen | 0.2.0+ | Offline debates |
+| **API Framework** | fastapi | 0.115.0+ | Async API framework |
+|  | uvicorn | 0.32.0+ | ASGI server |
+| **Validation** | pydantic | 2.10.0+ | Data validation |
+|  | pydantic-settings | 2.6.0+ | Environment settings |
+| **Database** | supabase | 2.10.0+ | Supabase Python client |
+|  | asyncpg | 0.30.0+ | Async Postgres driver |
+|  | redis | 5.0.0+ | Redis client |
+|  | aioredis | 2.0.0+ | Async Redis client |
+| **LLM Providers** | openai | 1.55.0+ | OpenAI SDK |
+|  | anthropic | 0.18.0+ | Claude SDK |
+| **HTTP** | httpx | 0.28.0+ | Async HTTP client |
+| **Scheduling** | apscheduler | 3.10.0+ | Cron scheduling |
+| **Resilience** | tenacity | 9.0.0+ | Retry logic |
+| **Logging** | structlog | 24.4.0+ | Structured logging |
+| **ML** | numpy | 1.24.0+ | Numerical computing |
+
+### 2.4 Infrastructure Components
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Frontend Hosting** | Vercel / Node.js | Next.js deployment |
+| **Agent Service** | Docker / Uvicorn | Python backend |
+| **Primary Database** | Supabase (PostgreSQL) | Persistent storage |
+| **Cache/Session** | Redis | Short-term memory |
+| **Vector Search** | pgvector extension | Semantic search |
+| **Authentication** | Supabase Auth | User authentication |
+| **File Storage** | Supabase Storage | Document storage |
+| **Monitoring** | LangSmith | LLM observability |
+
+---
+
+## PART 3: 3P ARCHITECTURE (THREE-TIER PERSISTENCE)
+
+### 3.1 3P Overview
+
+The **3P Architecture** (Three-tier Persistence) provides a comprehensive memory system for multi-agent operations:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    3P ARCHITECTURE (Three-Tier Persistence)                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                   │
+│   TIER 1: WORKING MEMORY                                                         │
+│   ┌───────────────────────────────────────────────────────────────────────────┐ │
+│   │                          In-Process Memory                                 │ │
+│   │                                                                            │ │
+│   │   ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐          │ │
+│   │   │  Context Frame  │  │  Planned Actions│  │ Option Analysis │          │ │
+│   │   │  ─────────────  │  │  ─────────────  │  │ ─────────────── │          │ │
+│   │   │ • Profile data  │  │ • Action queue  │  │ • Pros/cons     │          │ │
+│   │   │ • Memories      │  │ • Dependencies  │  │ • Fit scores    │          │ │
+│   │   │ • Knowledge     │  │ • Confidence    │  │ • Risk levels   │          │ │
+│   │   └─────────────────┘  └─────────────────┘  └─────────────────┘          │ │
+│   │                                                                            │ │
+│   │   ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐          │ │
+│   │   │Evaluation Frame │  │ Learning Frame  │  │  Scratch Space  │          │ │
+│   │   │  ─────────────  │  │  ─────────────  │  │ ─────────────── │          │ │
+│   │   │ • Quality score │  │ • Strategies    │  │ • Agent-specific│          │ │
+│   │   │ • Voice score   │  │ • Failed paths  │  │ • Temp data     │          │ │
+│   │   │ • Golden sim    │  │ • Preferences   │  │ • Intermediate  │          │ │
+│   │   │ • Issues found  │  │ • Insights      │  │   results       │          │ │
+│   │   └─────────────────┘  └─────────────────┘  └─────────────────┘          │ │
+│   │                                                                            │ │
+│   │   TTL: Session lifetime │ Scope: Per agent per profile                    │ │
+│   └───────────────────────────────────────────────────────────────────────────┘ │
+│                                       │                                          │
+│                                       ▼                                          │
+│   TIER 2: SHORT-TERM MEMORY (Redis)                                             │
+│   ┌───────────────────────────────────────────────────────────────────────────┐ │
+│   │                          Redis Cache Layer                                 │ │
+│   │                                                                            │ │
+│   │   ┌─────────────────────────────┐  ┌─────────────────────────────┐       │ │
+│   │   │      Agent Handoffs          │  │      Session State           │       │ │
+│   │   │      ────────────            │  │      ─────────────           │       │ │
+│   │   │  Key: handoff:{profile}:     │  │  Key: session:{id}:{key}     │       │ │
+│   │   │       {from}:{to}            │  │                               │       │ │
+│   │   │                              │  │  • User context               │       │ │
+│   │   │  • Context transfer          │  │  • Active workflows           │       │ │
+│   │   │  • Task description          │  │  • Temp preferences           │       │ │
+│   │   │  • Profile snapshot          │  │  • Rate limiting              │       │ │
+│   │   │  • Decisions made            │  │                               │       │ │
+│   │   │  • Pending actions           │  │                               │       │ │
+│   │   │  • Priority level            │  │                               │       │ │
+│   │   └─────────────────────────────┘  └─────────────────────────────┘       │ │
+│   │                                                                            │ │
+│   │   TTL: 24 hours │ Scope: Cross-agent communication                        │ │
+│   └───────────────────────────────────────────────────────────────────────────┘ │
+│                                       │                                          │
+│                                       ▼                                          │
+│   TIER 3: LONG-TERM MEMORY (Supabase/PostgreSQL)                                │
+│   ┌───────────────────────────────────────────────────────────────────────────┐ │
+│   │                        Persistent Storage                                  │ │
+│   │                                                                            │ │
+│   │   ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐         │ │
+│   │   │  agent_memories  │ │ profile_snapshots│ │ coaching_knowledge│         │ │
+│   │   │  ──────────────  │ │ ────────────────  │ │ ──────────────── │         │ │
+│   │   │ • Observations   │ │ • Identity evol. │ │ • Jenny methods  │         │ │
+│   │   │ • Learnings      │ │ • Score history  │ │ • Golden examples│         │ │
+│   │   │ • Embeddings     │ │ • Milestones     │ │ • Crisis patterns│         │ │
+│   │   │ • Importance     │ │ • Triggers       │ │ • Best practices │         │ │
+│   │   └──────────────────┘ └──────────────────┘ └──────────────────┘         │ │
+│   │                                                                            │ │
+│   │   ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐         │ │
+│   │   │  outcome_history │ │ interaction_summ │ │  learned_patterns│         │ │
+│   │   │  ──────────────  │ │ ──────────────── │ │ ──────────────── │         │ │
+│   │   │ • Awards won/lost│ │ • Session recaps │ │ • Success paths  │         │ │
+│   │   │ • Program results│ │ • Key decisions  │ │ • Failed paths   │         │ │
+│   │   │ • Predictions    │ │ • Topics covered │ │ • Archetypes     │         │ │
+│   │   │ • Lessons        │ │ • Timestamps     │ │ • Triggers       │         │ │
+│   │   └──────────────────┘ └──────────────────┘ └──────────────────┘         │ │
+│   │                                                                            │ │
+│   │   TTL: Permanent │ Scope: Complete history + semantic search (pgvector)   │ │
+│   └───────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 3.2 Working Memory (Tier 1)
+
+Working memory is managed by the `WorkingMemoryBuffer` class:
+
+```python
+class WorkingMemoryBuffer:
+    """
+    Structured working memory for agent reasoning.
+
+    Components:
+    - ContextFrame: Gathered context from all memory tiers
+    - PlannedAction: Actions planned in ReAct loop
+    - OptionAnalysis: Decision-making analysis
+    - EvaluationFrame: Quality gate evaluations
+    - LearningFrame: Session learnings
+    """
+
+    def __init__(self, agent_name: str, profile_id: str):
+        self.agent_name = agent_name
+        self.profile_id = profile_id
+        self.context: Optional[ContextFrame] = None
+        self.planned_actions: List[PlannedAction] = []
+        self.options_analyzed: List[OptionAnalysis] = []
+        self.evaluations: List[EvaluationFrame] = []
+        self.learning: LearningFrame = LearningFrame()
+        self.current_phase: ReasoningPhase = ReasoningPhase.CONTEXT_GATHERING
+        self.scratch: Dict[str, Any] = {}
+```
+
+**Reasoning Phases:**
+```python
+class ReasoningPhase(str, Enum):
+    CONTEXT_GATHERING = "context_gathering"  # Initial data collection
+    PLANNING = "planning"                    # Action planning
+    EXECUTION = "execution"                  # Executing actions
+    EVALUATION = "evaluation"                # Quality gate checks
+    CORRECTION = "correction"                # Self-correction
+```
+
+### 3.3 Short-Term Memory (Tier 2 - Redis)
+
+Redis provides 24-hour TTL storage for agent handoffs and session state:
+
+```python
+class HandoffManager:
+    """
+    Manages agent handoffs via Redis.
+
+    Key format: handoff:{profile_id}:{from_agent}:{to_agent}
+    TTL: 24 hours
+    """
+
+    async def create_handoff(
+        self,
+        from_agent: str,        # e.g., "assessment"
+        to_agent: str,          # e.g., "gameplan"
+        profile_id: str,
+        context: Dict[str, Any],
+        task: str,
+        reason: str,
+        profile_snapshot: Dict[str, Any] = None,
+        decisions_made: List[Dict[str, Any]] = None,
+        pending_actions: List[Dict[str, Any]] = None,
+        priority: str = "normal",  # low/normal/high/urgent
+    ) -> AgentHandoff
+```
+
+**Handoff Data Structure:**
+```typescript
+interface AgentHandoff {
+  from_agent: string;       // Source agent
+  to_agent: string;         // Destination agent
+  profile_id: string;
+  timestamp: DateTime;
+  context: Record<string, any>;       // What source knows
+  task: string;                       // What destination should do
+  reason: string;                     // Why handoff is happening
+  profile_snapshot: Record<string, any>;  // Profile at handoff time
+  decisions_made: Decision[];         // Already made decisions
+  pending_actions: Action[];          // Queued actions
+  priority: "low" | "normal" | "high" | "urgent";
+  expires_at: DateTime;               // 24hr from creation
+}
+```
+
+### 3.4 Long-Term Memory (Tier 3 - Supabase)
+
+PostgreSQL with pgvector extension for persistent storage and semantic search:
+
+**Database Schema:**
+
+```sql
+-- Agent observations with vector embeddings
+CREATE TABLE agent_memories (
+    id UUID PRIMARY KEY,
+    profile_id UUID REFERENCES profiles(id),
+    agent_id TEXT NOT NULL,
+    observation JSONB NOT NULL,
+    importance FLOAT DEFAULT 0.5,
+    tags TEXT[],
+    embedding vector(1536),  -- OpenAI ada-002 dimensions
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Profile identity evolution tracking
+CREATE TABLE profile_snapshots (
+    id UUID PRIMARY KEY,
+    profile_id UUID REFERENCES profiles(id),
+    snapshot_type TEXT,  -- 'assessment', 'milestone', 'quarterly'
+    narrative_dna TEXT,
+    brand_statement TEXT,
+    archetype TEXT,
+    cri_score FLOAT,
+    eds_score FLOAT,
+    change_summary TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Jenny's coaching methodology (RAG)
+CREATE TABLE coaching_knowledge (
+    id UUID PRIMARY KEY,
+    category TEXT,  -- 'crisis_response', 'narrative', etc.
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    source_type TEXT,  -- 'jenny_transcript', 'golden_example'
+    applicable_archetypes TEXT[],
+    embedding vector(1536),
+    effectiveness_score FLOAT DEFAULT 0.8
+);
+
+-- Outcome tracking for learning
+CREATE TABLE outcome_history (
+    id UUID PRIMARY KEY,
+    profile_id UUID REFERENCES profiles(id),
+    outcome_type TEXT,  -- 'award', 'program', 'project'
+    outcome_subtype TEXT,  -- 'won', 'lost', 'completed'
+    entity_name TEXT,
+    success BOOLEAN,
+    predicted_probability FLOAT,
+    contributing_factors JSONB,
+    lessons_learned TEXT
+);
+
+-- Semantic search function
+CREATE FUNCTION match_memories(
+    query_embedding vector(1536),
+    match_threshold FLOAT DEFAULT 0.7,
+    match_count INT DEFAULT 10,
+    filter_profile_id UUID DEFAULT NULL
+) RETURNS TABLE (...);
+```
+
+### 3.5 Memory Manager API
+
+```python
+class MemoryManager:
+    """
+    Unified interface for 3-tier memory system.
+    """
+
+    # Tier 1: Working Memory
+    def get_working_buffer(profile_id: str, agent_name: str) -> WorkingMemoryBuffer
+    def clear_working_buffer(profile_id: str, agent_name: str) -> None
+
+    # Tier 2: Short-Term Memory (Redis)
+    async def create_handoff(...) -> AgentHandoff
+    async def get_handoff(profile_id, to_agent, from_agent?) -> AgentHandoff
+    async def set_session_state(session_id, key, value, ttl?) -> bool
+    async def get_session_state(session_id, key) -> Any
+
+    # Tier 3: Long-Term Memory (Supabase)
+    async def store_observation(agent_id, profile_id, observation, importance) -> str
+    async def search_observations(profile_id, query, agent_id?, limit) -> List[Dict]
+    async def search_coaching_knowledge(query, category?, archetype?, limit) -> List[Dict]
+    async def record_outcome(profile_id, type, subtype, entity_name, success, ...) -> Dict
+    async def get_outcome_patterns(profile_id, type?, success_only?) -> List[Dict]
+    async def find_applicable_patterns(situation, pattern_type?, archetype?) -> List[Dict]
+```
+
+### 3.6 HITL (Human-in-the-Loop) Workflow
+
+```sql
+CREATE TABLE hitl_requests (
+    id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    profile_id UUID REFERENCES profiles(id),
+    action_type TEXT NOT NULL,
+    proposed_action JSONB NOT NULL,
+    confidence FLOAT CHECK (confidence >= 0 AND confidence <= 1),
+    reasoning TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',  -- pending/in_review/approved/rejected/modified/expired
+    reviewer_id TEXT,
+    review_notes TEXT,
+    modified_action JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    reviewed_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '7 days')
+);
+```
+
+**HITL Flow:**
+```
+Agent Decision (LOW autonomy)
+         │
+         ▼
+┌─────────────────┐
+│ Confidence < 70%│───YES──▶ Create HITL Request
+│ or LOW autonomy │                   │
+└────────┬────────┘                   ▼
+         │              ┌─────────────────────────┐
+         NO             │   Pending Review        │
+         │              │   (7-day expiration)    │
+         ▼              └──────────┬──────────────┘
+   Execute Action                  │
+                       ┌───────────┼───────────┐
+                       ▼           ▼           ▼
+                   Approved    Modified    Rejected
+                       │           │           │
+                       ▼           ▼           ▼
+                  Execute    Execute w/   Notify &
+                  Original   Changes      Archive
+```
+
+---
+
+## PART 4: SYSTEM LAYERS
+
+### 4.1 Complete System Layer Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        IvyQuest v15.0 System Layers                              │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                   │
+│  LAYER 7: USER INTERFACE                                                         │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │  Browser (React + Next.js)                                                │  │
+│  │                                                                            │  │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐              │  │
+│  │  │ Assessment     │  │ Multi-Agent    │  │ Chat Interface │              │  │
+│  │  │ Flow           │  │ Dashboard      │  │ (per agent)    │              │  │
+│  │  │ (8 Frames)     │  │ (6 Cards)      │  │                │              │  │
+│  │  └────────────────┘  └────────────────┘  └────────────────┘              │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                       │                                          │
+│                                       ▼                                          │
+│  LAYER 6: STATE MANAGEMENT                                                       │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │  ┌────────────────────────────────────────────────────────────────────┐   │  │
+│  │  │                      React Query (TanStack)                        │   │  │
+│  │  │  • Server state synchronization                                    │   │  │
+│  │  │  • Automatic background refetching                                 │   │  │
+│  │  │  • Cache invalidation on mutations                                 │   │  │
+│  │  │  • Optimistic updates                                              │   │  │
+│  │  └────────────────────────────────────────────────────────────────────┘   │  │
+│  │  ┌────────────────────────────────────────────────────────────────────┐   │  │
+│  │  │                         Zustand                                     │   │  │
+│  │  │  • Local UI state (modals, selections)                             │   │  │
+│  │  │  • Assessment progress tracking                                     │   │  │
+│  │  │  • User preferences                                                 │   │  │
+│  │  └────────────────────────────────────────────────────────────────────┘   │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                       │                                          │
+│                                       ▼                                          │
+│  LAYER 5: API CLIENT                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐           │  │
+│  │  │  agentClient.ts │  │ agentV13Client  │  │ supabaseClient  │           │  │
+│  │  │  ───────────────│  │ ─────────────── │  │ ─────────────── │           │  │
+│  │  │ • axios wrapper │  │ • v13 endpoints │  │ • Auth/DB       │           │  │
+│  │  │ • 60s timeout   │  │ • 120s timeout  │  │ • Real-time     │           │  │
+│  │  │ • Error handling│  │ • Health check  │  │ • Storage       │           │  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘           │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                       │                                          │
+│                                       ▼                                          │
+│  LAYER 4: API GATEWAY (Next.js API Routes)                                       │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │  /api/agents/*  ───▶  FastAPI Backend (:8001)                            │  │
+│  │  /api/auth/*    ───▶  Supabase Auth                                       │  │
+│  │  /api/profiles/*───▶  Supabase REST API                                   │  │
+│  │                                                                            │  │
+│  │  Features: Request validation, Auth middleware, Rate limiting             │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                       │                                          │
+│                                       ▼                                          │
+│  LAYER 3: AGENT SERVICE (FastAPI + Python)                                       │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │  ┌──────────────────────────────────────────────────────────────────┐     │  │
+│  │  │                    Agent Router (/v13/*)                          │     │  │
+│  │  │  /narrative, /gameplan, /awards, /opportunities, /execution      │     │  │
+│  │  │  /crisis, /memory/*, /health, /knowledge/*, /hitl/*              │     │  │
+│  │  └──────────────────────────────────────────────────────────────────┘     │  │
+│  │                                    │                                       │  │
+│  │                                    ▼                                       │  │
+│  │  ┌──────────────────────────────────────────────────────────────────┐     │  │
+│  │  │                     ReAct Agent Engine                            │     │  │
+│  │  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐              │     │  │
+│  │  │  │  THINK  │─▶│ ACTION  │─▶│ OBSERVE │─▶│  LEARN  │              │     │  │
+│  │  │  └─────────┘  └─────────┘  └─────────┘  └─────────┘              │     │  │
+│  │  │       │                                       │                   │     │  │
+│  │  │       └─────────── QUALITY GATES ◀────────────┘                   │     │  │
+│  │  │               (70/70/0.6, Max 3 cycles)                           │     │  │
+│  │  └──────────────────────────────────────────────────────────────────┘     │  │
+│  │                                    │                                       │  │
+│  │                                    ▼                                       │  │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐              │  │
+│  │  │   Agno Tools   │  │  LangGraph     │  │   AutoGen      │              │  │
+│  │  │  ────────────  │  │  ──────────    │  │  ──────────    │              │  │
+│  │  │ Memory, Search │  │ Deliberation   │  │ Multi-agent    │              │  │
+│  │  │ Compute        │  │ Graphs         │  │ Debates        │              │  │
+│  │  └────────────────┘  └────────────────┘  └────────────────┘              │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                       │                                          │
+│                                       ▼                                          │
+│  LAYER 2: LLM ORCHESTRATION                                                      │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │  ┌───────────────────────────────────────────────────────────────────┐    │  │
+│  │  │                    LLM Provider Manager                            │    │  │
+│  │  │                                                                    │    │  │
+│  │  │  Primary: Google Gemini (gemini-2.0-flash)                        │    │  │
+│  │  │                     │                                              │    │  │
+│  │  │                     ▼ (on failure)                                 │    │  │
+│  │  │  Fallback: OpenAI GPT-4 (gpt-4-turbo, gpt-4o-mini)               │    │  │
+│  │  │                                                                    │    │  │
+│  │  │  Models:                                                           │    │  │
+│  │  │  • Primary: AGENT_PRIMARY_MODEL (gpt-4o default)                  │    │  │
+│  │  │  • Fast: AGENT_FAST_MODEL (gpt-4o-mini default)                   │    │  │
+│  │  └───────────────────────────────────────────────────────────────────┘    │  │
+│  │                                                                            │  │
+│  │  Observability: LangSmith (LANGCHAIN_TRACING_V2=true)                    │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                       │                                          │
+│                                       ▼                                          │
+│  LAYER 1: PERSISTENCE (3P Architecture)                                          │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐           │  │
+│  │  │ Working Memory  │  │  Redis Cache    │  │  Supabase/PG    │           │  │
+│  │  │  (In-Process)   │  │  (24hr TTL)     │  │  (Persistent)   │           │  │
+│  │  │                 │  │                 │  │                 │           │  │
+│  │  │ WorkingBuffer   │  │ Handoffs        │  │ agent_memories  │           │  │
+│  │  │ ContextFrame    │  │ SessionState    │  │ profile_snaps   │           │  │
+│  │  │ EvaluationFrame │  │ RateLimiting    │  │ coaching_kb     │           │  │
+│  │  │ LearningFrame   │  │                 │  │ outcome_hist    │           │  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘           │  │
+│  │                                                                            │  │
+│  │  Semantic Search: pgvector (1536-dim OpenAI embeddings)                   │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.2 Layer Responsibilities
+
+| Layer | Name | Technologies | Responsibilities |
+|-------|------|--------------|------------------|
+| **7** | UI | React, Next.js, Tailwind | User interaction, visual rendering, form handling |
+| **6** | State | React Query, Zustand | Server/client state sync, caching, optimistic updates |
+| **5** | API Client | Axios, Fetch | HTTP abstraction, timeout handling, error formatting |
+| **4** | API Gateway | Next.js Routes | Request routing, auth middleware, rate limiting |
+| **3** | Agent Service | FastAPI, Agno | ReAct execution, quality gates, agent orchestration |
+| **2** | LLM | Gemini, OpenAI | Text generation, embeddings, reasoning |
+| **1** | Persistence | Redis, Supabase, pgvector | Data storage, caching, semantic search |
+
+### 4.3 Request Flow Through Layers
+
+```
+User clicks "Refresh" on Assessment Card
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ L7: UI Layer                                                     │
+│   AssessmentAgentCard.tsx                                       │
+│   → onClick={() => refetch()}                                    │
+└────────────────────────────────────────┬────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ L6: State Layer                                                  │
+│   useNarrativeDNA(profileId)                                    │
+│   → queryClient.invalidateQueries(['assessment', 'narrative'])  │
+└────────────────────────────────────────┬────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ L5: API Client                                                   │
+│   agentApi.synthesizeNarrativeDNA(profileId)                    │
+│   → axios.post('/api/agents/v13/narrative', {profile_id})       │
+│   → timeout: 120000ms (LLM operation)                           │
+└────────────────────────────────────────┬────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ L4: API Gateway                                                  │
+│   /api/agents/[...path]/route.ts                                │
+│   → Auth check (Supabase session)                               │
+│   → Proxy to http://localhost:8001/v13/narrative                │
+└────────────────────────────────────────┬────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ L3: Agent Service                                                │
+│   POST /v13/narrative                                           │
+│   → AssessmentAgent.synthesize_narrative_dna()                  │
+│   → ReAct Loop: THINK → ACTION → OBSERVE → LEARN                │
+│   → Quality Gates: 70/70/0.6                                     │
+└────────────────────────────────────────┬────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ L2: LLM Layer                                                    │
+│   1. Try Gemini (gemini-2.0-flash)                              │
+│   2. On failure → Fallback to GPT-4                             │
+│   3. Apply Jenny's Formula for synthesis                         │
+│   4. Evaluate against golden examples                            │
+└────────────────────────────────────────┬────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ L1: Persistence Layer                                            │
+│   1. Load profile from Supabase                                 │
+│   2. Search coaching_knowledge (RAG)                            │
+│   3. Check for existing handoffs (Redis)                        │
+│   4. Store result observation (agent_memories)                  │
+│   5. Create handoff to GamePlan agent                           │
+└─────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+                              Response bubbles back up
+```
+
+### 4.4 Cross-Layer Communication Protocols
+
+| From Layer | To Layer | Protocol | Format |
+|------------|----------|----------|--------|
+| UI → State | React hooks | Sync/Async | TypeScript objects |
+| State → API Client | Function calls | Async | JSON request/response |
+| API Client → Gateway | HTTP | REST | JSON body |
+| Gateway → Agent Service | HTTP | REST | JSON body |
+| Agent Service → LLM | SDK calls | Async | Prompt/Completion |
+| Agent Service → Persistence | DB clients | Async | SQL/Redis commands |
+
+### 4.5 Error Handling by Layer
+
+| Layer | Error Type | Handling Strategy |
+|-------|------------|-------------------|
+| **UI** | Render errors | Error boundaries, fallback UI |
+| **State** | Query errors | retry (3x), error state, staleTime |
+| **API Client** | Network errors | Timeout (60-120s), retry with backoff |
+| **Gateway** | Auth errors | 401 redirect, session refresh |
+| **Agent** | LLM errors | Provider fallback, graceful degradation |
+| **Persistence** | DB errors | Connection retry, read replicas |
+
+---
+
+## PART 5: AGENT ARCHITECTURE
 
 ### 2.1 ReAct Framework Implementation
 
@@ -179,7 +853,7 @@ class QualityThresholds:
 
 ---
 
-## PART 3: UI/UX DESIGN
+## PART 6: UI/UX DESIGN
 
 ### 3.1 Multi-Agent Dashboard Layout
 
@@ -326,7 +1000,7 @@ export const BRAND_COLORS = {
 
 ---
 
-## PART 4: DATA FLOW ARCHITECTURE
+## PART 7: DATA FLOW ARCHITECTURE
 
 ### 4.1 High-Level Data Flow
 
@@ -538,7 +1212,7 @@ export const BRAND_COLORS = {
 
 ---
 
-## PART 5: MESSAGE SEQUENCE DIAGRAMS
+## PART 8: MESSAGE SEQUENCE DIAGRAMS
 
 ### 5.1 Dashboard Initialization Sequence
 
@@ -730,7 +1404,7 @@ export const BRAND_COLORS = {
 
 ---
 
-## PART 6: INDIVIDUAL AGENT SPECIFICATIONS
+## PART 9: INDIVIDUAL AGENT SPECIFICATIONS
 
 ### 6.1 Assessment Agent
 
@@ -1239,7 +1913,7 @@ interface CrisisInput {
 
 ---
 
-## PART 7: INTER-AGENT COMMUNICATION
+## PART 10: INTER-AGENT COMMUNICATION
 
 ### 7.1 Dependency Graph
 
@@ -1350,7 +2024,7 @@ type AgentEvent =
 
 ---
 
-## PART 8: FRONTEND COMPONENT SPECIFICATIONS
+## PART 11: FRONTEND COMPONENT SPECIFICATIONS
 
 ### 8.1 Component Hierarchy
 
@@ -1445,7 +2119,7 @@ import { useResultsStore } from '@/lib/store/useResultsStore';
 
 ---
 
-## PART 9: API REFERENCE
+## PART 12: API REFERENCE
 
 ### 9.1 Base Configuration
 
@@ -1492,7 +2166,7 @@ const API_TIMEOUT_LONG = 120000;  // LLM operations: 120 seconds
 
 ---
 
-## PART 10: TESTING & VALIDATION
+## PART 13: TESTING & VALIDATION
 
 ### 10.1 Agent Test Matrix
 
