@@ -3,6 +3,7 @@
 
 const AGENT_API_URL = process.env.NEXT_PUBLIC_AGENT_API_URL || 'http://localhost:8000';
 const API_TIMEOUT = 60000;
+const API_TIMEOUT_LONG = 120000; // For slow LLM endpoints like game plan generation
 
 interface ApiResponse<T> {
   success: boolean;
@@ -10,15 +11,20 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+interface ApiCallOptions extends RequestInit {
+  timeout?: number;
+}
+
+async function apiCall<T>(endpoint: string, options: ApiCallOptions = {}): Promise<ApiResponse<T>> {
+  const { timeout = API_TIMEOUT, ...fetchOptions } = options;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
     const response = await fetch(`${AGENT_API_URL}${endpoint}`, {
-      headers: { 'Content-Type': 'application/json', ...options.headers },
+      headers: { 'Content-Type': 'application/json', ...fetchOptions.headers },
       signal: controller.signal,
-      ...options,
+      ...fetchOptions,
     });
     clearTimeout(timeoutId);
 
@@ -42,7 +48,8 @@ export async function enhanceAssessment(profileId: string, data?: Record<string,
 }
 
 export async function synthesizeNarrativeDNA(profileId: string) {
-  return apiCall('/agents/assessment/narrative', {
+  // Backend endpoint is /agents/narrative/synthesize, not /agents/assessment/narrative
+  return apiCall('/agents/narrative/synthesize', {
     method: 'POST',
     body: JSON.stringify({ profile_id: profileId }),
   });
@@ -57,9 +64,11 @@ export async function detectArchetype(profileId: string) {
 
 // Game Plan Agent
 export async function generateGamePlan(profileId: string, assessmentData?: Record<string, unknown>) {
+  // Use longer timeout for game plan generation (LLM-intensive operation)
   return apiCall('/agents/gameplan/generate', {
     method: 'POST',
     body: JSON.stringify({ profile_id: profileId, data: assessmentData }),
+    timeout: API_TIMEOUT_LONG,
   });
 }
 

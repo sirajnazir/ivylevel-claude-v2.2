@@ -16,6 +16,13 @@ Agents:
 5. OpportunityAgent - Matches summer programs and opportunities
 """
 
+# Load environment variables FIRST (before any other imports)
+import os
+from dotenv import load_dotenv
+# Load from parent .env.local first, then local .env to override
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env.local'), override=False)
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'), override=True)
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -404,6 +411,90 @@ async def generate_gameplan(input: ProfileInput):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/agents/gameplan/activities/{profile_id}")
+async def get_gameplan_activities(profile_id: str):
+    """
+    Get filtered activities for a profile's game plan.
+
+    Returns activities filtered by ROI (4+ touchpoints).
+    """
+    if not settings.enable_agents:
+        raise HTTPException(status_code=503, detail="Agents are disabled")
+
+    try:
+        # Generate game plan which includes filtered activities
+        result = await gameplan_agent.generate(profile_id)
+
+        if result.get("success") and result.get("data"):
+            activities = result["data"].get("filtered_activities", [])
+            return {
+                "success": True,
+                "activities": activities,
+                "count": len(activities),
+                "profile_id": profile_id,
+            }
+        elif result.get("filtered_activities"):
+            activities = result.get("filtered_activities", [])
+            return {
+                "success": True,
+                "activities": activities,
+                "count": len(activities),
+                "profile_id": profile_id,
+            }
+        else:
+            return {
+                "success": True,
+                "activities": [],
+                "count": 0,
+                "profile_id": profile_id,
+            }
+    except Exception as e:
+        logger.error("gameplan_activities_error", error=str(e), profile_id=profile_id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/agents/gameplan/seeds/{profile_id}")
+async def get_gameplan_seeds(profile_id: str):
+    """
+    Get identity seeds for a profile's game plan.
+
+    Returns identity seeds planted 6-12 months ahead.
+    """
+    if not settings.enable_agents:
+        raise HTTPException(status_code=503, detail="Agents are disabled")
+
+    try:
+        # Generate game plan which includes identity seeds
+        result = await gameplan_agent.generate(profile_id)
+
+        if result.get("success") and result.get("data"):
+            seeds = result["data"].get("identity_seeds", [])
+            return {
+                "success": True,
+                "seeds": seeds,
+                "count": len(seeds),
+                "profile_id": profile_id,
+            }
+        elif result.get("identity_seeds"):
+            seeds = result.get("identity_seeds", [])
+            return {
+                "success": True,
+                "seeds": seeds,
+                "count": len(seeds),
+                "profile_id": profile_id,
+            }
+        else:
+            return {
+                "success": True,
+                "seeds": [],
+                "count": 0,
+                "profile_id": profile_id,
+            }
+    except Exception as e:
+        logger.error("gameplan_seeds_error", error=str(e), profile_id=profile_id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # =====================================================
 # Awards Agent Endpoints
 # =====================================================
@@ -427,6 +518,53 @@ async def match_awards(profile_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/agents/awards/portfolio/{profile_id}")
+async def get_awards_portfolio(profile_id: str):
+    """
+    Get awards portfolio for a profile.
+
+    Returns a balanced 2-2-1 portfolio:
+    - 2 Likely awards (60%+ win probability)
+    - 2 Target awards (40-60% probability)
+    - 1 Stretch award (20-40% probability)
+    """
+    if not settings.enable_agents:
+        raise HTTPException(status_code=503, detail="Agents are disabled")
+
+    try:
+        # Use the awards agent match which returns portfolio data
+        result = await awards_agent.match(profile_id)
+
+        if result.get("success") and result.get("data"):
+            portfolio = result["data"].get("portfolio", {})
+            return {
+                "success": True,
+                "portfolio": portfolio,
+                "profile_id": profile_id,
+            }
+        elif result.get("portfolio"):
+            return {
+                "success": True,
+                "portfolio": result.get("portfolio", {}),
+                "profile_id": profile_id,
+            }
+        else:
+            # Return empty portfolio structure
+            return {
+                "success": True,
+                "portfolio": {
+                    "likely": [],
+                    "target": [],
+                    "stretch": [],
+                    "skip": [],
+                },
+                "profile_id": profile_id,
+            }
+    except Exception as e:
+        logger.error("awards_portfolio_error", error=str(e), profile_id=profile_id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # =====================================================
 # Opportunity Agent Endpoints
 # =====================================================
@@ -446,6 +584,51 @@ async def match_opportunities(profile_id: str):
         return result
     except Exception as e:
         logger.error("opportunities_error", error=str(e), profile_id=profile_id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/agents/opportunities/alerts/{profile_id}")
+async def get_opportunity_alerts(profile_id: str):
+    """
+    Get opportunity alerts for a profile.
+
+    Returns advance alerts for opportunities with deadlines 5-6 months away.
+    """
+    if not settings.enable_agents:
+        raise HTTPException(status_code=503, detail="Agents are disabled")
+
+    try:
+        # Use the opportunity agent match which returns alerts
+        result = await opportunity_agent.match(profile_id)
+
+        if result.get("success") and result.get("data"):
+            alerts = result["data"].get("advance_alerts", [])
+            return {
+                "success": True,
+                "alerts": alerts,
+                "count": len(alerts),
+                "urgent_count": len([a for a in alerts if a.get("days_until", 999) < 30]),
+                "profile_id": profile_id,
+            }
+        elif result.get("advance_alerts"):
+            alerts = result.get("advance_alerts", [])
+            return {
+                "success": True,
+                "alerts": alerts,
+                "count": len(alerts),
+                "urgent_count": len([a for a in alerts if a.get("days_until", 999) < 30]),
+                "profile_id": profile_id,
+            }
+        else:
+            return {
+                "success": True,
+                "alerts": [],
+                "count": 0,
+                "urgent_count": 0,
+                "profile_id": profile_id,
+            }
+    except Exception as e:
+        logger.error("opportunity_alerts_error", error=str(e), profile_id=profile_id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1445,14 +1628,15 @@ async def get_v13_memory():
 
 @v13_router.get("/health")
 async def v13_health_check():
-    """v13.2 Health check with quality thresholds."""
+    """v15.0 Health check with quality thresholds."""
     try:
         from agents.agents.core import QualityThresholds
         return {
             "status": "healthy",
-            "version": "13.2.0",
+            "version": "15.0.0",
             "react_enabled": True,
             "memory_enabled": True,
+            "hitl_enabled": True,
             "thresholds": {
                 "min_quality": QualityThresholds.MIN_QUALITY_SCORE,
                 "min_voice": QualityThresholds.MIN_VOICE_SCORE,
@@ -1461,10 +1645,15 @@ async def v13_health_check():
             }
         }
     except ImportError:
+        # Return healthy status for basic API functionality
+        # ReAct advanced features are optional
         return {
-            "status": "degraded",
-            "version": "13.2.0",
-            "error": "v13.2 core module not fully loaded"
+            "status": "healthy",
+            "version": "15.0.0",
+            "react_enabled": False,
+            "memory_enabled": False,
+            "hitl_enabled": False,
+            "note": "Running in basic mode (ReAct features not loaded)"
         }
 
 

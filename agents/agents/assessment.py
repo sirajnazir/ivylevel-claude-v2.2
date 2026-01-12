@@ -10,7 +10,7 @@ import asyncio
 
 from langchain_openai import ChatOpenAI
 
-from tools.database import get_supabase_client
+from tools.database import get_supabase_client, get_profile_with_assessment
 from tools.cri import compute_cri, get_chetty_baseline
 
 
@@ -502,20 +502,8 @@ Return ONLY valid JSON array:
                    for c in constraints]
 
     async def _get_profile(self, profile_id: str) -> Optional[Dict]:
-        """Get profile from database"""
-        result = self.db.table("profiles").select("*").eq("id", profile_id).single().execute()
-        if result.data:
-            # Also get latest assessment data
-            assessment = self.db.table("assessments").select("profile_data, scores").eq(
-                "user_id", profile_id
-            ).order("completed_at", desc=True).limit(1).execute()
-
-            if assessment.data:
-                result.data["profile_data"] = assessment.data[0].get("profile_data", {})
-                result.data["scores"] = assessment.data[0].get("scores", {})
-
-            return result.data
-        return None
+        """Get profile with assessment data using centralized function."""
+        return await get_profile_with_assessment(profile_id)
 
     async def _version_state(self, profile_id: str, event: str, state: Dict, created_by: str = "agent"):
         """Version state change for rollback capability"""

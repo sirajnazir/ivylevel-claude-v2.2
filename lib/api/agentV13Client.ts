@@ -417,6 +417,7 @@ class AgentV13Client {
 
   /**
    * Get notifications for a profile.
+   * Note: Backend uses /notifications/* not /v13/notifications/*
    */
   async getNotifications(
     profileId: string,
@@ -440,39 +441,43 @@ class AgentV13Client {
       limit: limit.toString(),
       unread_only: unreadOnly.toString(),
     });
-    return this.request('GET', `/v13/notifications/${profileId}?${params}`);
+    return this.request('GET', `/notifications/${profileId}?${params}`);
   }
 
   /**
    * Get notification count for a profile.
+   * Note: Backend uses /notifications/* not /v13/notifications/*
    */
   async getNotificationCount(profileId: string): Promise<{
     unread_count: number;
     total_count: number;
   }> {
-    return this.request('GET', `/v13/notifications/${profileId}/count`);
+    return this.request('GET', `/notifications/${profileId}/count`);
   }
 
   /**
    * Mark a notification as read.
+   * Note: Backend uses /notifications/* not /v13/notifications/*
    */
   async markNotificationRead(
     profileId: string,
     notificationId: string
   ): Promise<{ success: boolean }> {
-    return this.request('POST', `/v13/notifications/${profileId}/read`, {
+    return this.request('POST', `/notifications/mark-read`, {
+      profile_id: profileId,
       notification_id: notificationId,
     });
   }
 
   /**
    * Mark all notifications as read for a profile.
+   * Note: Backend uses /notifications/* not /v13/notifications/*
    */
   async markAllNotificationsRead(profileId: string): Promise<{
     success: boolean;
     marked_count: number;
   }> {
-    return this.request('POST', `/v13/notifications/${profileId}/read-all`, {});
+    return this.request('POST', `/notifications/${profileId}/mark-all-read`, {});
   }
 
   // ============================================================

@@ -47,7 +47,15 @@ export function useNarrativeDNA(profileId: string | null) {
       if (!profileId) return null;
       const result = await agentApi.synthesizeNarrativeDNA(profileId);
       if (!result.success) throw new Error(result.error);
-      return result.data as NarrativeDNA;
+      // Transform backend response (narrative_dna) to frontend type (dna)
+      const rawData = result.data as Record<string, unknown>;
+      return {
+        dna: rawData.narrative_dna || rawData.dna || '',
+        themes: rawData.themes || [],
+        confidence: rawData.confidence || 0,
+        rationale: rawData.brand_statement || rawData.rationale || '',
+        identity_markers: rawData.identity_markers || [],
+      } as NarrativeDNA;
     },
     enabled: !!profileId,
     staleTime: 10 * 60 * 1000,
@@ -74,12 +82,44 @@ export function useGamePlan(profileId: string | null) {
     queryKey: ['gameplan', profileId],
     queryFn: async () => {
       if (!profileId) return null;
-      const result = await agentApi.generateGamePlan(profileId);
-      if (!result.success) throw new Error(result.error);
-      return result.data as GamePlanResult;
+      try {
+        const result = await agentApi.generateGamePlan(profileId);
+        if (!result.success) {
+          console.error('[useGamePlan] API error:', result.error);
+          throw new Error(result.error || 'Failed to generate game plan');
+        }
+        // Transform flat backend response to nested game_plan structure
+        const rawData = (result.data || {}) as Record<string, unknown>;
+        // Handle nested game_plan structure from backend
+        const gamePlanData = (rawData.game_plan || rawData) as Record<string, unknown>;
+        return {
+          success: true,
+          game_plan: {
+            profile_id: (gamePlanData.profile_id as string) || profileId,
+            narrative_dna: (gamePlanData.narrative_dna as string) || '',
+            hidden_target: (gamePlanData.hidden_target as string | null) || null,
+            activities: (gamePlanData.filtered_activities || gamePlanData.activities || []) as unknown[],
+            identity_seeds: (gamePlanData.identity_seeds || []) as unknown[],
+            phases: (gamePlanData.phases || []) as unknown[],
+            summary: (gamePlanData.summary || { total_activities: 0, total_touchpoints: 0, average_roi: 0 }) as Record<string, unknown>,
+          },
+        } as GamePlanResult;
+      } catch (error) {
+        // Ignore abort errors from React Strict Mode double-renders
+        if (error instanceof Error && error.message.includes('abort')) {
+          console.log('[useGamePlan] Request aborted (likely React Strict Mode)');
+          return null;
+        }
+        console.error('[useGamePlan] Error:', error);
+        throw error;
+      }
     },
     enabled: !!profileId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 minutes - game plan generation is slow
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    retry: false, // Don't retry on failure (it's a long operation)
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: 'always', // Always fetch on mount since aborts return null
   });
 }
 

@@ -12,9 +12,10 @@ import { AgentCardBase } from './AgentCardBase';
 interface GamePlanAgentCardProps {
   profileId: string;
   onChat?: () => void;
+  onViewDetails?: (data: Record<string, unknown>) => void;
 }
 
-export function GamePlanAgentCard({ profileId, onChat }: GamePlanAgentCardProps) {
+export function GamePlanAgentCard({ profileId, onChat, onViewDetails }: GamePlanAgentCardProps) {
   const { data: gamePlan, isLoading: planLoading, isError: planError, refetch: refetchPlan } = useGamePlan(profileId);
   const { data: activities, isLoading: activitiesLoading } = useFilteredActivities(profileId);
   const { data: seeds, isLoading: seedsLoading } = useIdentitySeeds(profileId);
@@ -24,6 +25,12 @@ export function GamePlanAgentCard({ profileId, onChat }: GamePlanAgentCardProps)
 
   const handleRefresh = () => {
     refetchPlan();
+  };
+
+  const handleClick = () => {
+    if (onViewDetails && gamePlan) {
+      onViewDetails(gamePlan as unknown as Record<string, unknown>);
+    }
   };
 
   // Extract counts from data
@@ -39,6 +46,7 @@ export function GamePlanAgentCard({ profileId, onChat }: GamePlanAgentCardProps)
       isError={isError}
       onRefresh={handleRefresh}
       onChat={onChat}
+      onClick={handleClick}
     >
       <div className="space-y-4">
         {/* Stats Grid */}

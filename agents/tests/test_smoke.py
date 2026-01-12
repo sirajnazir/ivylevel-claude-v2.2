@@ -45,7 +45,7 @@ async def test_health_endpoint():
         data = response.json()
         
         assert data["status"] in ["healthy", "degraded"]
-        assert data["version"] == "13.2.0"
+        assert data["version"] == "15.0.0"
         assert data["react_enabled"] is True
         assert "thresholds" in data
         assert data["thresholds"]["min_quality"] == 70
@@ -287,7 +287,7 @@ class TestVersionConsistency:
     def test_version_string(self):
         """Test version string is correct."""
         from agents.agents.core import __version__
-        assert __version__ == "13.2.0"
+        assert __version__ == "15.0.0"
 
     def test_threshold_values_consistent(self):
         """Test threshold values are consistent with PRD."""

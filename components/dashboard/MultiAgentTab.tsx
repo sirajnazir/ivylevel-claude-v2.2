@@ -16,6 +16,7 @@ import {
   useAgentHealth,
   useDashboardData,
 } from '@/hooks/useAgentData';
+import { useStudentStore } from '@/lib/store/useStudentStore';
 
 // v2.0 Components
 import { TimeAuditCardV2 } from '@/components/agents/TimeAuditCardV2';
@@ -259,6 +260,37 @@ export function MultiAgentTab({ profileId }: MultiAgentTabProps) {
   const { refetchAll, isLoading } = useDashboardData(profileId);
   const [showCrisisModal, setShowCrisisModal] = useState(false);
 
+  // Get real profile data from store
+  const profile = useStudentStore((s) => s.profile);
+
+  // Build studentProfile for V2 components from real profile data
+  const studentProfile = {
+    spike: profile.passion?.spike_category || 'general',
+    identity: [
+      profile.passion?.brag_text,
+      profile.intended_major,
+      profile.identity?.name,
+    ].filter(Boolean) as string[],
+    activities: [
+      profile.passion?.project_description && {
+        name: 'Main Project',
+        description: profile.passion.project_description,
+      },
+      ...(profile.aptitude?.academic_awards || []).map((award) => ({
+        name: award,
+        description: 'Academic award',
+      })),
+      ...(profile.passion?.ec_awards || []).map((award) => ({
+        name: award,
+        description: 'Extracurricular award',
+      })),
+    ].filter(Boolean) as Array<{ name: string; description?: string }>,
+    has_working_project: Boolean(
+      profile.passion?.project_description &&
+      profile.passion.project_description.length > 20
+    ),
+  };
+
   if (!profileId) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -314,14 +346,7 @@ export function MultiAgentTab({ profileId }: MultiAgentTabProps) {
       {/* v2.0 Feature Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TimeAuditCardV2 />
-        <AwardsPortfolioCardV2
-          studentProfile={{
-            spike: 'general',
-            identity: [],
-            activities: [],
-            has_working_project: false,
-          }}
-        />
+        <AwardsPortfolioCardV2 studentProfile={studentProfile} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -336,7 +361,7 @@ export function MultiAgentTab({ profileId }: MultiAgentTabProps) {
       <CrisisAlchemyModal
         isOpen={showCrisisModal}
         onClose={() => setShowCrisisModal(false)}
-        studentProfile={{ spike: 'general' }}
+        studentProfile={studentProfile}
       />
     </div>
   );

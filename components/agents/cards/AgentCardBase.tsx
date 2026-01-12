@@ -22,6 +22,7 @@ interface AgentCardBaseProps {
   errorMessage?: string;
   onRefresh: () => void;
   onChat?: () => void;
+  onClick?: () => void;
   children: ReactNode;
   actions?: ReactNode;
   headerBadge?: ReactNode;
@@ -35,17 +36,26 @@ export function AgentCardBase({
   errorMessage,
   onRefresh,
   onChat,
+  onClick,
   children,
   actions,
   headerBadge,
 }: AgentCardBaseProps) {
+  const isClickable = !!onClick && !isLoading && !isError;
+
   return (
     <div
-      className="rounded-xl p-5 shadow-sm h-full flex flex-col"
+      className={`rounded-xl p-5 shadow-sm h-full flex flex-col transition-all ${
+        isClickable ? 'cursor-pointer hover:shadow-md hover:scale-[1.01]' : ''
+      }`}
       style={{
         backgroundColor: '#ffffff',
         border: `1px solid ${BRAND_COLORS.borderLight}`,
       }}
+      onClick={isClickable ? onClick : undefined}
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onKeyDown={isClickable ? (e) => e.key === 'Enter' && onClick?.() : undefined}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -112,6 +122,7 @@ export function AgentCardBase({
       <div
         className="flex items-center gap-2 mt-4 pt-4 border-t"
         style={{ borderColor: BRAND_COLORS.borderLight }}
+        onClick={(e) => e.stopPropagation()} // Prevent card click when clicking actions
       >
         <button
           onClick={onRefresh}
@@ -141,6 +152,16 @@ export function AgentCardBase({
         )}
 
         {actions}
+
+        {/* Click hint for clickable cards */}
+        {isClickable && (
+          <span
+            className="ml-auto text-xs"
+            style={{ color: BRAND_COLORS.textMuted }}
+          >
+            Click for details
+          </span>
+        )}
       </div>
     </div>
   );

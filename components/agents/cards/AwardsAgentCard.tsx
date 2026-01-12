@@ -12,9 +12,10 @@ import { AgentCardBase } from './AgentCardBase';
 interface AwardsAgentCardProps {
   profileId: string;
   onChat?: () => void;
+  onViewDetails?: (data: Record<string, unknown>) => void;
 }
 
-export function AwardsAgentCard({ profileId, onChat }: AwardsAgentCardProps) {
+export function AwardsAgentCard({ profileId, onChat, onViewDetails }: AwardsAgentCardProps) {
   const { data: matchData, isLoading: matchLoading, isError: matchError, refetch } = useAwardMatches(profileId);
   const { data: portfolioData, isLoading: portfolioLoading } = useAwardPortfolio(profileId);
 
@@ -23,6 +24,12 @@ export function AwardsAgentCard({ profileId, onChat }: AwardsAgentCardProps) {
 
   // Get portfolio data
   const portfolio = portfolioData?.portfolio || matchData?.portfolio;
+
+  const handleClick = () => {
+    if (onViewDetails && (matchData || portfolioData)) {
+      onViewDetails({ matches: matchData?.matches || [], portfolio, ...matchData } as unknown as Record<string, unknown>);
+    }
+  };
   const likelyCount = portfolio?.likely?.length || 0;
   const targetCount = portfolio?.target?.length || 0;
   const stretchCount = portfolio?.stretch?.length || 0;
@@ -36,6 +43,7 @@ export function AwardsAgentCard({ profileId, onChat }: AwardsAgentCardProps) {
       isError={isError}
       onRefresh={() => refetch()}
       onChat={onChat}
+      onClick={handleClick}
     >
       <div className="space-y-4">
         {/* Award Tiers */}

@@ -12,9 +12,10 @@ import { CrisisAlchemyModal } from '../CrisisAlchemyModal';
 
 interface CrisisAgentCardProps {
   profileId: string;
+  onViewDetails?: (data: Record<string, unknown>) => void;
 }
 
-export function CrisisAgentCard({ profileId }: CrisisAgentCardProps) {
+export function CrisisAgentCard({ profileId, onViewDetails }: CrisisAgentCardProps) {
   const [showCrisisModal, setShowCrisisModal] = useState(false);
   const [activeCrises, setActiveCrises] = useState<number>(0);
 
@@ -26,6 +27,12 @@ export function CrisisAgentCard({ profileId }: CrisisAgentCardProps) {
     // Could fetch active crises count here
   };
 
+  const handleClick = () => {
+    if (onViewDetails) {
+      onViewDetails({ active_crises: [], resolved_crises: [] });
+    }
+  };
+
   return (
     <>
       <AgentCardBase
@@ -34,6 +41,7 @@ export function CrisisAgentCard({ profileId }: CrisisAgentCardProps) {
         isLoading={isLoading}
         isError={isError}
         onRefresh={handleRefresh}
+        onClick={handleClick}
         actions={
           <button
             onClick={() => setShowCrisisModal(true)}

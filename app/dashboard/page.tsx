@@ -463,7 +463,7 @@ function DashboardContent() {
           dateRange: phase.duration,
           goal: phase.goals?.[0] || '',
           completionPercent: supabaseGamePlan?.completionPercentage || (idx === 0 ? 50 : 0),
-          milestones: phase.actions.slice(0, 3).map((action, actionIdx) => ({
+          milestones: (phase.actions || []).slice(0, 3).map((action, actionIdx) => ({
             id: `m${idx}-${actionIdx}`,
             title: action,
             status: 'pending' as const,
@@ -477,7 +477,7 @@ function DashboardContent() {
             dateRange: phase.timeframe,
             goal: phase.description,
             completionPercent: idx === 0 ? 50 : 0,
-            milestones: phase.actions.slice(0, 3).map((action) => ({
+            milestones: (phase.actions || []).slice(0, 3).map((action) => ({
               id: action.id,
               title: action.title,
               status: 'pending' as const,
@@ -531,7 +531,7 @@ function DashboardContent() {
         dateRange: week.weekRange,
         focus: week.focus,
         completionPercent: week.progress,
-        tasks: week.tasks.map((task) => ({
+        tasks: (week.tasks || []).map((task) => ({
           id: task.id,
           title: task.title,
           description: '',

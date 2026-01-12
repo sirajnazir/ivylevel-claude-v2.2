@@ -1,6 +1,6 @@
 # agents/agents/core/__init__.py
 """
-IvyQuest v13.2 - Core Agent Framework
+IvyQuest v15.0 - Core Agent Framework
 
 This package provides the foundational components for the IvyQuest
 multi-agent ReAct platform:
@@ -118,4 +118,4 @@ __all__ = [
     "VoiceDimension",
 ]
 
-__version__ = "13.2.0"
+__version__ = "15.0.0"

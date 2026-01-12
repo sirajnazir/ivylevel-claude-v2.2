@@ -12,9 +12,10 @@ import { AgentCardBase } from './AgentCardBase';
 interface OpportunityAgentCardProps {
   profileId: string;
   onChat?: () => void;
+  onViewDetails?: (data: Record<string, unknown>) => void;
 }
 
-export function OpportunityAgentCard({ profileId, onChat }: OpportunityAgentCardProps) {
+export function OpportunityAgentCard({ profileId, onChat, onViewDetails }: OpportunityAgentCardProps) {
   const { data: matchData, isLoading: matchLoading, isError: matchError, refetch: refetchMatch } = useOpportunityMatches(profileId);
   const { data: alertsData, isLoading: alertsLoading, refetch: refetchAlerts } = useOpportunityAlerts(profileId);
 
@@ -24,6 +25,12 @@ export function OpportunityAgentCard({ profileId, onChat }: OpportunityAgentCard
   const handleRefresh = () => {
     refetchMatch();
     refetchAlerts();
+  };
+
+  const handleClick = () => {
+    if (onViewDetails && (matchData || alertsData)) {
+      onViewDetails({ matches: matchData?.matches || [], alerts: alertsData?.alerts || [], urgent_count: alertsData?.urgent_count || 0 } as Record<string, unknown>);
+    }
   };
 
   // Get data
@@ -42,6 +49,7 @@ export function OpportunityAgentCard({ profileId, onChat }: OpportunityAgentCard
       isError={isError}
       onRefresh={handleRefresh}
       onChat={onChat}
+      onClick={handleClick}
       headerBadge={
         urgentCount > 0 && (
           <span

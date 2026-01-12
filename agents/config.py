@@ -1,5 +1,5 @@
 """
-IvyQuest v10.0 Agent Service Configuration
+IvyQuest v15.0 Agent Service Configuration
 ==========================================
 Loads environment variables and provides typed settings.
 """
@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     # Service Configuration
     service_name: str = "ivyquest-agents"
-    service_version: str = "10.0.0"
+    service_version: str = "15.0.0"
     debug: bool = False
     host: str = "0.0.0.0"
     port: int = Field(default=8001, alias="AGENT_SERVICE_PORT")

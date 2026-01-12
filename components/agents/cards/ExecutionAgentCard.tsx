@@ -12,9 +12,10 @@ import { AgentCardBase } from './AgentCardBase';
 interface ExecutionAgentCardProps {
   profileId: string;
   onChat?: () => void;
+  onViewDetails?: (data: Record<string, unknown>) => void;
 }
 
-export function ExecutionAgentCard({ profileId, onChat }: ExecutionAgentCardProps) {
+export function ExecutionAgentCard({ profileId, onChat, onViewDetails }: ExecutionAgentCardProps) {
   const { data: edsData, isLoading: edsLoading, isError: edsError, refetch: refetchEds } = useExecutionDebtScore(profileId);
   const { data: blockersData, isLoading: blockersLoading } = useBlockers(profileId);
 
@@ -23,6 +24,12 @@ export function ExecutionAgentCard({ profileId, onChat }: ExecutionAgentCardProp
 
   const handleRefresh = () => {
     refetchEds();
+  };
+
+  const handleClick = () => {
+    if (onViewDetails && edsData) {
+      onViewDetails({ eds: edsData.execution_debt_score, blockers: blockersData?.blockers || [], ...edsData } as Record<string, unknown>);
+    }
   };
 
   // Get status color and icon
@@ -80,6 +87,7 @@ export function ExecutionAgentCard({ profileId, onChat }: ExecutionAgentCardProp
       isError={isError}
       onRefresh={handleRefresh}
       onChat={onChat}
+      onClick={handleClick}
       headerBadge={
         edsData?.status && (
           <span

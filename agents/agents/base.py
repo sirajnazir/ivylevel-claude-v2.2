@@ -23,6 +23,7 @@ import structlog
 from config import settings, AutonomyLevel
 from tools.database import (
     get_profile,
+    get_profile_with_assessment,
     update_profile,
     create_state_version,
     get_latest_state,
@@ -179,8 +180,8 @@ class BaseAgent(ABC):
     # =========================================
 
     async def _get_profile(self, profile_id: str) -> Optional[Dict]:
-        """Get profile by ID with logging."""
-        profile = await get_profile(profile_id)
+        """Get profile with assessment data merged using centralized function."""
+        profile = await get_profile_with_assessment(profile_id)
         if not profile:
             self.logger.warning("profile_not_found", profile_id=profile_id)
         return profile

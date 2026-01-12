@@ -41,6 +41,64 @@ async def get_profile(profile_id: str) -> Optional[Dict]:
         return None
 
 
+async def get_profile_with_assessment(profile_id: str) -> Optional[Dict]:
+    """
+    Get complete profile with assessment data merged.
+
+    This is the preferred method for agents to get profile data.
+    It fetches from both profiles and assessments tables and merges them,
+    ensuring profile_data from the latest assessment is always included.
+
+    Returns:
+        Dict with profile fields + profile_data from latest assessment
+    """
+    try:
+        # Start with profile (may be minimal - just id, email, role)
+        profile_result = supabase.table("profiles").select("*").eq("id", profile_id).maybe_single().execute()
+
+        # Get latest completed assessment for this user
+        assessment_result = supabase.table("assessments").select(
+            "id, profile_data, scores, archetype, completeness_score, completed_at"
+        ).eq("user_id", profile_id).order(
+            "completed_at", desc=True
+        ).limit(1).execute()
+
+        # If no profile and no assessment, user doesn't exist
+        if not profile_result.data and (not assessment_result.data or len(assessment_result.data) == 0):
+            logger.warning("get_profile_with_assessment: no data found", profile_id=profile_id)
+            return None
+
+        # Build merged profile
+        profile = profile_result.data if profile_result.data else {"id": profile_id}
+
+        # Merge assessment data if available
+        if assessment_result.data and len(assessment_result.data) > 0:
+            assessment = assessment_result.data[0]
+            profile["profile_data"] = assessment.get("profile_data") or {}
+            profile["scores"] = assessment.get("scores") or {}
+            profile["archetype"] = assessment.get("archetype")
+            profile["completeness_score"] = assessment.get("completeness_score")
+            profile["assessment_id"] = assessment.get("id")
+            profile["completed_at"] = assessment.get("completed_at")
+
+            logger.info(
+                "get_profile_with_assessment: merged data",
+                profile_id=profile_id,
+                has_profile_data=bool(profile.get("profile_data")),
+                assessment_id=assessment.get("id")
+            )
+        else:
+            # No assessment - set empty profile_data
+            profile["profile_data"] = {}
+            logger.warning("get_profile_with_assessment: no assessment found", profile_id=profile_id)
+
+        return profile
+
+    except Exception as e:
+        logger.error("get_profile_with_assessment_error", profile_id=profile_id, error=str(e))
+        return None
+
+
 async def update_profile(profile_id: str, updates: Dict) -> bool:
     """Update profile with new data."""
     try:

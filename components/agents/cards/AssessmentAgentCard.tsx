@@ -12,10 +12,17 @@ import { AgentCardBase } from './AgentCardBase';
 interface AssessmentAgentCardProps {
   profileId: string;
   onChat?: () => void;
+  onViewDetails?: (data: Record<string, unknown>) => void;
 }
 
-export function AssessmentAgentCard({ profileId, onChat }: AssessmentAgentCardProps) {
+export function AssessmentAgentCard({ profileId, onChat, onViewDetails }: AssessmentAgentCardProps) {
   const { data, isLoading, isError, refetch } = useNarrativeDNA(profileId);
+
+  const handleClick = () => {
+    if (onViewDetails && data) {
+      onViewDetails(data as unknown as Record<string, unknown>);
+    }
+  };
 
   return (
     <AgentCardBase
@@ -25,6 +32,7 @@ export function AssessmentAgentCard({ profileId, onChat }: AssessmentAgentCardPr
       isError={isError}
       onRefresh={() => refetch()}
       onChat={onChat}
+      onClick={handleClick}
     >
       {data && (
         <div className="space-y-3">

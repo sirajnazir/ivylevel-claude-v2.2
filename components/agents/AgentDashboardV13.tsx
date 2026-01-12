@@ -1,17 +1,18 @@
 /**
- * AgentDashboardV13 Component
- * v13.3 - Multi-Agent Dashboard with 6 agent cards in responsive grid
+ * AgentDashboard Component
+ * v15.0 - Multi-Agent Dashboard with 6 agent cards in responsive grid
  *
  * Layout: 2x3 grid on desktop, stacked on mobile
  * Features:
- * - Health indicator
+ * - Health indicator with version display
  * - Refresh all button
  * - 6 agent cards with real-time data
+ * - Clickable cards opening detail modals (v15.0)
  * - Chat view toggle (optional)
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { RefreshCw, Brain, Activity } from 'lucide-react';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { useAgentV13Health, useDashboardV13Data } from '@/hooks/useAgentData';
@@ -23,6 +24,7 @@ import {
   OpportunityAgentCard,
   CrisisAgentCard,
 } from './cards';
+import { AgentDetailModal, AgentType } from './AgentDetailModal';
 
 interface AgentDashboardV13Props {
   profileId: string | null;
@@ -33,6 +35,19 @@ export function AgentDashboardV13({ profileId, onAgentChat }: AgentDashboardV13P
   const { data: health, isLoading: healthLoading } = useAgentV13Health();
   const { isLoading, refetchAll } = useDashboardV13Data(profileId);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalAgentType, setModalAgentType] = useState<AgentType>('assessment');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalData, setModalData] = useState<Record<string, unknown> | null>(null);
+
+  const handleViewDetails = useCallback((agentType: AgentType, title: string, data: Record<string, unknown>) => {
+    setModalAgentType(agentType);
+    setModalTitle(title);
+    setModalData(data);
+    setModalOpen(true);
+  }, []);
 
   const handleRefreshAll = async () => {
     setIsRefreshing(true);
@@ -139,7 +154,7 @@ export function AgentDashboardV13({ profileId, onAgentChat }: AgentDashboardV13P
         <div className="flex items-center gap-2 text-xs" style={{ color: BRAND_COLORS.textMuted }}>
           <Activity size={12} />
           <span>
-            v{health.version || '13.3'} •
+            v{health.version || '15.0'} •
             ReAct: {health.react_enabled ? 'On' : 'Off'} •
             Memory: {health.memory_enabled ? 'On' : 'Off'} •
             HITL: {health.hitl_enabled ? 'On' : 'Off'}
@@ -152,25 +167,42 @@ export function AgentDashboardV13({ profileId, onAgentChat }: AgentDashboardV13P
         <AssessmentAgentCard
           profileId={profileId}
           onChat={() => handleAgentChat('narrative')}
+          onViewDetails={(data) => handleViewDetails('assessment', 'Assessment Agent - Narrative DNA', data)}
         />
         <GamePlanAgentCard
           profileId={profileId}
           onChat={() => handleAgentChat('strategist')}
+          onViewDetails={(data) => handleViewDetails('gameplan', 'Game Plan Agent - Strategic Roadmap', data)}
         />
         <ExecutionAgentCard
           profileId={profileId}
           onChat={() => handleAgentChat('strategist')}
+          onViewDetails={(data) => handleViewDetails('execution', 'Execution Agent - Progress Tracking', data)}
         />
         <AwardsAgentCard
           profileId={profileId}
           onChat={() => handleAgentChat('awards')}
+          onViewDetails={(data) => handleViewDetails('awards', 'Awards Agent - Portfolio Analysis', data)}
         />
         <OpportunityAgentCard
           profileId={profileId}
           onChat={() => handleAgentChat('opportunity')}
+          onViewDetails={(data) => handleViewDetails('opportunity', 'Opportunity Agent - Matches & Deadlines', data)}
         />
-        <CrisisAgentCard profileId={profileId} />
+        <CrisisAgentCard
+          profileId={profileId}
+          onViewDetails={(data) => handleViewDetails('crisis', 'Crisis Response - VARC Framework', data)}
+        />
       </div>
+
+      {/* Detail Modal */}
+      <AgentDetailModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        agentType={modalAgentType}
+        title={modalTitle}
+        data={modalData}
+      />
 
       {/* Thresholds Info (Development) */}
       {health?.thresholds && process.env.NODE_ENV === 'development' && (

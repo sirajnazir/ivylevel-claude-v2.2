@@ -14,11 +14,12 @@ import {
 import { COLORS, GRADIENTS } from '@/lib/constants/design';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { useMultiAgentChat, type AgentType } from '@/lib/hooks/useAgents';
+import { getSupabaseClient } from '@/lib/supabase/client';
 
 // v13.3 Components
 import { AgentDashboardV13 } from '@/components/agents/AgentDashboardV13';
 import { NotificationBell } from '@/components/shared/NotificationBell';
-import { useProfileId } from '@/lib/store/useSessionStore';
+import { useProfileId, useIsAssessmentComplete, useSessionStore } from '@/lib/store/useSessionStore';
 
 interface Agent {
   id: AgentType;
@@ -53,6 +54,29 @@ export function MultiAgentsTab() {
   // v13.3 Features
   const [activeView, setActiveView] = useState<'dashboard' | 'chat'>('dashboard');
   const profileId = useProfileId();
+  const isAssessmentComplete = useIsAssessmentComplete();
+  const { setProfileId, session_id } = useSessionStore();
+
+  // Retroactively set profile_id if assessment is complete but profile_id is missing
+  // This handles users who completed assessment before v13.3 profile linking was added
+  // Uses auth user ID (which matches Supabase assessment data) instead of session_id
+  useEffect(() => {
+    const setAuthProfileId = async () => {
+      if (isAssessmentComplete && !profileId) {
+        const supabase = getSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
+          setProfileId(user.id);
+          console.log('[MultiAgentsTab] Profile ID set to auth user:', user.id);
+        } else if (session_id) {
+          // Fallback to session_id for non-authenticated users
+          setProfileId(session_id);
+          console.log('[MultiAgentsTab] Profile ID set to session (fallback):', session_id);
+        }
+      }
+    };
+    setAuthProfileId();
+  }, [isAssessmentComplete, profileId, session_id, setProfileId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

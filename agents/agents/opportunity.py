@@ -9,7 +9,7 @@ import json
 
 from langchain_openai import ChatOpenAI
 
-from tools.database import get_supabase_client
+from tools.database import get_supabase_client, get_profile_with_assessment
 
 
 class OpportunityAgent:
@@ -39,7 +39,16 @@ class OpportunityAgent:
         try:
             profile = await self._get_profile(profile_id)
             if not profile:
-                return {"success": False, "error": "Profile not found"}
+                # Return placeholder data for graceful frontend handling
+                return {
+                    "success": True,
+                    "total_matches": 0,
+                    "top_recommendations": [],
+                    "advance_alerts": [],
+                    "backup_cascades": [],
+                    "timeline": [],
+                    "placeholder": True
+                }
 
             # Get all active opportunities
             opportunities = await self._get_opportunities()
@@ -598,18 +607,8 @@ class OpportunityAgent:
         ]
 
     async def _get_profile(self, profile_id: str) -> Optional[Dict]:
-        """Get profile with assessment data"""
-        result = self.db.table("profiles").select("*").eq("id", profile_id).single().execute()
-        if result.data:
-            assessment = self.db.table("assessments").select("profile_data, scores").eq(
-                "user_id", profile_id
-            ).order("completed_at", desc=True).limit(1).execute()
-
-            if assessment.data:
-                result.data["profile_data"] = assessment.data[0].get("profile_data", {})
-
-            return result.data
-        return None
+        """Get profile with assessment data using centralized function."""
+        return await get_profile_with_assessment(profile_id)
 
     async def _version_state(self, profile_id: str, event: str, state: Dict, created_by: str = "agent"):
         """Version state change"""

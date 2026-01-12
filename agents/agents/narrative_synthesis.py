@@ -92,7 +92,17 @@ class NarrativeSynthesisAgent:
                 assessment_contract = await self._get_assessment_contract(profile_id)
 
             if not assessment_contract:
-                return {"success": False, "error": "Assessment data not found"}
+                # Return placeholder data instead of error for graceful frontend handling
+                return {
+                    "success": True,
+                    "brand_statement": "Complete your assessment to unlock your unique narrative",
+                    "narrative_dna": "Your personalized narrative will be generated once you complete the IvyQuest assessment. This will synthesize your identity, aptitude, passion, and service into a compelling story.",
+                    "first_principle": "Discover your driving purpose",
+                    "themes": ["Identity", "Potential", "Growth"],
+                    "confidence": 0.0,
+                    "requires_handoff": False,
+                    "placeholder": True
+                }
 
             # Extract the four pillars
             identity = self._extract_identity(assessment_contract)
@@ -413,7 +423,9 @@ class NarrativeSynthesisAgent:
 
         return f"""You are an elite college admissions strategist with 20+ years of experience placing students at top universities. Your task is to synthesize a powerful, authentic narrative for this student.
 
-## JENNY'S FORMULA
+CRITICAL: Do NOT use any names like "Jenny", "John", or any made-up names in the narrative. Refer to the student as "this student", "they", or write in a way that describes their journey without using a specific name. The narrative should be written about the student in third person without naming them.
+
+## THE IVYLEVEL NARRATIVE FORMULA
 Create a narrative using this proven formula:
 "Because I am [IDENTITY], I use [APTITUDE] and [PASSION] to [SERVICE], becoming [UNIQUE ROLE]"
 
@@ -461,6 +473,7 @@ Create a narrative using this proven formula:
    - Transforms any constraints into strengths
    - Shows authentic self-discovery and growth
    - Demonstrates impact and future potential
+   - IMPORTANT: Do NOT use any names. Write about "this student", "they", or describe their journey in third person without a name.
 
 3. **First Principle**: The core "why" that drives this student (1 sentence)
 
@@ -516,7 +529,7 @@ Focus on AUTHENTICITY, SPECIFICITY, and IMPACT. Avoid generic statements."""
 
             # Get latest assessment
             assessment_result = self.db.table("assessments").select(
-                "profile_data, scores, archetype_id, archetype_confidence, archetype_rationale"
+                "profile_data, scores, archetype, archetype_confidence"
             ).eq("user_id", profile_id).order("completed_at", desc=True).limit(1).execute()
 
             assessment = assessment_result.data[0] if assessment_result.data else {}
@@ -526,10 +539,9 @@ Focus on AUTHENTICITY, SPECIFICITY, and IMPACT. Avoid generic statements."""
                 "profile_data": assessment.get("profile_data", {}),
                 "scores": assessment.get("scores", {}),
                 "archetype": {
-                    "id": assessment.get("archetype_id"),
+                    "id": assessment.get("archetype"),
                     "confidence": assessment.get("archetype_confidence"),
-                    "rationale": assessment.get("archetype_rationale")
-                } if assessment.get("archetype_id") else None
+                } if assessment.get("archetype") else None
             }
         except Exception as e:
             print(f"Error getting assessment contract: {e}")

@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { Progress } from '@/components/ui/Progress';
 import { FrameWrapper, CardNavigation } from '@/components/layout/AssessmentLayout';
 import { BRAND_COLORS } from '@/lib/constants/brand';
+import { getSupabaseClient } from '@/lib/supabase/client';
 import {
   Rocket,
   Clock,
@@ -215,7 +216,7 @@ interface Frame6Props {
 export function Frame6PowerUps({ onComplete }: Frame6Props) {
   const [selectedBoosters, setSelectedBoosters] = useState<string[]>([]);
   const [expandedBooster, setExpandedBooster] = useState<string | null>(null);
-  const { startFrame, completeFrame, completeAssessment } = useSessionStore();
+  const { startFrame, completeFrame, completeAssessment, setProfileId, session_id } = useSessionStore();
   const results = useResultsStore((s) => s.results);
   const ivyScore = useResultsStore((s) => s.ivy_score);
 
@@ -223,11 +224,26 @@ export function Frame6PowerUps({ onComplete }: Frame6Props) {
     startFrame(6, 1);
   }, [startFrame]);
 
-  const handleComplete = useCallback(() => {
+  const handleComplete = useCallback(async () => {
     completeFrame();
     completeAssessment();
+
+    // Get the REAL user_id from Supabase auth (not session_id)
+    // This ensures the profile_id matches the assessment data in Supabase
+    const supabase = getSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user?.id) {
+      setProfileId(user.id);
+      console.log('[Frame6] Profile ID set to auth user:', user.id);
+    } else if (session_id) {
+      // Fallback to session_id for non-authenticated users
+      setProfileId(session_id);
+      console.log('[Frame6] Profile ID set to session (fallback):', session_id);
+    }
+
     onComplete();
-  }, [completeFrame, completeAssessment, onComplete]);
+  }, [completeFrame, completeAssessment, setProfileId, session_id, onComplete]);
 
   const toggleBooster = (boosterId: string) => {
     setSelectedBoosters((prev) =>

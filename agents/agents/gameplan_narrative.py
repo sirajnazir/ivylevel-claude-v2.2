@@ -210,10 +210,11 @@ class NarrativeSynthesizer:
         Returns:
             MasterNarrative: The synthesized brand statement and filtering keywords
         """
-        raw_identity = raw_extraction.get('raw_identity', {})
-        raw_aptitude = raw_extraction.get('raw_aptitude', {})
-        raw_passion = raw_extraction.get('raw_passion', {})
-        raw_service = raw_extraction.get('raw_service', {})
+        # Use 'or {}' to handle explicit None values
+        raw_identity = raw_extraction.get('raw_identity') or {}
+        raw_aptitude = raw_extraction.get('raw_aptitude') or {}
+        raw_passion = raw_extraction.get('raw_passion') or {}
+        raw_service = raw_extraction.get('raw_service') or {}
 
         # Step 1: Find the First Principle passion (Jenny's core extraction)
         first_principle, evidence = self._extract_first_principle(raw_passion)
@@ -224,15 +225,15 @@ class NarrativeSynthesizer:
 
         # Step 3: Synthesize aptitude statement
         aptitude_statement = self._synthesize_aptitude(raw_aptitude)
-        aptitude_keywords = raw_aptitude.get('mentioned_skills', [])
+        aptitude_keywords = raw_aptitude.get('mentioned_skills') or []
 
         # Step 4: Synthesize passion statement (using first principle)
         passion_statement = self._synthesize_passion(raw_passion, first_principle)
-        passion_keywords = raw_passion.get('passion_keywords', [])
+        passion_keywords = raw_passion.get('passion_keywords') or []
 
         # Step 5: Synthesize service statement
         service_statement = self._synthesize_service(raw_service, raw_identity)
-        service_keywords = raw_service.get('communities_served', [])
+        service_keywords = raw_service.get('communities_served') or []
 
         # Step 6: Create brand statement using Jenny's formula
         brand_statement = self._create_brand_statement(
@@ -278,9 +279,9 @@ class NarrativeSynthesizer:
         Huda example: She does CS, games, film - but fundamentally she's a BUILDER
         """
         all_text = ' '.join([
-            raw_passion.get('brag_text', '') or '',
-            raw_passion.get('spike_description', '') or '',
-            ' '.join(raw_passion.get('passion_keywords', [])),
+            raw_passion.get('brag_text') or '',
+            raw_passion.get('spike_description') or '',
+            ' '.join(raw_passion.get('passion_keywords') or []),
         ]).lower()
 
         scores: Dict[FirstPrinciplePassion, int] = {}
@@ -324,7 +325,7 @@ class NarrativeSynthesizer:
                 parts.append(origin)
 
         # Add self-described characteristics
-        for desc in raw_identity.get('self_described_identity', [])[:2]:
+        for desc in (raw_identity.get('self_described_identity') or [])[:2]:
             if desc and desc not in parts:
                 parts.append(desc)
 
@@ -347,14 +348,14 @@ class NarrativeSynthesizer:
         if raw_identity.get('first_gen'):
             keywords.extend(['first-gen', 'first-generation'])
 
-        keywords.extend(raw_identity.get('self_described_identity', []))
-        keywords.extend(raw_identity.get('communities_served', []))
+        keywords.extend(raw_identity.get('self_described_identity') or [])
+        keywords.extend(raw_identity.get('communities_served') or [])
 
         return list(set(keywords))
 
     def _synthesize_aptitude(self, raw_aptitude: Dict[str, Any]) -> str:
         """Create aptitude statement from raw data"""
-        skills = raw_aptitude.get('mentioned_skills', [])
+        skills = raw_aptitude.get('mentioned_skills') or []
         major = raw_aptitude.get('intended_major', '')
 
         if skills:
@@ -369,7 +370,7 @@ class NarrativeSynthesizer:
         first_principle: FirstPrinciplePassion
     ) -> str:
         """Create passion statement using first principle"""
-        keywords = raw_passion.get('passion_keywords', [])
+        keywords = raw_passion.get('passion_keywords') or []
 
         # Use the first principle as the core
         statement = f"who is fundamentally a {first_principle.value}"
@@ -388,7 +389,7 @@ class NarrativeSynthesizer:
         raw_identity: Dict[str, Any]
     ) -> str:
         """Create service statement, connecting to identity"""
-        communities = raw_service.get('communities_served', [])
+        communities = raw_service.get('communities_served') or []
         description = raw_service.get('service_description', '')
 
         if communities:
@@ -398,7 +399,7 @@ class NarrativeSynthesizer:
             return f"committed to {truncated}"
 
         # Default: connect to identity
-        identity_keywords = raw_identity.get('self_described_identity', [])
+        identity_keywords = raw_identity.get('self_described_identity') or []
         if identity_keywords:
             return "supporting others like them"
 
@@ -482,7 +483,7 @@ class NarrativeSynthesizer:
             identity_score += 2
         if raw_identity.get('self_described_identity'):
             identity_score += 2
-        identity_score += min(2, len(raw_identity.get('family_structure', [])))
+        identity_score += min(2, len(raw_identity.get('family_structure') or []))
         scores.identity_clarity = min(10, identity_score)
 
         # Aptitude alignment (1-10)
@@ -493,7 +494,7 @@ class NarrativeSynthesizer:
             aptitude_score += 2
         if raw_aptitude.get('academic_awards'):
             aptitude_score += 3
-        aptitude_score += min(2, len(raw_aptitude.get('competitions_entered', [])))
+        aptitude_score += min(2, len(raw_aptitude.get('competitions_entered') or []))
         scores.aptitude_alignment = min(10, aptitude_score)
 
         # Passion authenticity (1-10)
