@@ -48,3 +48,4 @@ outputs/
 __pycache__/
 *.pyc
 *.pyo
+.enrichment_checkpoints/

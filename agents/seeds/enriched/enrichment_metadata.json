@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0",
+  "enrichment_date": "2026-01-12T20:09:06.167370",
+  "awards": {
+    "total_in_database": 97,
+    "enriched": 97,
+    "tier_distribution": {
+      "1": 23,
+      "2": 56,
+      "3": 17,
+      "4": 1
+    }
+  },
+  "programs": {
+    "total_in_database": 58,
+    "enriched": 58,
+    "tier_distribution": {
+      "2": 29,
+      "1": 15,
+      "3": 10,
+      "4": 4
+    }
+  },
+  "errors": 0,
+  "llm_model": "gpt-4o"
+}
