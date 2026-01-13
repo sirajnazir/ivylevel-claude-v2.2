@@ -102,3 +102,13 @@ class HudaBenchmarks:
     HUDA_TASK_COMPLETION = 0.73
     HUDA_AWARD_WIN_RATE = 0.625  # 5/8
     HUDA_EDS = 12
+
+
+# =============================================================================
+# HYBRID ARCHITECTURE v4.0 FEATURE FLAGS
+# =============================================================================
+FEATURE_FLAGS = {
+    "use_profile_inference": True,   # Enable profile-based spike/archetype inference
+    "use_strategic_routing": True,   # Enable strategic routing (BUILD_FRESH/OPTIMIZE/REFRAME/URGENT)
+    "enable_guardrails": True,       # Enable output validation
+}

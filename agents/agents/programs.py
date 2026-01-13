@@ -15,6 +15,10 @@ from langchain_openai import ChatOpenAI
 
 from tools.database import get_supabase_client, get_profile_with_assessment
 
+# v4.0: Hybrid Architecture imports
+from agents.core.guardrails import validate_programs_output
+from config import FEATURE_FLAGS
+
 
 # Path to enriched programs data
 ENRICHED_PROGRAMS_PATH = os.path.join(
@@ -75,14 +79,17 @@ class ProgramsAgent:
         Args:
             profile_id: Student profile ID
             identity_synthesis: (optional) Output from EC Agent
+            route_config: (optional) Strategic routing config from GamePlan
         """
         identity_synthesis = kwargs.get("identity_synthesis")
-        return await self.match(profile_id, identity_synthesis=identity_synthesis)
+        route_config = kwargs.get("route_config", {})
+        return await self.match(profile_id, identity_synthesis=identity_synthesis, route_config=route_config)
 
     async def match(
         self,
         profile_id: str,
-        identity_synthesis: Optional[Dict] = None
+        identity_synthesis: Optional[Dict] = None,
+        route_config: Optional[Dict] = None
     ) -> Dict[str, Any]:
         """
         Match profile to programs with Strategic Intelligence filtering.
@@ -91,7 +98,13 @@ class ProgramsAgent:
         - Archetype fit scores
         - Strategic tier positioning
         - Hidden value alignment
+
+        Uses route_config for:
+        - be_prescriptive: Whether to provide detailed action steps
+        - max_recommendations: Limit results for URGENT_TRIAGE
+        - timeline_horizon: Adjust recommendations based on time available
         """
+        route_config = route_config or {}
         try:
             profile = await self._get_profile(profile_id)
             if not profile:
@@ -195,16 +208,34 @@ class ProgramsAgent:
                 matched, archetype, identity_synthesis
             )
 
-            return {
+            # v4.0: Apply route_config adjustments
+            max_recs = route_config.get("max_recommendations", 10)
+            be_prescriptive = route_config.get("be_prescriptive", False)
+
+            result = {
                 "success": True,
                 "total_matches": len(matched),
-                "top_recommendations": matched[:10],
-                "advance_alerts": alerts,
+                "top_recommendations": matched[:max_recs],
+                "advance_alerts": alerts[:max_recs] if alerts else [],
                 "synergy_recommendations": synergy_recs,
-                "timeline": self._generate_timeline(matched),
+                "timeline": self._generate_timeline(matched[:max_recs]),
                 "strategic_insights": strategic_insights,
                 "archetype_used": archetype,
+                "route_config_applied": route_config if route_config else None,
             }
+
+            # v4.0: Add prescriptive action steps if enabled
+            if be_prescriptive and matched:
+                result["prescriptive_actions"] = self._generate_prescriptive_actions(matched[:3])
+
+            # v4.0: Validate output against knowledge base
+            if FEATURE_FLAGS.get("enable_guardrails", True):
+                validation = validate_programs_output(result, self._load_enriched_programs())
+                if validation.warnings:
+                    result["validation_warnings"] = validation.warnings
+                result["confidence"] = validation.confidence
+
+            return result
 
         except Exception as e:
             import traceback
@@ -305,6 +336,65 @@ class ProgramsAgent:
             })
 
         return insights
+
+    def _generate_prescriptive_actions(self, top_programs: List[Dict]) -> List[Dict]:
+        """
+        Generate specific, actionable steps for program applications.
+        Used when be_prescriptive=True in route_config (BUILD_FRESH, URGENT_TRIAGE).
+        """
+        actions = []
+
+        for i, prog in enumerate(top_programs, 1):
+            action = {
+                "priority": i,
+                "program": prog.get("name"),
+                "deadline": prog.get("deadline"),
+                "action_steps": [],
+            }
+
+            # Add specific action steps
+            if prog.get("deadline"):
+                action["action_steps"].append(
+                    f"Application deadline: {prog['deadline']}"
+                )
+
+            timing = prog.get("timing", {})
+            if timing.get("ideal_apply_window"):
+                action["action_steps"].append(
+                    f"Best time to apply: {timing['ideal_apply_window']}"
+                )
+
+            if timing.get("application_intensity"):
+                intensity = timing["application_intensity"]
+                if intensity == "heavy":
+                    action["action_steps"].append(
+                        "Heavy application - start prep 4+ weeks early"
+                    )
+                elif intensity == "moderate":
+                    action["action_steps"].append(
+                        "Moderate application - plan 2-3 weeks prep time"
+                    )
+
+            if prog.get("success_patterns"):
+                action["action_steps"].append(
+                    f"Key to success: {prog['success_patterns'][0]}"
+                )
+
+            if prog.get("hidden_value"):
+                action["action_steps"].append(
+                    f"Hidden benefit: {prog['hidden_value'][0]}"
+                )
+
+            # Add synergy info
+            synergies = prog.get("synergies", {})
+            if synergies.get("pairs_well_with"):
+                action["action_steps"].append(
+                    f"Pairs well with: {synergies['pairs_well_with'][0]}"
+                )
+
+            actions.append(action)
+
+        return actions
 
     async def calculate_fit_score(self, profile: Dict, program: Dict) -> float:
         """Calculate fit score based on multiple factors"""

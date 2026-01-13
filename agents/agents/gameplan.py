@@ -39,6 +39,10 @@ from .extracurriculars import extracurriculars_agent
 from .awards import awards_agent
 from .programs import programs_agent
 
+# v4.0: Hybrid Architecture imports
+from agents.core.strategic_router import StrategicRouter, StrategicRoute, calculate_months_to_ed
+from config import FEATURE_FLAGS
+
 
 # Touchpoint types for activity evaluation (ACP-005)
 TOUCHPOINTS = [
@@ -86,6 +90,9 @@ class GamePlanAgent:
         self.awards_agent = awards_agent
         self.programs_agent = programs_agent
 
+        # v4.0: Strategic Router for approach selection (deterministic rules)
+        self.router = StrategicRouter()
+
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
         """Main processing entry point."""
         # Use orchestrated flow if requested
@@ -93,16 +100,77 @@ class GamePlanAgent:
             return await self.generate_orchestrated(profile_id)
         return await self.generate(profile_id, kwargs.get("data"))
 
+    # =========================================================================
+    # v4.0: Strategic Routing
+    # =========================================================================
+
+    async def _determine_strategic_route(self, profile: Dict) -> StrategicRoute:
+        """
+        Determine strategic approach for this student.
+
+        v4.0: Uses LLMRouter to select BUILD/OPTIMIZE/REFRAME/URGENT
+        """
+        profile_data = profile.get("profile_data", {})
+        experience = profile_data.get("experience", {})
+        activities = experience.get("activities", [])
+        identity = profile_data.get("identity", {})
+        grade = identity.get("grade", 11)
+
+        # Build context for router
+        context = {
+            "grade": grade,
+            "activity_count": len(activities),
+            "has_tier1": any(
+                self._classify_activity_tier(a) == "T1"
+                for a in activities
+            ),
+            "has_tier2": any(
+                self._classify_activity_tier(a) == "T2"
+                for a in activities
+            ),
+            "months_to_ed": calculate_months_to_ed(grade),
+        }
+
+        return await self.router.decide_route(context)
+
+    def _classify_activity_tier(self, activity: Dict) -> str:
+        """Quick tier classification for routing."""
+        text = f"{activity.get('name', '')} {activity.get('role', '')} {activity.get('description', '')}".lower()
+
+        t1_signals = ["founder", "national", "international", "published", "olympiad"]
+        t2_signals = ["president", "captain", "state", "research", "intern"]
+
+        if any(s in text for s in t1_signals):
+            return "T1"
+        if any(s in text for s in t2_signals):
+            return "T2"
+        return "T3"
+
     async def generate_orchestrated(self, profile_id: str) -> Dict[str, Any]:
         """
         Orchestrated GamePlan generation using multi-agent flow.
 
-        Flow:
+        v4.0 Flow:
+        0. Determine strategic route (NEW)
         1. EC Agent (FIRST) → identity_synthesis
         2. Awards + Programs (PARALLEL) ← identity_synthesis
-        3. Synthesis → Unified GamePlan
+        3. Synthesis → Unified GamePlan with route context
         """
         try:
+            # ========================================================
+            # STEP 0 (v4.0): Determine Strategic Route
+            # ========================================================
+            profile = await self._get_profile(profile_id)
+            if not profile:
+                return await self.generate(profile_id, None)
+
+            route = None
+            if FEATURE_FLAGS.get("use_strategic_routing", True):
+                route = await self._determine_strategic_route(profile)
+                print(f"[GamePlan] Strategic route: {route.choice.value} - {route.reasoning}")
+            else:
+                print(f"[GamePlan] Strategic routing disabled, using default flow")
+
             # ========================================================
             # STEP 1: Run EC Agent FIRST to get identity synthesis
             # ========================================================
@@ -122,13 +190,18 @@ class GamePlanAgent:
             # ========================================================
             print(f"[GamePlan] Step 2: Running Awards + Programs in parallel")
 
+            # Get route config for downstream agents
+            route_config = route.config if route else {}
+
             awards_task = self.awards_agent.process(
                 profile_id,
-                identity_synthesis=identity_synthesis
+                identity_synthesis=identity_synthesis,
+                route_config=route_config
             )
             programs_task = self.programs_agent.process(
                 profile_id,
-                identity_synthesis=identity_synthesis
+                identity_synthesis=identity_synthesis,
+                route_config=route_config
             )
 
             # Execute in parallel
@@ -190,7 +263,7 @@ class GamePlanAgent:
                 "programs_count": programs_result.get("total_matches", 0),
             })
 
-            return {
+            result = {
                 "success": True,
                 "game_plan": unified_plan,
                 "orchestration": {
@@ -199,6 +272,13 @@ class GamePlanAgent:
                     "programs_agent": "completed" if programs_result.get("success") else "failed",
                 },
             }
+
+            # v4.0: Include strategic route if routing was used
+            if route:
+                result["strategic_route"] = route.to_dict()
+                unified_plan["strategic_route"] = route.to_dict()
+
+            return result
 
         except Exception as e:
             import traceback

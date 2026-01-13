@@ -15,6 +15,10 @@ from langchain_openai import ChatOpenAI
 
 from tools.database import get_supabase_client, get_profile_with_assessment
 
+# v4.0: Hybrid Architecture imports
+from agents.core.guardrails import validate_awards_output
+from config import FEATURE_FLAGS
+
 
 # Path to enriched awards data
 ENRICHED_AWARDS_PATH = os.path.join(
@@ -79,14 +83,17 @@ class AwardsAgent:
         Args:
             profile_id: Student profile ID
             identity_synthesis: (optional) Output from EC Agent with spike, archetype, pillars
+            route_config: (optional) Strategic routing config from GamePlan
         """
         identity_synthesis = kwargs.get("identity_synthesis")
-        return await self.match(profile_id, identity_synthesis=identity_synthesis)
+        route_config = kwargs.get("route_config", {})
+        return await self.match(profile_id, identity_synthesis=identity_synthesis, route_config=route_config)
 
     async def match(
         self,
         profile_id: str,
-        identity_synthesis: Optional[Dict] = None
+        identity_synthesis: Optional[Dict] = None,
+        route_config: Optional[Dict] = None
     ) -> Dict[str, Any]:
         """
         Match profile to awards with Strategic Intelligence filtering.
@@ -95,7 +102,13 @@ class AwardsAgent:
         - Archetype fit scores
         - Strategic tier positioning
         - Win cascade readiness
+
+        Uses route_config for:
+        - be_prescriptive: Whether to provide detailed action steps
+        - max_recommendations: Limit results for URGENT_TRIAGE
+        - timeline_horizon: Adjust recommendations based on time available
         """
+        route_config = route_config or {}
         try:
             profile = await self._get_profile(profile_id)
             if not profile:
@@ -205,15 +218,35 @@ class AwardsAgent:
                 matched_awards, archetype, identity_synthesis
             )
 
-            return {
+            # v4.0: Apply route_config adjustments
+            max_recs = route_config.get("max_recommendations", 10)
+            be_prescriptive = route_config.get("be_prescriptive", False)
+
+            result = {
                 "success": True,
                 "total_matches": len(matched_awards),
                 "portfolio": portfolio,
-                "top_recommendations": matched_awards[:10],
-                "timeline": self._generate_timeline(matched_awards),
+                "top_recommendations": matched_awards[:max_recs],
+                "timeline": self._generate_timeline(matched_awards[:max_recs]),
                 "strategic_insights": strategic_insights,
                 "archetype_used": archetype,
+                "route_config_applied": route_config if route_config else None,
             }
+
+            # v4.0: Add prescriptive action steps if enabled
+            if be_prescriptive and matched_awards:
+                result["prescriptive_actions"] = self._generate_prescriptive_actions(
+                    matched_awards[:3], portfolio
+                )
+
+            # v4.0: Validate output against knowledge base
+            if FEATURE_FLAGS.get("enable_guardrails", True):
+                validation = validate_awards_output(result, self._load_enriched_awards())
+                if validation.warnings:
+                    result["validation_warnings"] = validation.warnings
+                result["confidence"] = validation.confidence
+
+            return result
 
         except Exception as e:
             import traceback
@@ -395,6 +428,73 @@ class AwardsAgent:
             })
 
         return insights
+
+    def _generate_prescriptive_actions(
+        self,
+        top_awards: List[Dict],
+        portfolio: Dict
+    ) -> List[Dict]:
+        """
+        Generate specific, actionable steps for award applications.
+        Used when be_prescriptive=True in route_config (BUILD_FRESH, URGENT_TRIAGE).
+        """
+        actions = []
+
+        for i, award in enumerate(top_awards, 1):
+            action = {
+                "priority": i,
+                "award": award.get("name"),
+                "deadline": award.get("deadline"),
+                "action_steps": [],
+            }
+
+            # Add specific action steps
+            if award.get("deadline"):
+                action["action_steps"].append(
+                    f"Mark deadline on calendar: {award['deadline']}"
+                )
+
+            if award.get("effort_hours"):
+                action["action_steps"].append(
+                    f"Block {award['effort_hours']} hours for application prep"
+                )
+
+            if award.get("success_patterns"):
+                action["action_steps"].append(
+                    f"Key to winning: {award['success_patterns'][0]}"
+                )
+
+            if award.get("common_mistakes"):
+                action["action_steps"].append(
+                    f"Avoid: {award['common_mistakes'][0]}"
+                )
+
+            # Add portfolio context
+            tier = award.get("strategic_tier", 3)
+            category = "reach" if tier <= 2 else ("target" if tier == 3 else "safety")
+            action["portfolio_category"] = category
+            action["action_steps"].append(
+                f"This is a {category.upper()} award - {'aim high!' if category == 'reach' else 'solid chance' if category == 'target' else 'good backup'}"
+            )
+
+            actions.append(action)
+
+        # Add portfolio-level guidance
+        if portfolio:
+            reach_count = len(portfolio.get("reach", []))
+            target_count = len(portfolio.get("target", []))
+            safety_count = len(portfolio.get("safety", []))
+            actions.append({
+                "priority": 0,
+                "award": "Portfolio Strategy",
+                "action_steps": [
+                    f"Your portfolio: {reach_count} reach, {target_count} target, {safety_count} safety",
+                    "Recommended: 2 reach, 2 target, 1 safety (2-2-1 strategy)",
+                    "Apply to safety awards first to build confidence",
+                ]
+            })
+
+        return sorted(actions, key=lambda x: x["priority"])
 
     async def calculate_win_probability(self, profile: Dict, award: Dict) -> float:
         """

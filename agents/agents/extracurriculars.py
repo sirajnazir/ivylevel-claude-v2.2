@@ -21,6 +21,10 @@ from langchain_openai import ChatOpenAI
 
 from tools.database import get_supabase_client, get_profile_with_assessment
 
+# v4.0: Hybrid Architecture imports
+from agents.core.profile_signals import ProfileSignals, extract_profile_signals
+from config import FEATURE_FLAGS
+
 
 # =============================================================================
 # CONSTANTS & TYPES
@@ -142,41 +146,82 @@ class ExtracurricularsAgent:
         return await self.analyze(profile_id)
 
     async def analyze(self, profile_id: str) -> Dict[str, Any]:
-        """Main analysis pipeline."""
+        """
+        Main analysis pipeline.
+
+        Hybrid Architecture v4.0:
+        - If activities exist: Use activity-based analysis (existing logic)
+        - If no activities: Use profile-based inference (NEW)
+        """
         try:
             profile = await self._get_profile(profile_id)
             if not profile:
                 return self._placeholder_response(profile_id)
 
+            # ALWAYS extract profile signals (v4.0)
+            signals = self._extract_profile_signals(profile)
+
+            # Extract activities (may be empty)
             activities = self._extract_activities(profile)
-            if not activities:
-                return self._placeholder_response(profile_id,
-                    message="Add extracurricular activities to generate analysis")
 
-            # TYPE-013: Portfolio Optimization
-            portfolio_analysis = self._analyze_portfolio_balance(activities)
+            # =========================================================
+            # HYBRID PATH SELECTION (v4.0)
+            # =========================================================
+            use_profile_inference = FEATURE_FLAGS.get("use_profile_inference", True)
 
-            # TYPE-014: Narrative Synthesis
-            identity_synthesis = await self._synthesize_identity(
-                profile, activities, portfolio_analysis
-            )
+            if activities:
+                # PATH A: Activity-based analysis (existing logic)
+                print(f"[EC Agent] Using activity-based analysis ({len(activities)} activities)")
 
-            # TYPE-015: Impact Assessment
-            impact_assessment = self._assess_impact(activities)
-            identity_synthesis.total_impact_score = impact_assessment["total_score"]
-            identity_synthesis.top_impact_activities = impact_assessment["top_activities"]
+                # TYPE-013: Portfolio Optimization
+                portfolio_analysis = self._analyze_portfolio_balance(activities)
 
+                # TYPE-014: Narrative Synthesis
+                identity_synthesis = await self._synthesize_identity(
+                    profile, activities, portfolio_analysis
+                )
+
+                # TYPE-015: Impact Assessment
+                impact_assessment = self._assess_impact(activities)
+                identity_synthesis.total_impact_score = impact_assessment["total_score"]
+                identity_synthesis.top_impact_activities = impact_assessment["top_activities"]
+
+            elif use_profile_inference and signals.has_any_signals():
+                # PATH B: Profile-based inference (v4.0 NEW)
+                print(f"[EC Agent] Using profile-based inference (no activities, has signals)")
+
+                identity_synthesis = await self._synthesize_identity_from_profile(profile, signals)
+                portfolio_analysis = PortfolioAnalysis()  # Empty portfolio
+                portfolio_analysis.gaps = list(CATEGORY_WEIGHTS.keys())
+                portfolio_analysis.recommendations = [
+                    "Start building your extracurricular portfolio",
+                    f"Consider activities aligned with your interest in {signals.intended_major or 'your passions'}",
+                ]
+                impact_assessment = {"total_score": 0, "activities_assessed": 0, "top_activities": []}
+
+            else:
+                # PATH C: Placeholder (no activities AND no signals)
+                print(f"[EC Agent] No activities and no profile signals - returning placeholder")
+                return self._placeholder_response(
+                    profile_id,
+                    message="Complete your profile to get personalized recommendations"
+                )
+
+            # Version state
             await self._version_state(profile_id, "ec_analyzed", {
                 "activities_count": len(activities),
                 "spike": identity_synthesis.spike,
                 "archetype": identity_synthesis.archetype,
+                "inference_mode": "activities" if activities else "profile_signals",
             })
 
+            # Publish event
             await self._publish_event("EC_IDENTITY_SYNTHESIZED", {
                 "profileId": profile_id,
                 "spike": identity_synthesis.spike,
                 "archetype": identity_synthesis.archetype,
                 "pillars": identity_synthesis.pillars,
+                "inference_mode": "activities" if activities else "profile_signals",
             })
 
             return {
@@ -184,14 +229,15 @@ class ExtracurricularsAgent:
                 "profile_id": profile_id,
                 "identity_synthesis": identity_synthesis.to_dict(),
                 "portfolio_analysis": {
-                    "category_counts": portfolio_analysis.category_counts,
-                    "balance_score": portfolio_analysis.balance_score,
-                    "gaps": portfolio_analysis.gaps,
-                    "strengths": portfolio_analysis.strengths,
-                    "recommendations": portfolio_analysis.recommendations,
+                    "category_counts": getattr(portfolio_analysis, 'category_counts', {}),
+                    "balance_score": getattr(portfolio_analysis, 'balance_score', 0),
+                    "gaps": getattr(portfolio_analysis, 'gaps', []),
+                    "strengths": getattr(portfolio_analysis, 'strengths', []),
+                    "recommendations": getattr(portfolio_analysis, 'recommendations', []),
                 },
-                "impact_assessment": impact_assessment,
+                "impact_assessment": impact_assessment if activities else {"total_score": 0, "activities_assessed": 0, "top_activities": []},
                 "activities_analyzed": len(activities),
+                "inference_mode": "activities" if activities else "profile_signals",
             }
 
         except Exception as e:
@@ -557,6 +603,202 @@ class ExtracurricularsAgent:
             level_name = "basic"
 
         return {"score": min(10, score), "level": level_name, "factors": factors}
+
+    # =========================================================================
+    # HYBRID ARCHITECTURE v4.0: Profile-Based Inference
+    # =========================================================================
+
+    def _extract_profile_signals(self, profile: Dict) -> ProfileSignals:
+        """Extract signals from profile for inference when activities are empty."""
+        return extract_profile_signals(profile)
+
+    async def _synthesize_identity_from_profile(
+        self,
+        profile: Dict,
+        signals: ProfileSignals
+    ) -> IdentitySynthesis:
+        """
+        Synthesize identity when no activities exist.
+        Uses profile signals (interests, major, causes) to infer spike and archetype.
+        """
+        synthesis = IdentitySynthesis()
+
+        # Infer spike from profile signals
+        spike, spike_evidence = self._infer_spike_from_signals(signals)
+        synthesis.spike = spike
+        synthesis.spike_evidence = spike_evidence
+
+        # Score archetypes from profile signals
+        archetype, confidence, scores = self._score_archetypes_from_signals(signals)
+        synthesis.archetype = archetype
+        synthesis.archetype_confidence = confidence
+        synthesis.archetype_scores = scores
+
+        # Generate pillars from profile signals
+        pillars = self._generate_pillars_from_signals(signals)
+        synthesis.pillars = pillars
+
+        # Set portfolio as empty with recommendations
+        synthesis.portfolio_balance_score = 0.0
+        synthesis.portfolio_gaps = list(CATEGORY_WEIGHTS.keys())
+        synthesis.portfolio_strengths = []
+
+        # Leadership defaults to potential (no evidence yet)
+        synthesis.leadership_level = "potential"
+        synthesis.leadership_evidence = []
+
+        return synthesis
+
+    def _infer_spike_from_signals(self, signals: ProfileSignals) -> Tuple[str, List[str]]:
+        """
+        Infer spike from profile signals.
+
+        Priority:
+        1. Explicit spike_category from passion
+        2. Intended major + interests combination
+        3. Dream career + causes combination
+        """
+        # Priority 1: If spike_category is explicitly set, use it
+        if signals.spike_category:
+            spike = signals.spike_category.lower().replace("_", " ")
+            evidence = [f"spike_category: {signals.spike_category}"]
+            if signals.interests:
+                evidence.extend(signals.interests[:2])
+            return spike, evidence
+
+        components = signals.get_spike_components()
+
+        # Priority 2/3: Synthesize from components
+        if len(components) >= 2:
+            spike = f"{components[0]} + {components[1]}"
+        elif len(components) == 1:
+            spike = components[0]
+        else:
+            spike = "exploring interests"
+
+        return spike, components[:3]
+
+    def _score_archetypes_from_signals(
+        self,
+        signals: ProfileSignals
+    ) -> Tuple[str, float, Dict[str, float]]:
+        """
+        Score archetypes based on profile signals (not activities).
+
+        Uses:
+        - intended_major, favorite_subjects → academic archetypes
+        - interests, causes → passion-based archetypes
+        - strengths, values → identity-based archetypes
+        """
+        scores = {arch: 0.0 for arch in ARCHETYPES}
+
+        # Major to archetype mapping
+        major_mapping = {
+            "computer science": {"stem_innovator": 0.4, "academic_powerhouse": 0.2},
+            "engineering": {"stem_innovator": 0.4, "academic_powerhouse": 0.2},
+            "biology": {"stem_innovator": 0.3, "academic_powerhouse": 0.3},
+            "medicine": {"stem_innovator": 0.3, "community_changemaker": 0.3},
+            "business": {"entrepreneurial_leader": 0.4, "academic_powerhouse": 0.2},
+            "economics": {"entrepreneurial_leader": 0.3, "academic_powerhouse": 0.3},
+            "art": {"creative_visionary": 0.5},
+            "music": {"creative_visionary": 0.5},
+            "film": {"creative_visionary": 0.4, "entrepreneurial_leader": 0.2},
+            "history": {"humanities_scholar": 0.4, "academic_powerhouse": 0.2},
+            "political science": {"humanities_scholar": 0.3, "community_changemaker": 0.3},
+            "law": {"humanities_scholar": 0.3, "entrepreneurial_leader": 0.3},
+            "psychology": {"community_changemaker": 0.3, "humanities_scholar": 0.3},
+            "education": {"community_changemaker": 0.4, "humanities_scholar": 0.2},
+        }
+
+        # Score from intended major
+        major_lower = signals.intended_major.lower()
+        for keyword, arch_scores in major_mapping.items():
+            if keyword in major_lower:
+                for arch, score in arch_scores.items():
+                    scores[arch] += score
+
+        # Score from interests
+        interest_mapping = {
+            "research": {"academic_powerhouse": 0.2, "stem_innovator": 0.2},
+            "coding": {"stem_innovator": 0.3},
+            "robotics": {"stem_innovator": 0.3},
+            "ai": {"stem_innovator": 0.3},
+            "art": {"creative_visionary": 0.3},
+            "music": {"creative_visionary": 0.3},
+            "writing": {"creative_visionary": 0.2, "humanities_scholar": 0.2},
+            "debate": {"humanities_scholar": 0.3},
+            "volunteer": {"community_changemaker": 0.3},
+            "nonprofit": {"community_changemaker": 0.3},
+            "startup": {"entrepreneurial_leader": 0.3},
+            "business": {"entrepreneurial_leader": 0.3},
+            "sports": {"athletic_scholar": 0.4},
+        }
+
+        for interest in signals.interests:
+            interest_lower = interest.lower()
+            for keyword, arch_scores in interest_mapping.items():
+                if keyword in interest_lower:
+                    for arch, score in arch_scores.items():
+                        scores[arch] += score
+
+        # Score from causes (boosts community_changemaker)
+        if signals.causes:
+            scores["community_changemaker"] += 0.2 * min(len(signals.causes), 3)
+
+        # Score from volunteer interests
+        if signals.volunteer_interests:
+            scores["community_changemaker"] += 0.15 * min(len(signals.volunteer_interests), 3)
+
+        # Score from spike_category (explicit category from assessment)
+        spike_category_mapping = {
+            "SERVICE": {"community_changemaker": 0.5},
+            "STEM": {"stem_innovator": 0.5},
+            "BUSINESS": {"entrepreneurial_leader": 0.5},
+            "ARTS": {"creative_visionary": 0.5},
+            "HUMANITIES": {"humanities_scholar": 0.5},
+            "ATHLETICS": {"athletic_scholar": 0.5},
+            "ACADEMIC": {"academic_powerhouse": 0.5},
+        }
+        if signals.spike_category:
+            category_upper = signals.spike_category.upper()
+            if category_upper in spike_category_mapping:
+                for arch, score in spike_category_mapping[category_upper].items():
+                    scores[arch] += score
+
+        # Normalize scores
+        max_score = max(scores.values()) if max(scores.values()) > 0 else 1
+        scores = {k: round(v / max_score, 2) for k, v in scores.items()}
+
+        # Determine primary archetype
+        primary = max(scores, key=scores.get)
+        confidence = scores[primary]
+
+        # If no strong signal, default to multi_hyphenate with lower confidence
+        if confidence < 0.3:
+            primary = "multi_hyphenate"
+            confidence = 0.4
+            scores["multi_hyphenate"] = 0.4
+
+        return primary, confidence, scores
+
+    def _generate_pillars_from_signals(self, signals: ProfileSignals) -> List[str]:
+        """Generate pillars from profile signals."""
+        pillars = []
+
+        if signals.intended_major:
+            pillars.append(signals.intended_major)
+
+        if signals.interests:
+            pillars.extend(signals.interests[:2])
+
+        if signals.causes:
+            pillars.append(f"Impact: {signals.causes[0]}")
+
+        if signals.strengths:
+            pillars.append(f"Strength: {signals.strengths[0]}")
+
+        # Limit to 5 pillars
+        return pillars[:5] if pillars else ["Exploring interests", "Building foundation"]
 
     def _extract_activities(self, profile: Dict) -> List[Dict]:
         """Extract activities from profile data"""
