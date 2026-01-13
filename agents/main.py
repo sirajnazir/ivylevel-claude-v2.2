@@ -8,12 +8,16 @@ Multi-agent coaching platform powered by Agno + LangGraph + AutoGen
 - LangGraph: Deliberative reasoning (Crisis Alchemy, planning graphs)
 - AutoGen: Selective debates (offline narrative experiments only)
 
-Agents:
+6-Agent Architecture with Strategic Intelligence (v1.0.0):
 1. ExecutionAgent (P0 CRITICAL) - Bridges strategy-execution gap
 2. AssessmentAgent - Synthesizes identity & computes readiness
-3. GamePlanAgent - Creates strategic activity plans
-4. AwardsAgent - Matches and optimizes award applications
-5. OpportunityAgent - Matches summer programs and opportunities
+3. ExtracurricularsAgent - Portfolio analysis, identity synthesis (runs FIRST)
+4. GamePlanAgent - Orchestrates multi-agent flow, creates strategic plans
+5. AwardsAgent - Matches awards with enriched strategic intelligence
+6. ProgramsAgent - Matches programs with enriched strategic intelligence
+
+Orchestration Flow:
+  EC Agent (FIRST) → identity_synthesis → Awards + Programs (PARALLEL)
 """
 
 # Load environment variables FIRST (before any other imports)
@@ -34,9 +38,11 @@ import structlog
 from config import settings
 from agents.execution import ExecutionAgent
 from agents.assessment import AssessmentAgent
+from agents.extracurriculars import ExtracurricularsAgent
 from agents.gameplan import GamePlanAgent
 from agents.awards import AwardsAgent
-from agents.opportunity import OpportunityAgent
+from agents.opportunity import OpportunityAgent  # Backward compat shim → ProgramsAgent
+from agents.programs import ProgramsAgent
 from agents.narrative_synthesis import NarrativeSynthesisAgent
 from workflows import WorkflowRunner
 from tools.database import get_supabase_client
@@ -106,9 +112,11 @@ app.add_middleware(
 # Initialize agents
 execution_agent = ExecutionAgent()
 assessment_agent = AssessmentAgent()
+extracurriculars_agent = ExtracurricularsAgent()
 gameplan_agent = GamePlanAgent()
 awards_agent = AwardsAgent()
-opportunity_agent = OpportunityAgent()
+programs_agent = ProgramsAgent()
+opportunity_agent = programs_agent  # Backward compat alias
 narrative_synthesis_agent = NarrativeSynthesisAgent()
 
 
