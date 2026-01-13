@@ -1,17 +1,17 @@
-# Game Plan Agent - Complete Implementation
+# Game Plan Agent - Complete Implementation with Orchestration
 # File: agents/agents/gameplan.py
 #
-# This replaces the stub implementation with real ROI filtering and identity seeds
+# Enhanced with Multi-Agent Orchestration (v1.0.0)
+#
+# Orchestration Flow:
+# ==================
+# 1. EC Agent (FIRST) → identity_synthesis
+# 2. Awards + Programs (PARALLEL) ← identity_synthesis
+# 3. Synthesis → Unified GamePlan
 #
 # Architecture (Surgical Enhancement v2):
 # ========================================
 # Assessment (DIAGNOSIS) → Game Plan (PRESCRIPTION)
-#
-# Assessment extracts RAW components:
-# - raw_identity: ethnicity, first-gen, geographic, self-described
-# - raw_aptitude: GPA, SAT, skills, achievements
-# - raw_passion: spike, brag text, keywords
-# - raw_service: hours, leadership, communities served
 #
 # Game Plan Agent SYNTHESIZES these into Master Narrative:
 # 1. Extract First Principle passion (Jenny's "Who are you fundamentally?")
@@ -34,6 +34,11 @@ from .gameplan_narrative import (
     FirstPrinciplePassion,
 )
 
+# Import sub-agents for orchestration
+from .extracurriculars import extracurriculars_agent
+from .awards import awards_agent
+from .programs import programs_agent
+
 
 # Touchpoint types for activity evaluation (ACP-005)
 TOUCHPOINTS = [
@@ -49,7 +54,12 @@ TOUCHPOINTS = [
 
 class GamePlanAgent:
     """
-    Game Plan Agent: Generates strategic roadmap optimized for hidden target
+    Game Plan Agent: Orchestrates multi-agent system for strategic roadmap
+
+    Orchestration Flow (v1.0.0):
+    1. EC Agent (FIRST) → identity_synthesis (spike, archetype, pillars)
+    2. Awards + Programs (PARALLEL) ← use identity_synthesis for filtering
+    3. Synthesis → Unified GamePlan with activities, awards, programs
 
     Primitives Used:
     - ACP-004: Strategic Overwhelm (1.4x task assignment)
@@ -71,9 +81,304 @@ class GamePlanAgent:
         self.narrative_filter: Optional[NarrativeFilter] = None
         self.master_narrative: Optional[MasterNarrative] = None
 
+        # Sub-agents (orchestration)
+        self.ec_agent = extracurriculars_agent
+        self.awards_agent = awards_agent
+        self.programs_agent = programs_agent
+
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
         """Main processing entry point."""
+        # Use orchestrated flow if requested
+        if kwargs.get("use_orchestration", True):
+            return await self.generate_orchestrated(profile_id)
         return await self.generate(profile_id, kwargs.get("data"))
+
+    async def generate_orchestrated(self, profile_id: str) -> Dict[str, Any]:
+        """
+        Orchestrated GamePlan generation using multi-agent flow.
+
+        Flow:
+        1. EC Agent (FIRST) → identity_synthesis
+        2. Awards + Programs (PARALLEL) ← identity_synthesis
+        3. Synthesis → Unified GamePlan
+        """
+        try:
+            # ========================================================
+            # STEP 1: Run EC Agent FIRST to get identity synthesis
+            # ========================================================
+            print(f"[GamePlan] Step 1: Running EC Agent for {profile_id}")
+            ec_result = await self.ec_agent.process(profile_id)
+
+            if not ec_result.get("success"):
+                print(f"[GamePlan] EC Agent failed: {ec_result.get('error')}")
+                # Fall back to legacy generate
+                return await self.generate(profile_id, None)
+
+            identity_synthesis = ec_result.get("identity_synthesis", {})
+            print(f"[GamePlan] Identity synthesis: archetype={identity_synthesis.get('archetype')}, spike={identity_synthesis.get('spike')}")
+
+            # ========================================================
+            # STEP 2: Run Awards + Programs in PARALLEL with identity
+            # ========================================================
+            print(f"[GamePlan] Step 2: Running Awards + Programs in parallel")
+
+            awards_task = self.awards_agent.process(
+                profile_id,
+                identity_synthesis=identity_synthesis
+            )
+            programs_task = self.programs_agent.process(
+                profile_id,
+                identity_synthesis=identity_synthesis
+            )
+
+            # Execute in parallel
+            awards_result, programs_result = await asyncio.gather(
+                awards_task,
+                programs_task,
+                return_exceptions=True
+            )
+
+            # Handle exceptions
+            if isinstance(awards_result, Exception):
+                print(f"[GamePlan] Awards Agent error: {awards_result}")
+                awards_result = {"success": False, "error": str(awards_result)}
+
+            if isinstance(programs_result, Exception):
+                print(f"[GamePlan] Programs Agent error: {programs_result}")
+                programs_result = {"success": False, "error": str(programs_result)}
+
+            print(f"[GamePlan] Awards: {awards_result.get('total_matches', 0)} matches")
+            print(f"[GamePlan] Programs: {programs_result.get('total_matches', 0)} matches")
+
+            # ========================================================
+            # STEP 3: Synthesize into unified GamePlan
+            # ========================================================
+            print(f"[GamePlan] Step 3: Synthesizing results")
+
+            # Get profile for additional context
+            profile = await self._get_profile(profile_id)
+
+            # Synthesize master narrative
+            raw_extraction = self._extract_raw_components(profile, None)
+            self.master_narrative = self.narrative_synthesizer.synthesize(raw_extraction)
+            self.narrative_filter = NarrativeFilter(self.master_narrative)
+
+            # Combine recommendations
+            unified_plan = self._synthesize_gameplan(
+                profile_id=profile_id,
+                identity_synthesis=identity_synthesis,
+                ec_result=ec_result,
+                awards_result=awards_result,
+                programs_result=programs_result,
+                master_narrative=self.master_narrative,
+            )
+
+            # Version state
+            await self._version_state(profile_id, "gameplan_orchestrated", {
+                "ec_activities": ec_result.get("activities_analyzed", 0),
+                "awards_matched": awards_result.get("total_matches", 0),
+                "programs_matched": programs_result.get("total_matches", 0),
+                "archetype": identity_synthesis.get("archetype"),
+            })
+
+            # Publish event
+            await self._publish_event("GAMEPLAN_ORCHESTRATED", {
+                "profileId": profile_id,
+                "archetype": identity_synthesis.get("archetype"),
+                "spike": identity_synthesis.get("spike"),
+                "awards_count": awards_result.get("total_matches", 0),
+                "programs_count": programs_result.get("total_matches", 0),
+            })
+
+            return {
+                "success": True,
+                "game_plan": unified_plan,
+                "orchestration": {
+                    "ec_agent": "completed",
+                    "awards_agent": "completed" if awards_result.get("success") else "failed",
+                    "programs_agent": "completed" if programs_result.get("success") else "failed",
+                },
+            }
+
+        except Exception as e:
+            import traceback
+            print(f"[GamePlan] Orchestration ERROR: {str(e)}")
+            print(traceback.format_exc())
+            # Fall back to legacy generate
+            return await self.generate(profile_id, None)
+
+    def _synthesize_gameplan(
+        self,
+        profile_id: str,
+        identity_synthesis: Dict,
+        ec_result: Dict,
+        awards_result: Dict,
+        programs_result: Dict,
+        master_narrative: MasterNarrative,
+    ) -> Dict[str, Any]:
+        """
+        Synthesize results from all agents into unified GamePlan.
+        """
+        # Extract top recommendations
+        awards_portfolio = awards_result.get("portfolio", {})
+        top_awards = (
+            awards_portfolio.get("reach", [])[:2] +
+            awards_portfolio.get("target", [])[:2] +
+            awards_portfolio.get("safety", [])[:1]
+        )
+
+        top_programs = programs_result.get("top_recommendations", [])[:5]
+
+        # Build phases based on identity and recommendations
+        phases = self._build_orchestrated_phases(
+            identity_synthesis,
+            ec_result.get("portfolio_analysis", {}),
+            top_awards,
+            top_programs,
+        )
+
+        # Combine strategic insights
+        all_insights = (
+            awards_result.get("strategic_insights", []) +
+            programs_result.get("strategic_insights", [])
+        )
+
+        return {
+            "profile_id": profile_id,
+            # Identity (from EC Agent)
+            "identity_synthesis": identity_synthesis,
+            "archetype": identity_synthesis.get("archetype"),
+            "spike": identity_synthesis.get("spike"),
+            "pillars": identity_synthesis.get("pillars", []),
+            # Master Narrative
+            "master_narrative": master_narrative.to_dict() if master_narrative else None,
+            "narrative_dna": master_narrative.brand_statement if master_narrative else "",
+            # Portfolio Analysis (from EC Agent)
+            "portfolio_analysis": ec_result.get("portfolio_analysis", {}),
+            "impact_assessment": ec_result.get("impact_assessment", {}),
+            # Awards (from Awards Agent)
+            "awards": {
+                "portfolio": awards_portfolio,
+                "top_recommendations": awards_result.get("top_recommendations", [])[:5],
+                "timeline": awards_result.get("timeline", []),
+                "strategic_insights": awards_result.get("strategic_insights", []),
+            },
+            # Programs (from Programs Agent)
+            "programs": {
+                "top_recommendations": top_programs,
+                "advance_alerts": programs_result.get("advance_alerts", []),
+                "synergy_recommendations": programs_result.get("synergy_recommendations", []),
+                "timeline": programs_result.get("timeline", []),
+                "strategic_insights": programs_result.get("strategic_insights", []),
+            },
+            # Unified recommendations
+            "unified_recommendations": {
+                "awards": top_awards,
+                "programs": top_programs,
+                "activities": ec_result.get("impact_assessment", {}).get("top_activities", []),
+            },
+            # Phases and timeline
+            "phases": phases,
+            # Summary
+            "summary": {
+                "total_awards_matched": awards_result.get("total_matches", 0),
+                "total_programs_matched": programs_result.get("total_matches", 0),
+                "activities_analyzed": ec_result.get("activities_analyzed", 0),
+                "portfolio_balance_score": identity_synthesis.get("portfolio_balance_score", 0),
+                "narrative_score": master_narrative.total_score if master_narrative else 0,
+            },
+            # All strategic insights
+            "strategic_insights": all_insights[:5],
+            "created_at": datetime.now().isoformat(),
+        }
+
+    def _build_orchestrated_phases(
+        self,
+        identity_synthesis: Dict,
+        portfolio_analysis: Dict,
+        awards: List[Dict],
+        programs: List[Dict],
+    ) -> List[Dict]:
+        """Build execution phases based on orchestrated results"""
+        phases = []
+
+        # Phase 1: Foundation (address portfolio gaps)
+        gaps = portfolio_analysis.get("gaps", [])
+        phase1_actions = []
+
+        if gaps:
+            phase1_actions.append({
+                "type": "portfolio_gap",
+                "action": f"Address portfolio gaps: {', '.join(gaps)}",
+                "priority": "high"
+            })
+
+        # Add entry-level awards
+        for award in awards:
+            cascade = award.get("win_cascade", {})
+            if cascade.get("position") == "entry":
+                phase1_actions.append({
+                    "type": "award",
+                    "action": f"Apply to {award.get('name')}",
+                    "priority": "high"
+                })
+
+        phases.append({
+            "name": "Foundation Building",
+            "duration": "Months 1-3",
+            "focus": "Build foundation, address gaps, apply to entry awards",
+            "actions": phase1_actions[:5],
+        })
+
+        # Phase 2: Building Momentum
+        phase2_actions = []
+
+        # Add building-level awards
+        for award in awards:
+            cascade = award.get("win_cascade", {})
+            if cascade.get("position") == "building":
+                phase2_actions.append({
+                    "type": "award",
+                    "action": f"Apply to {award.get('name')}",
+                    "priority": "medium"
+                })
+
+        # Add top programs
+        for prog in programs[:3]:
+            phase2_actions.append({
+                "type": "program",
+                "action": f"Apply to {prog.get('name')}",
+                "priority": "medium"
+            })
+
+        phases.append({
+            "name": "Building Momentum",
+            "duration": "Months 4-8",
+            "focus": "Scale impact, apply to programs and building awards",
+            "actions": phase2_actions[:5],
+        })
+
+        # Phase 3: Capstone
+        phase3_actions = []
+
+        # Add capstone awards
+        for award in awards:
+            cascade = award.get("win_cascade", {})
+            if cascade.get("position") == "capstone":
+                phase3_actions.append({
+                    "type": "award",
+                    "action": f"Apply to {award.get('name')}",
+                    "priority": "high"
+                })
+
+        phases.append({
+            "name": "Capstone Achievement",
+            "duration": "Months 9-12",
+            "focus": "Apply to capstone awards, finalize applications",
+            "actions": phase3_actions[:5],
+        })
+
+        return phases
 
     async def generate(self, profile_id: str, assessment_data: Optional[Dict] = None) -> Dict:
         """

@@ -1,72 +1,152 @@
-# Awards Agent - Complete Implementation
+# Awards Agent - Complete Implementation with Strategic Intelligence
 # File: agents/agents/awards.py
 #
-# This replaces the stub with real win probability and portfolio balancing
+# Enhanced with strategic intelligence enrichment (v1.0.0)
+# Uses enriched awards data with archetype_fit, strategic_tier, win_cascade
+#
+# Accepts identity_synthesis from EC Agent for filtering
 
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 import json
+import os
 
 from langchain_openai import ChatOpenAI
 
 from tools.database import get_supabase_client, get_profile_with_assessment
 
 
+# Path to enriched awards data
+ENRICHED_AWARDS_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "seeds", "enriched", "awards_enriched.json"
+)
+
+# Portfolio strategy: 2-2-1 (2 reach, 2 target, 1 safety)
+PORTFOLIO_STRATEGY = {
+    "reach": {"count": 2, "tier_range": [1, 2]},     # Tier 1-2 awards
+    "target": {"count": 2, "tier_range": [2, 3]},    # Tier 2-3 awards
+    "safety": {"count": 1, "tier_range": [3, 4]},    # Tier 3-4 awards
+}
+
+# Minimum archetype fit score to include award
+MIN_ARCHETYPE_FIT = 0.3
+
+
 class AwardsAgent:
     """
-    Awards Agent: Matches students to awards with ROI optimization
+    Awards Agent: Matches students to awards with Strategic Intelligence
+
+    Enhanced Features (v1.0.0):
+    - Strategic tier-based filtering (Tier 1-4)
+    - Archetype fit scoring (8 archetypes)
+    - Win cascade positioning (entry → building → capstone)
+    - 2-2-1 Portfolio Strategy (2 reach, 2 target, 1 safety)
 
     Primitives Used:
     - ACP-001: Hidden Probability Matrix (win probability calculation)
+    - TYPE-014: Archetype-based filtering
 
+    Accepts: identity_synthesis from EC Agent
     Autonomy: FULL (deterministic matching)
-    Huda Benchmark: >40% win rate (Huda actual: 62.5% = 5/8)
     """
 
     def __init__(self):
         self.name = "Awards"
         self.llm = ChatOpenAI(model="gpt-4o", temperature=0.3)
         self.db = get_supabase_client()
+        self._enriched_awards_cache = None
+
+    def _load_enriched_awards(self) -> List[Dict]:
+        """Load enriched awards from JSON file with caching"""
+        if self._enriched_awards_cache is not None:
+            return self._enriched_awards_cache
+
+        try:
+            if os.path.exists(ENRICHED_AWARDS_PATH):
+                with open(ENRICHED_AWARDS_PATH, 'r') as f:
+                    self._enriched_awards_cache = json.load(f)
+                    return self._enriched_awards_cache
+        except Exception as e:
+            print(f"[AwardsAgent] Warning: Could not load enriched awards: {e}")
+
+        self._enriched_awards_cache = []
+        return self._enriched_awards_cache
 
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
-        """Main processing entry point."""
-        return await self.match(profile_id)
+        """
+        Main processing entry point.
 
-    async def match(self, profile_id: str) -> Dict[str, Any]:
-        """Match profile to awards with ROI calculation."""
+        Args:
+            profile_id: Student profile ID
+            identity_synthesis: (optional) Output from EC Agent with spike, archetype, pillars
+        """
+        identity_synthesis = kwargs.get("identity_synthesis")
+        return await self.match(profile_id, identity_synthesis=identity_synthesis)
+
+    async def match(
+        self,
+        profile_id: str,
+        identity_synthesis: Optional[Dict] = None
+    ) -> Dict[str, Any]:
+        """
+        Match profile to awards with Strategic Intelligence filtering.
+
+        Uses identity_synthesis from EC Agent to filter by:
+        - Archetype fit scores
+        - Strategic tier positioning
+        - Win cascade readiness
+        """
         try:
             profile = await self._get_profile(profile_id)
             if not profile:
-                # Return placeholder data for graceful frontend handling
                 return {
                     "success": True,
                     "total_matches": 0,
-                    "portfolio": {
-                        "likely": [],
-                        "target": [],
-                        "stretch": [],
-                        "skip": []
-                    },
+                    "portfolio": {"reach": [], "target": [], "safety": [], "skip": []},
                     "top_recommendations": [],
                     "timeline": [],
+                    "strategic_insights": [],
                     "placeholder": True
                 }
 
-            # Get all active awards
-            awards = await self._get_awards()
+            # Get enriched awards (with strategic intelligence)
+            awards = self._load_enriched_awards()
+            if not awards:
+                # Fallback to database/sample awards
+                awards = await self._get_awards()
+
+            # Extract archetype from identity_synthesis
+            archetype = None
+            if identity_synthesis:
+                archetype = identity_synthesis.get("archetype", "multi_hyphenate")
+            else:
+                # Try to get from profile
+                profile_data = profile.get("profile_data", {})
+                archetype = profile_data.get("archetype", "multi_hyphenate")
 
             # Filter by eligibility
             eligible_awards = self._filter_by_eligibility(awards, profile)
 
-            # Calculate win probability for each
+            # Filter by archetype fit (if enriched data available)
+            if archetype:
+                eligible_awards = self._filter_by_archetype(eligible_awards, archetype)
+
+            # Calculate win probability and strategic fit for each
             matched_awards = []
             for award in eligible_awards:
                 probability = await self.calculate_win_probability(profile, award)
                 effort = award.get("effort_hours", 20)
                 prestige = award.get("prestige_score", 5)
+                strategic_tier = award.get("strategic_tier", 3)
 
-                # ROI = (probability × prestige) / effort
-                roi = (probability * prestige * 100) / max(effort, 1)
+                # ROI = (probability × prestige × tier_boost) / effort
+                tier_boost = {1: 1.5, 2: 1.2, 3: 1.0, 4: 0.8}.get(strategic_tier, 1.0)
+                roi = (probability * prestige * tier_boost * 100) / max(effort, 1)
+
+                # Get archetype fit score
+                archetype_fit = 0.5
+                if archetype and award.get("archetype_fit"):
+                    archetype_fit = award["archetype_fit"].get(archetype, 0.5)
 
                 matched_awards.append({
                     "award_id": award.get("id"),
@@ -79,22 +159,34 @@ class AwardsAgent:
                     "prestige_score": prestige,
                     "roi": round(roi, 3),
                     "deadline": award.get("deadline"),
-                    "recommendation": self._get_recommendation(probability)
+                    "recommendation": self._get_recommendation(probability),
+                    # Strategic intelligence fields
+                    "strategic_tier": strategic_tier,
+                    "archetype_fit": round(archetype_fit, 2),
+                    "strategic_notes": award.get("strategic_notes", ""),
+                    "success_patterns": award.get("success_patterns", []),
+                    "common_mistakes": award.get("common_mistakes", []),
+                    "win_cascade": award.get("win_cascade", {}),
+                    "differentiation_factor": award.get("differentiation_factor", ""),
                 })
 
-            # Sort by ROI
-            matched_awards.sort(key=lambda x: x["roi"], reverse=True)
+            # Sort by ROI × archetype_fit
+            matched_awards.sort(
+                key=lambda x: x["roi"] * x.get("archetype_fit", 0.5),
+                reverse=True
+            )
 
-            # Balance portfolio
-            portfolio = self.balance_portfolio(matched_awards)
+            # Balance portfolio using 2-2-1 strategy
+            portfolio = self.balance_portfolio_strategic(matched_awards)
 
             # Version state
             await self._version_state(profile_id, "awards_matched", {
                 "matches_count": len(matched_awards),
+                "archetype_used": archetype,
                 "portfolio_summary": {
-                    "likely": len(portfolio.get("likely", [])),
+                    "reach": len(portfolio.get("reach", [])),
                     "target": len(portfolio.get("target", [])),
-                    "stretch": len(portfolio.get("stretch", []))
+                    "safety": len(portfolio.get("safety", []))
                 }
             })
 
@@ -103,19 +195,206 @@ class AwardsAgent:
                 await self._publish_event("AWARD_MATCHED", {
                     "profileId": profile_id,
                     "awardId": matched_awards[0]["award_id"],
-                    "probability": matched_awards[0]["win_probability"]
+                    "probability": matched_awards[0]["win_probability"],
+                    "archetype": archetype,
+                    "strategic_tier": matched_awards[0].get("strategic_tier"),
                 })
+
+            # Generate strategic insights
+            strategic_insights = self._generate_strategic_insights(
+                matched_awards, archetype, identity_synthesis
+            )
 
             return {
                 "success": True,
                 "total_matches": len(matched_awards),
                 "portfolio": portfolio,
                 "top_recommendations": matched_awards[:10],
-                "timeline": self._generate_timeline(matched_awards)
+                "timeline": self._generate_timeline(matched_awards),
+                "strategic_insights": strategic_insights,
+                "archetype_used": archetype,
             }
 
         except Exception as e:
+            import traceback
+            print(f"[AwardsAgent] ERROR: {str(e)}")
+            print(traceback.format_exc())
             return {"success": False, "error": str(e)}
+
+    def _filter_by_archetype(self, awards: List[Dict], archetype: str) -> List[Dict]:
+        """
+        Filter awards by archetype fit score.
+
+        Only include awards where archetype_fit[archetype] >= MIN_ARCHETYPE_FIT
+        """
+        filtered = []
+        for award in awards:
+            archetype_fit = award.get("archetype_fit", {})
+            fit_score = archetype_fit.get(archetype, 0.5)
+
+            if fit_score >= MIN_ARCHETYPE_FIT:
+                filtered.append(award)
+
+        return filtered
+
+    def balance_portfolio_strategic(self, awards: List[Dict]) -> Dict:
+        """
+        Balance portfolio using 2-2-1 strategy based on strategic tiers.
+
+        - Reach (2): Tier 1-2 awards (low win probability, high prestige)
+        - Target (2): Tier 2-3 awards (moderate win probability)
+        - Safety (1): Tier 3-4 awards (higher win probability)
+        """
+        reach = []
+        target = []
+        safety = []
+
+        for award in awards:
+            tier = award.get("strategic_tier", 3)
+            prob = award.get("win_probability", 0.1)
+
+            # Categorize by tier and probability
+            if tier <= 2 and prob < 0.25:
+                reach.append(award)
+            elif tier in [2, 3] and 0.15 <= prob <= 0.50:
+                target.append(award)
+            elif tier >= 3 or prob > 0.40:
+                safety.append(award)
+            else:
+                # Default to target
+                target.append(award)
+
+        # Apply 2-2-1 limits
+        portfolio = {
+            "reach": reach[:PORTFOLIO_STRATEGY["reach"]["count"]],
+            "target": target[:PORTFOLIO_STRATEGY["target"]["count"]],
+            "safety": safety[:PORTFOLIO_STRATEGY["safety"]["count"]],
+            "summary": {
+                "total_awards": min(5, len(reach[:2]) + len(target[:2]) + len(safety[:1])),
+                "strategy": "2-2-1 (Reach-Target-Safety)",
+                "expected_wins": sum(
+                    a.get("win_probability", 0)
+                    for a in reach[:2] + target[:2] + safety[:1]
+                ),
+                "total_effort_hours": sum(
+                    a.get("effort_hours", 0)
+                    for a in reach[:2] + target[:2] + safety[:1]
+                ),
+            },
+            # Win cascade sequencing
+            "application_sequence": self._sequence_by_cascade(
+                reach[:2] + target[:2] + safety[:1]
+            )
+        }
+
+        return portfolio
+
+    def _sequence_by_cascade(self, awards: List[Dict]) -> List[Dict]:
+        """
+        Sequence awards by win cascade position.
+
+        Order: entry → building → capstone
+        """
+        position_order = {"entry": 0, "building": 1, "capstone": 2}
+
+        def get_position_score(award):
+            cascade = award.get("win_cascade", {})
+            position = cascade.get("position", "building")
+            return position_order.get(position, 1)
+
+        sorted_awards = sorted(awards, key=get_position_score)
+
+        sequenced = []
+        for i, award in enumerate(sorted_awards):
+            cascade = award.get("win_cascade", {})
+            sequenced.append({
+                "sequence": i + 1,
+                "award_id": award.get("award_id"),
+                "name": award.get("name"),
+                "win_probability": award.get("win_probability"),
+                "strategic_tier": award.get("strategic_tier"),
+                "cascade_position": cascade.get("position", "building"),
+                "prerequisites": cascade.get("prerequisites", []),
+                "enables": cascade.get("enables", []),
+                "rationale": self._get_cascade_rationale(cascade, i)
+            })
+
+        return sequenced
+
+    def _get_cascade_rationale(self, cascade: Dict, position: int) -> str:
+        """Generate rationale for cascade position"""
+        pos = cascade.get("position", "building")
+
+        if pos == "entry":
+            return "Entry-level award - build foundation and confidence"
+        elif pos == "building":
+            prereqs = cascade.get("prerequisites", [])
+            if prereqs:
+                return f"Building award - requires: {', '.join(prereqs[:2])}"
+            return "Building award - demonstrates growing expertise"
+        else:
+            enables = cascade.get("enables", [])
+            if enables:
+                return f"Capstone award - enables: {', '.join(enables[:2])}"
+            return "Capstone award - crowning achievement"
+
+    def _generate_strategic_insights(
+        self,
+        awards: List[Dict],
+        archetype: str,
+        identity_synthesis: Optional[Dict]
+    ) -> List[Dict]:
+        """Generate strategic insights based on matches and identity"""
+        insights = []
+
+        if not awards:
+            return insights
+
+        # Insight 1: Archetype alignment
+        avg_fit = sum(a.get("archetype_fit", 0.5) for a in awards[:5]) / min(5, len(awards))
+        if avg_fit >= 0.7:
+            insights.append({
+                "type": "archetype_alignment",
+                "title": "Strong Archetype Match",
+                "message": f"Your {archetype.replace('_', ' ')} profile aligns well with top recommendations (avg fit: {avg_fit:.0%})",
+                "priority": "high"
+            })
+
+        # Insight 2: Tier distribution
+        tier_counts = {}
+        for a in awards[:10]:
+            tier = a.get("strategic_tier", 3)
+            tier_counts[tier] = tier_counts.get(tier, 0) + 1
+
+        if tier_counts.get(1, 0) >= 2:
+            insights.append({
+                "type": "tier_opportunity",
+                "title": "Elite Award Opportunities",
+                "message": f"You qualify for {tier_counts.get(1, 0)} Tier-1 elite awards. These are highly competitive but transformative.",
+                "priority": "high"
+            })
+
+        # Insight 3: Success pattern
+        if awards and awards[0].get("success_patterns"):
+            top_pattern = awards[0]["success_patterns"][0]
+            insights.append({
+                "type": "success_pattern",
+                "title": "Key to Winning",
+                "message": f"For {awards[0]['name']}: {top_pattern}",
+                "priority": "medium"
+            })
+
+        # Insight 4: Common mistake to avoid
+        if awards and awards[0].get("common_mistakes"):
+            top_mistake = awards[0]["common_mistakes"][0]
+            insights.append({
+                "type": "avoid_mistake",
+                "title": "Pitfall to Avoid",
+                "message": f"Common mistake: {top_mistake}",
+                "priority": "medium"
+            })
+
+        return insights
 
     async def calculate_win_probability(self, profile: Dict, award: Dict) -> float:
         """
