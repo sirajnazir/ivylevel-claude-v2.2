@@ -289,9 +289,9 @@ function GamePlanDetail({ data }: { data: Record<string, unknown> }) {
                     {seed.target_type as string}
                   </span>
                 </div>
-                {seed.narrative_connection && (
+                {typeof seed.narrative_connection === 'string' && seed.narrative_connection && (
                   <p className="text-sm mb-3" style={{ color: BRAND_COLORS.textMuted }}>
-                    {(seed.narrative_connection as string).slice(0, 200)}...
+                    {seed.narrative_connection.slice(0, 200)}...
                   </p>
                 )}
                 {/* Actions */}
@@ -424,16 +424,16 @@ function AwardsDetail({ data }: { data: Record<string, unknown> }) {
           )}
         </div>
         {/* Category and Level */}
-        {(award.category || award.level) && (
+        {(typeof award.category === 'string' || typeof award.level === 'string') && (
           <div className="flex items-center gap-2 mb-1">
-            {award.category && (
+            {typeof award.category === 'string' && award.category && (
               <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: BRAND_COLORS.bgSecondary, color: BRAND_COLORS.textMuted }}>
-                {award.category as string}
+                {award.category}
               </span>
             )}
-            {award.level && (
+            {typeof award.level === 'string' && award.level && (
               <span className="text-xs" style={{ color: BRAND_COLORS.textMuted }}>
-                {award.level as string}
+                {award.level}
               </span>
             )}
           </div>
@@ -446,17 +446,17 @@ function AwardsDetail({ data }: { data: Record<string, unknown> }) {
         )}
         {/* Metadata row */}
         <div className="flex items-center gap-3 mt-2 text-xs" style={{ color: BRAND_COLORS.textMuted }}>
-          {award.deadline && (
+          {typeof award.deadline === 'string' && award.deadline && (
             <span className="flex items-center gap-1">
               <Clock size={10} />
-              {award.deadline as string}
+              {award.deadline}
             </span>
           )}
-          {award.effort_hours && (
+          {typeof award.effort_hours === 'number' && award.effort_hours && (
             <span>{award.effort_hours}h effort</span>
           )}
-          {award.roi !== undefined && (
-            <span>ROI: {(award.roi as number).toFixed(1)}</span>
+          {typeof award.roi === 'number' && award.roi !== undefined && (
+            <span>ROI: {award.roi.toFixed(1)}</span>
           )}
         </div>
       </div>
@@ -562,10 +562,10 @@ function AwardsDetail({ data }: { data: Record<string, unknown> }) {
                 <p className="text-sm" style={{ color: BRAND_COLORS.textMuted }}>
                   {match.description as string || match.rationale as string}
                 </p>
-                {match.deadline && (
+                {typeof match.deadline === 'string' && match.deadline && (
                   <div className="flex items-center gap-1 mt-2 text-xs" style={{ color: BRAND_COLORS.textMuted }}>
                     <Clock size={12} />
-                    Deadline: {match.deadline as string}
+                    Deadline: {match.deadline}
                   </div>
                 )}
               </div>
@@ -603,10 +603,10 @@ function OpportunityDetail({ data }: { data: Record<string, unknown> }) {
                 <p className="text-sm mt-1" style={{ color: BRAND_COLORS.textPrimary }}>
                   {alert.message as string}
                 </p>
-                {alert.deadline && (
+                {typeof alert.deadline === 'string' && alert.deadline && (
                   <div className="flex items-center gap-1 mt-2 text-xs" style={{ color: BRAND_COLORS.error }}>
                     <Clock size={12} />
-                    Due: {alert.deadline as string}
+                    Due: {alert.deadline}
                   </div>
                 )}
               </div>
@@ -688,13 +688,13 @@ function CrisisDetail({ data }: { data: Record<string, unknown> }) {
                 <p className="text-sm mt-1" style={{ color: BRAND_COLORS.textPrimary }}>
                   {crisis.description as string}
                 </p>
-                {crisis.varc_response && (
+                {typeof crisis.varc_response === 'string' && crisis.varc_response && (
                   <div className="mt-3 p-3 rounded bg-white">
                     <p className="text-sm font-medium" style={{ color: BRAND_COLORS.textHeading }}>
                       VARC Response
                     </p>
                     <p className="text-sm" style={{ color: BRAND_COLORS.textMuted }}>
-                      {crisis.varc_response as string}
+                      {crisis.varc_response}
                     </p>
                   </div>
                 )}

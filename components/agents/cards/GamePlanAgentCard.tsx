@@ -1,13 +1,15 @@
 /**
  * GamePlanAgentCard Component
- * v13.3 - Displays activities, seeds, and phases from GamePlan Agent
+ * v13.4 - Added spike indicator from Strategic Intelligence
  */
 'use client';
 
 import { Target, Calendar, Sprout } from 'lucide-react';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { useGamePlan, useFilteredActivities, useIdentitySeeds } from '@/hooks/useAgentData';
+import { useResultsStore } from '@/lib/store/useResultsStore';
 import { AgentCardBase } from './AgentCardBase';
+import { SpikeIndicator } from '@/components/ui/SpikeIndicator';
 
 interface GamePlanAgentCardProps {
   profileId: string;
@@ -19,6 +21,8 @@ export function GamePlanAgentCard({ profileId, onChat, onViewDetails }: GamePlan
   const { data: gamePlan, isLoading: planLoading, isError: planError, refetch: refetchPlan } = useGamePlan(profileId);
   const { data: activities, isLoading: activitiesLoading } = useFilteredActivities(profileId);
   const { data: seeds, isLoading: seedsLoading } = useIdentitySeeds(profileId);
+  const identity_synthesis = useResultsStore((state) => state.identity_synthesis);
+  const priority_actions = useResultsStore((state) => state.priority_actions);
 
   const isLoading = planLoading || activitiesLoading || seedsLoading;
   const isError = planError;
@@ -127,6 +131,38 @@ export function GamePlanAgentCard({ profileId, onChat, onViewDetails }: GamePlan
             <p className="text-xs mt-0.5" style={{ color: BRAND_COLORS.textMuted }}>
               {gamePlan.game_plan.phases[0].duration}
             </p>
+          </div>
+        )}
+
+        {/* Spike Indicator (Strategic Intelligence v1.1.0) */}
+        {identity_synthesis?.spike && (
+          <div className="pt-2 border-t" style={{ borderColor: BRAND_COLORS.borderLight }}>
+            <SpikeIndicator spike={identity_synthesis.spike} variant="compact" size="sm" />
+          </div>
+        )}
+
+        {/* Priority Actions Preview */}
+        {priority_actions && priority_actions.length > 0 && (
+          <div className="space-y-1.5">
+            {priority_actions.slice(0, 2).map((action, idx) => (
+              <div key={idx} className="flex items-start gap-2">
+                <span
+                  className="px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0"
+                  style={{
+                    backgroundColor: action.priority === 'high' ? '#fee2e2' : '#fef3c7',
+                    color: action.priority === 'high' ? '#dc2626' : '#d97706',
+                  }}
+                >
+                  {action.priority}
+                </span>
+                <span
+                  className="text-xs line-clamp-1"
+                  style={{ color: BRAND_COLORS.textSecondary }}
+                >
+                  {action.action}
+                </span>
+              </div>
+            ))}
           </div>
         )}
 

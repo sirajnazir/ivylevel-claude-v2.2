@@ -1,12 +1,13 @@
 /**
  * OpportunityAgentCard Component
- * v13.3 - Displays opportunity matches and urgent alerts from Opportunity Agent
+ * v13.4 - Added strategic fit from Programs Agent
  */
 'use client';
 
-import { Lightbulb, AlertTriangle, Calendar, TrendingUp } from 'lucide-react';
+import { Lightbulb, AlertTriangle, Calendar, TrendingUp, Star } from 'lucide-react';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { useOpportunityMatches, useOpportunityAlerts } from '@/hooks/useAgentData';
+import { useResultsStore } from '@/lib/store/useResultsStore';
 import { AgentCardBase } from './AgentCardBase';
 
 interface OpportunityAgentCardProps {
@@ -18,9 +19,11 @@ interface OpportunityAgentCardProps {
 export function OpportunityAgentCard({ profileId, onChat, onViewDetails }: OpportunityAgentCardProps) {
   const { data: matchData, isLoading: matchLoading, isError: matchError, refetch: refetchMatch } = useOpportunityMatches(profileId);
   const { data: alertsData, isLoading: alertsLoading, refetch: refetchAlerts } = useOpportunityAlerts(profileId);
+  const programs_portfolio = useResultsStore((state) => state.programs_portfolio);
 
   const isLoading = matchLoading || alertsLoading;
   const isError = matchError;
+  const hasStrategicPrograms = programs_portfolio && (programs_portfolio.primary?.length > 0 || programs_portfolio.alternatives?.length > 0);
 
   const handleRefresh = () => {
     refetchMatch();
@@ -165,8 +168,54 @@ export function OpportunityAgentCard({ profileId, onChat, onViewDetails }: Oppor
           </div>
         )}
 
-        {/* Top Match Preview */}
-        {matchData?.matches?.[0] && (
+        {/* Strategic Programs (v1.1.0) */}
+        {hasStrategicPrograms && programs_portfolio?.primary && programs_portfolio.primary.length > 0 && (
+          <div className="space-y-2 pt-2 border-t" style={{ borderColor: BRAND_COLORS.borderLight }}>
+            <p className="text-xs font-medium" style={{ color: BRAND_COLORS.textMuted }}>
+              Top Programs
+            </p>
+            {programs_portfolio.primary.slice(0, 2).map((program, i) => (
+              <div
+                key={i}
+                className="p-2 rounded-lg flex items-start justify-between"
+                style={{ backgroundColor: BRAND_COLORS.bgSuccess }}
+              >
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="text-sm font-medium line-clamp-1"
+                    style={{ color: BRAND_COLORS.textHeading }}
+                  >
+                    {program.name}
+                  </p>
+                  <p className="text-xs" style={{ color: BRAND_COLORS.textMuted }}>
+                    {program.organization}
+                  </p>
+                </div>
+                <div className="text-right flex-shrink-0 ml-2">
+                  <span
+                    className="text-xs font-medium"
+                    style={{ color: BRAND_COLORS.success }}
+                  >
+                    {Math.round(program.fit_score * 100)}%
+                  </span>
+                  <p className="text-xs" style={{ color: BRAND_COLORS.textMuted }}>
+                    fit
+                  </p>
+                </div>
+              </div>
+            ))}
+            {/* Hidden Value Teaser */}
+            {programs_portfolio.primary[0]?.hidden_value?.[0] && (
+              <div className="flex items-start gap-1 text-xs" style={{ color: BRAND_COLORS.info }}>
+                <Star size={12} className="flex-shrink-0 mt-0.5" />
+                <span className="line-clamp-1">{programs_portfolio.primary[0].hidden_value[0]}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Top Match Preview (Legacy) */}
+        {!hasStrategicPrograms && matchData?.matches?.[0] && (
           <div className="text-xs" style={{ color: BRAND_COLORS.textMuted }}>
             Top match: <span style={{ color: BRAND_COLORS.textPrimary }}>{matchData.matches[0].name}</span>
             {' '}({Math.round(matchData.matches[0].fit_score * 100)}% fit)

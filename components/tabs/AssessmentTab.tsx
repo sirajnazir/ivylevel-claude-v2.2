@@ -1,6 +1,6 @@
 /**
  * AssessmentTab - Main Assessment Results View
- * v12.0 - Matches original frontend specification
+ * v12.1 - Added Strategic Intelligence display
  */
 'use client';
 
@@ -12,6 +12,9 @@ import {
 import CircularProgress from '@/components/rings/CircularProgress';
 import { PillarCards } from '@/components/rings/PillarCards';
 import { COLORS, STATUS_COLORS, GRADIENTS } from '@/lib/constants/design';
+import { ArchetypeBadge } from '@/components/ui/ArchetypeBadge';
+import { SpikeIndicator } from '@/components/ui/SpikeIndicator';
+import type { IdentitySynthesis, PortfolioAudit, Archetype } from '@/lib/store/useResultsStore';
 
 interface AssessmentData {
   ivyReadyScore: {
@@ -54,6 +57,9 @@ interface AssessmentData {
   narrativeThemes?: string[];
   narrativeDna?: string | null;
   firstPrinciple?: string | null;
+  // Strategic Intelligence (v1.1.0)
+  identitySynthesis?: IdentitySynthesis | null;
+  portfolioAudit?: PortfolioAudit | null;
 }
 
 interface AssessmentTabProps {
@@ -110,6 +116,173 @@ export function AssessmentTab({ data }: AssessmentTabProps) {
             >
               Core Principle: {data.firstPrinciple}
             </p>
+          )}
+        </motion.section>
+      )}
+
+      {/* Strategic Identity Section (v1.1.0) */}
+      {data.identitySynthesis && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-2xl p-6"
+          style={{
+            background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)',
+            border: '2px solid #818cf8',
+          }}
+        >
+          <h2
+            className="text-sm font-semibold mb-4 uppercase tracking-wider"
+            style={{ color: '#4338ca' }}
+          >
+            Strategic Identity
+          </h2>
+
+          {/* Archetype Badge */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <ArchetypeBadge
+              archetype={data.identitySynthesis.archetype}
+              confidence={data.identitySynthesis.archetype_confidence}
+              size="md"
+            />
+          </div>
+
+          {/* Spike */}
+          <div className="mb-4">
+            <label
+              className="text-sm font-medium mb-1 block"
+              style={{ color: '#4338ca' }}
+            >
+              Your Spike
+            </label>
+            <SpikeIndicator spike={data.identitySynthesis.spike} size="md" />
+          </div>
+
+          {/* Pillars */}
+          {data.identitySynthesis.pillars && data.identitySynthesis.pillars.length > 0 && (
+            <div className="mb-4">
+              <label
+                className="text-sm font-medium mb-2 block"
+                style={{ color: '#4338ca' }}
+              >
+                Identity Pillars
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {data.identitySynthesis.pillars.map((pillar, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3 py-1 bg-white rounded-full text-sm border"
+                    style={{ color: '#4338ca', borderColor: '#a5b4fc' }}
+                  >
+                    {pillar}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Narrative Hook */}
+          {data.identitySynthesis.narrative_hook && (
+            <div
+              className="mt-4 p-3 bg-white rounded-md"
+              style={{ borderLeft: '4px solid #6366f1' }}
+            >
+              <label
+                className="text-xs font-medium uppercase"
+                style={{ color: '#6b7280' }}
+              >
+                Narrative Hook
+              </label>
+              <p
+                className="italic mt-1"
+                style={{ color: '#1f2937' }}
+              >
+                "{data.identitySynthesis.narrative_hook}"
+              </p>
+            </div>
+          )}
+        </motion.section>
+      )}
+
+      {/* Portfolio Diagnosis */}
+      {data.portfolioAudit && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-white rounded-2xl p-6"
+          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3
+                className="font-semibold"
+                style={{ color: COLORS.textHeading }}
+              >
+                Portfolio Strength
+              </h3>
+              <p
+                className="text-sm mt-1"
+                style={{ color: COLORS.textSecondary }}
+              >
+                {data.portfolioAudit.diagnosis.replace(/_/g, ' ')}
+              </p>
+            </div>
+            <div className="text-right">
+              <div
+                className="text-3xl font-bold"
+                style={{ color: '#6366f1' }}
+              >
+                {data.portfolioAudit.score}
+              </div>
+              <div
+                className="text-xs"
+                style={{ color: COLORS.textMuted }}
+              >
+                out of 100
+              </div>
+            </div>
+          </div>
+
+          {/* Tier Summary */}
+          <div className="mt-4 flex gap-4 text-sm">
+            <span style={{ color: '#16a34a' }}>
+              T1: {data.portfolioAudit.tier_summary?.T1 || 0}
+            </span>
+            <span style={{ color: '#2563eb' }}>
+              T2: {data.portfolioAudit.tier_summary?.T2 || 0}
+            </span>
+            <span style={{ color: '#d97706' }}>
+              T3: {data.portfolioAudit.tier_summary?.T3 || 0}
+            </span>
+            <span style={{ color: '#6b7280' }}>
+              T4: {data.portfolioAudit.tier_summary?.T4 || 0}
+            </span>
+          </div>
+
+          {/* Gaps */}
+          {data.portfolioAudit.gaps && data.portfolioAudit.gaps.length > 0 && (
+            <div className="mt-4">
+              <label
+                className="text-xs font-medium uppercase"
+                style={{ color: COLORS.textMuted }}
+              >
+                Areas to Develop
+              </label>
+              <ul className="mt-2 space-y-1">
+                {data.portfolioAudit.gaps.slice(0, 3).map((gap, idx) => (
+                  <li
+                    key={idx}
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: COLORS.textSecondary }}
+                  >
+                    <span style={{ color: '#d97706' }}>!</span>
+                    {gap}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </motion.section>
       )}

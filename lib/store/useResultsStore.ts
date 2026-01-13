@@ -1,6 +1,8 @@
 /**
  * Results Store (Zustand)
  * Caches scoring results and twin fleet data
+ *
+ * v1.1.0 - Added Strategic Intelligence fields
  */
 
 import { create } from 'zustand';
@@ -32,6 +34,111 @@ interface NarrativeSynthesis {
   };
 }
 
+// ============================================
+// Strategic Intelligence Types (v1.1.0)
+// ============================================
+
+export type Archetype =
+  | 'academic_powerhouse'
+  | 'stem_innovator'
+  | 'creative_visionary'
+  | 'community_changemaker'
+  | 'entrepreneurial_leader'
+  | 'humanities_scholar'
+  | 'athletic_scholar'
+  | 'multi_hyphenate';
+
+export interface IdentitySynthesis {
+  spike: string;
+  archetype: Archetype;
+  archetype_confidence: number;
+  pillars: string[];
+  narrative_hook: string;
+  differentiation_summary: string;
+  portfolio_balance_score?: number;
+}
+
+export interface PortfolioAudit {
+  diagnosis: 'COMPETITIVE' | 'NEEDS_VALIDATION' | 'WEAK' | 'UNDERDEVELOPED';
+  score: number;
+  tier_summary: {
+    T1: number;
+    T2: number;
+    T3: number;
+    T4: number;
+  };
+  gaps: string[];
+}
+
+export interface AwardMatch {
+  award_id: string;
+  name: string;
+  strategic_tier: number;
+  fit_score: number;
+  archetype_alignment: number;
+  identity_alignment: number;
+  win_probability: number;
+  portfolio_role: 'reach' | 'target' | 'safety';
+  rationale: string;
+  success_patterns: string[];
+  common_mistakes: string[];
+  differentiation_factor: string;
+}
+
+export interface ProgramMatch {
+  program_id: string;
+  name: string;
+  organization: string;
+  strategic_tier: number;
+  fit_score: number;
+  archetype_alignment: number;
+  acceptance_probability: number;
+  rationale: string;
+  success_patterns: string[];
+  hidden_value: string[];
+}
+
+export interface AwardsPortfolio {
+  reach: AwardMatch[];
+  target: AwardMatch[];
+  safety: AwardMatch[];
+}
+
+export interface ProgramsPortfolio {
+  primary: ProgramMatch[];
+  alternatives: ProgramMatch[];
+}
+
+export interface PriorityAction {
+  type: string;
+  priority: 'high' | 'medium' | 'low';
+  action: string;
+  rationale: string;
+}
+
+export interface TimelineItem {
+  type: 'award' | 'program';
+  name: string;
+  deadline_month: number;
+  priority: string;
+}
+
+// GamePlan API response shape (for setGamePlanResults)
+export interface GamePlanApiResponse {
+  identity?: {
+    synthesis?: IdentitySynthesis;
+    portfolio_audit?: PortfolioAudit;
+  };
+  awards?: {
+    portfolio?: AwardsPortfolio;
+  };
+  programs?: {
+    portfolio?: ProgramsPortfolio;
+  };
+  priority_actions?: PriorityAction[];
+  unified_timeline?: TimelineItem[];
+}
+
 interface ResultsStoreState {
   // Scoring results
   results: AssessmentResults | null;
@@ -51,6 +158,14 @@ interface ResultsStoreState {
   narrative_themes: string[];
   narrative_confidence: number;
 
+  // Strategic Intelligence (v1.1.0)
+  identity_synthesis: IdentitySynthesis | null;
+  portfolio_audit: PortfolioAudit | null;
+  awards_portfolio: AwardsPortfolio | null;
+  programs_portfolio: ProgramsPortfolio | null;
+  priority_actions: PriorityAction[];
+  unified_timeline: TimelineItem[];
+
   // Boosters
   booster_recommendations: BoosterRecommendations | null;
   top_3_boosters: Booster[];
@@ -69,6 +184,7 @@ interface ResultsStoreState {
   // Actions
   setResults: (results: AssessmentResults) => void;
   setNarrative: (narrative: NarrativeSynthesis) => void;
+  setGamePlanResults: (results: GamePlanApiResponse) => void;
   setBoosters: (boosters: BoosterRecommendations) => void;
   setTwinFleet: (fleet: TwinFleet) => void;
   markStale: () => void;
@@ -96,6 +212,13 @@ export const useResultsStore = create<ResultsStoreState>()(
         first_principle: '',
         narrative_themes: [],
         narrative_confidence: 0,
+        // Strategic Intelligence (v1.1.0)
+        identity_synthesis: null,
+        portfolio_audit: null,
+        awards_portfolio: null,
+        programs_portfolio: null,
+        priority_actions: [],
+        unified_timeline: [],
         // Other
         booster_recommendations: null,
         top_3_boosters: [],
@@ -130,6 +253,35 @@ export const useResultsStore = create<ResultsStoreState>()(
             state.narrative_themes = narrative.themes;
             state.narrative_confidence = narrative.confidence;
             state.narrative_synthesized_at = new Date().toISOString();
+          }),
+
+        // Set GamePlan results with Strategic Intelligence (v1.1.0)
+        setGamePlanResults: (results) =>
+          set((state) => {
+            // Map identity synthesis from EC Agent
+            if (results.identity?.synthesis) {
+              state.identity_synthesis = results.identity.synthesis as IdentitySynthesis;
+            }
+            // Map portfolio audit from EC Agent
+            if (results.identity?.portfolio_audit) {
+              state.portfolio_audit = results.identity.portfolio_audit as PortfolioAudit;
+            }
+            // Map awards portfolio from Awards Agent
+            if (results.awards?.portfolio) {
+              state.awards_portfolio = results.awards.portfolio as AwardsPortfolio;
+            }
+            // Map programs portfolio from Programs Agent
+            if (results.programs?.portfolio) {
+              state.programs_portfolio = results.programs.portfolio as ProgramsPortfolio;
+            }
+            // Map priority actions
+            if (results.priority_actions) {
+              state.priority_actions = results.priority_actions as PriorityAction[];
+            }
+            // Map unified timeline
+            if (results.unified_timeline) {
+              state.unified_timeline = results.unified_timeline as TimelineItem[];
+            }
           }),
 
         setBoosters: (boosters) =>
@@ -169,6 +321,13 @@ export const useResultsStore = create<ResultsStoreState>()(
             state.narrative_themes = [];
             state.narrative_confidence = 0;
             state.narrative_synthesized_at = null;
+            // Clear strategic intelligence (v1.1.0)
+            state.identity_synthesis = null;
+            state.portfolio_audit = null;
+            state.awards_portfolio = null;
+            state.programs_portfolio = null;
+            state.priority_actions = [];
+            state.unified_timeline = [];
             // Clear others
             state.booster_recommendations = null;
             state.top_3_boosters = [];

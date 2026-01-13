@@ -1,13 +1,15 @@
 /**
  * AssessmentAgentCard Component
- * v13.3 - Displays Narrative DNA and Archetype from Assessment Agent
+ * v13.4 - Added archetype badge from Strategic Intelligence
  */
 'use client';
 
 import { Brain } from 'lucide-react';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { useNarrativeDNA } from '@/hooks/useAgentData';
+import { useResultsStore } from '@/lib/store/useResultsStore';
 import { AgentCardBase } from './AgentCardBase';
+import { ArchetypeBadge } from '@/components/ui/ArchetypeBadge';
 
 interface AssessmentAgentCardProps {
   profileId: string;
@@ -17,6 +19,7 @@ interface AssessmentAgentCardProps {
 
 export function AssessmentAgentCard({ profileId, onChat, onViewDetails }: AssessmentAgentCardProps) {
   const { data, isLoading, isError, refetch } = useNarrativeDNA(profileId);
+  const identity_synthesis = useResultsStore((state) => state.identity_synthesis);
 
   const handleClick = () => {
     if (onViewDetails && data) {
@@ -67,6 +70,17 @@ export function AssessmentAgentCard({ profileId, onChat, onViewDetails }: Assess
                   {theme}
                 </span>
               ))}
+            </div>
+          )}
+
+          {/* Archetype Badge (Strategic Intelligence v1.1.0) */}
+          {identity_synthesis?.archetype && (
+            <div className="mt-2">
+              <ArchetypeBadge
+                archetype={identity_synthesis.archetype}
+                size="sm"
+                showConfidence={false}
+              />
             </div>
           )}
 
