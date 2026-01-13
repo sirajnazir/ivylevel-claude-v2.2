@@ -402,8 +402,14 @@ async def get_eds(profile_id: str):
 @app.post("/agents/gameplan/generate")
 async def generate_gameplan(input: ProfileInput):
     """
-    Generate comprehensive game plan.
+    Generate comprehensive game plan with multi-agent orchestration.
 
+    Orchestration Flow (v1.0.0):
+    1. EC Agent (FIRST) → identity_synthesis (spike, archetype, pillars)
+    2. Awards + Programs (PARALLEL) ← use identity_synthesis for filtering
+    3. Synthesis → Unified GamePlan
+
+    Legacy features still included:
     - Filters activities by ROI (4+ touchpoints)
     - Plants identity seeds (6-12mo ahead)
     - Applies Strategic Overwhelm (1.4x)
@@ -412,7 +418,8 @@ async def generate_gameplan(input: ProfileInput):
         raise HTTPException(status_code=503, detail="Agents are disabled")
 
     try:
-        result = await gameplan_agent.generate(input.profile_id)
+        # Use process() to trigger orchestrated flow
+        result = await gameplan_agent.process(input.profile_id)
         return result
     except Exception as e:
         logger.error("gameplan_error", error=str(e), profile_id=input.profile_id)
