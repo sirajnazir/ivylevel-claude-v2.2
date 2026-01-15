@@ -323,6 +323,19 @@ class GamePlanAgent:
             programs_result.get("strategic_insights", [])
         )
 
+        # Build top-level activities from all phase activities
+        all_activities = []
+        for phase in phases:
+            all_activities.extend(phase.get("activities", []))
+
+        # Generate identity seeds from profile signals and recommendations
+        identity_seeds = self._generate_identity_seeds(
+            identity_synthesis,
+            ec_result.get("portfolio_analysis", {}),
+            top_awards[:3],
+            top_programs[:3],
+        )
+
         return {
             "profile_id": profile_id,
             # Identity (from EC Agent)
@@ -357,6 +370,10 @@ class GamePlanAgent:
                 "programs": top_programs,
                 "activities": ec_result.get("impact_assessment", {}).get("top_activities", []),
             },
+            # Top-level activities (all phase activities combined) - for UI
+            "activities": all_activities,
+            # Identity seeds (strategic foundation) - for UI
+            "identity_seeds": identity_seeds,
             # Phases and timeline
             "phases": phases,
             # Summary
@@ -372,6 +389,73 @@ class GamePlanAgent:
             "created_at": datetime.now().isoformat(),
         }
 
+    def _generate_identity_seeds(
+        self,
+        identity_synthesis: Dict,
+        portfolio_analysis: Dict,
+        top_awards: List[Dict],
+        top_programs: List[Dict],
+    ) -> List[Dict]:
+        """
+        Generate identity seeds from profile signals and recommendations.
+
+        Identity seeds are strategic building blocks that establish the student's
+        narrative foundation even before they have activities.
+        """
+        seeds = []
+
+        # Seed 1: Archetype Foundation
+        archetype = identity_synthesis.get("archetype", "")
+        if archetype:
+            seeds.append({
+                "type": "archetype",
+                "name": f"{archetype.replace('_', ' ').title()} Identity",
+                "description": f"Your profile aligns with the {archetype.replace('_', ' ')} archetype",
+                "confidence": identity_synthesis.get("archetype_confidence", 0.5),
+                "planted": True,
+            })
+
+        # Seed 2: Spike Foundation
+        spike = identity_synthesis.get("spike", "")
+        if spike and spike != "exploring interests":
+            seeds.append({
+                "type": "spike",
+                "name": f"{spike.title()} Focus",
+                "description": f"Your unique differentiator: {spike}",
+                "evidence": identity_synthesis.get("spike_evidence", []),
+                "planted": True,
+            })
+
+        # Seed 3: Gap-Filling Seeds (opportunities to plant)
+        gaps = portfolio_analysis.get("gaps", [])
+        for gap in gaps[:2]:  # Top 2 gaps
+            seeds.append({
+                "type": "gap_opportunity",
+                "name": f"{gap.replace('_', ' ').title()} Development",
+                "description": f"Opportunity to build {gap.replace('_', ' ')} portfolio",
+                "planted": False,
+            })
+
+        # Seed 4: Award-Based Seeds
+        for award in top_awards[:2]:
+            seeds.append({
+                "type": "award_seed",
+                "name": f"{award.get('name', 'Award')} Pursuit",
+                "description": f"Strategic award aligned with your profile",
+                "planted": False,
+            })
+
+        # Seed 5: Program-Based Seeds
+        for prog in top_programs[:2]:
+            seeds.append({
+                "type": "program_seed",
+                "name": f"{prog.get('name', 'Program')} Application",
+                "description": f"Program opportunity that builds your narrative",
+                "planted": False,
+            })
+
+        return seeds
+
     def _build_orchestrated_phases(
         self,
         identity_synthesis: Dict,
@@ -384,11 +468,13 @@ class GamePlanAgent:
 
         # Phase 1: Foundation (address portfolio gaps)
         gaps = portfolio_analysis.get("gaps", [])
-        phase1_actions = []
+        phase1_activities = []
 
         if gaps:
-            phase1_actions.append({
+            phase1_activities.append({
                 "type": "portfolio_gap",
+                "name": "Address Portfolio Gaps",
+                "description": f"Focus on: {', '.join(gaps[:3])}",
                 "action": f"Address portfolio gaps: {', '.join(gaps)}",
                 "priority": "high"
             })
@@ -397,65 +483,79 @@ class GamePlanAgent:
         for award in awards:
             cascade = award.get("win_cascade", {})
             if cascade.get("position") == "entry":
-                phase1_actions.append({
+                phase1_activities.append({
                     "type": "award",
+                    "name": award.get('name'),
+                    "description": f"Entry-level award opportunity",
                     "action": f"Apply to {award.get('name')}",
                     "priority": "high"
                 })
 
+        phase1_list = phase1_activities[:5]
         phases.append({
             "name": "Foundation Building",
             "duration": "Months 1-3",
             "focus": "Build foundation, address gaps, apply to entry awards",
-            "actions": phase1_actions[:5],
+            "activities": phase1_list,
+            "activity_count": len(phase1_list),
         })
 
         # Phase 2: Building Momentum
-        phase2_actions = []
+        phase2_activities = []
 
         # Add building-level awards
         for award in awards:
             cascade = award.get("win_cascade", {})
             if cascade.get("position") == "building":
-                phase2_actions.append({
+                phase2_activities.append({
                     "type": "award",
+                    "name": award.get('name'),
+                    "description": f"Building-level award",
                     "action": f"Apply to {award.get('name')}",
                     "priority": "medium"
                 })
 
         # Add top programs
         for prog in programs[:3]:
-            phase2_actions.append({
+            phase2_activities.append({
                 "type": "program",
+                "name": prog.get('name'),
+                "description": f"Summer program opportunity",
                 "action": f"Apply to {prog.get('name')}",
                 "priority": "medium"
             })
 
+        phase2_list = phase2_activities[:5]
         phases.append({
             "name": "Building Momentum",
             "duration": "Months 4-8",
             "focus": "Scale impact, apply to programs and building awards",
-            "actions": phase2_actions[:5],
+            "activities": phase2_list,
+            "activity_count": len(phase2_list),
         })
 
         # Phase 3: Capstone
-        phase3_actions = []
+        phase3_activities = []
 
         # Add capstone awards
         for award in awards:
             cascade = award.get("win_cascade", {})
             if cascade.get("position") == "capstone":
-                phase3_actions.append({
+                phase3_activities.append({
                     "type": "award",
+                    "name": award.get('name'),
+                    "description": f"Capstone-level award",
                     "action": f"Apply to {award.get('name')}",
                     "priority": "high"
                 })
 
+        phase3_list = phase3_activities[:5]
         phases.append({
             "name": "Capstone Achievement",
             "duration": "Months 9-12",
             "focus": "Apply to capstone awards, finalize applications",
-            "actions": phase3_actions[:5],
+            "activities": phase3_list,
+            "activity_count": len(phase3_list),
         })
 
         return phases

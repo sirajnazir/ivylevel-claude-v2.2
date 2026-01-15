@@ -101,6 +101,16 @@ export function useGamePlan(profileId: string | null) {
             activities: (gamePlanData.filtered_activities || gamePlanData.activities || []) as unknown[],
             identity_seeds: (gamePlanData.identity_seeds || []) as unknown[],
             phases: (gamePlanData.phases || []) as unknown[],
+            // EC Agent data
+            identity_synthesis: gamePlanData.identity_synthesis as Record<string, unknown> | undefined,
+            archetype: (gamePlanData.archetype as string) || undefined,
+            spike: (gamePlanData.spike as string) || undefined,
+            pillars: (gamePlanData.pillars as string[]) || undefined,
+            portfolio_analysis: gamePlanData.portfolio_analysis as Record<string, unknown> | undefined,
+            // Awards and Programs data
+            awards: gamePlanData.awards as Record<string, unknown> | undefined,
+            programs: gamePlanData.programs as Record<string, unknown> | undefined,
+            strategic_insights: (gamePlanData.strategic_insights as string[]) || [],
             summary: (gamePlanData.summary || { total_activities: 0, total_touchpoints: 0, average_roi: 0 }) as Record<string, unknown>,
           },
         } as GamePlanResult;

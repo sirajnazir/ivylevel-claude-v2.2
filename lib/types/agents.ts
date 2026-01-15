@@ -59,15 +59,32 @@ export interface SeedAction {
 }
 
 export interface IdentitySeed {
-  id: string;
-  target: string;
-  target_type: string;
-  plant_date: string;
-  bloom_date: string;
-  months_until_bloom: number;
-  actions: SeedAction[];
-  status: 'planned' | 'active' | 'completed';
-  narrative_connection: string;
+  id?: string;
+  type: string;
+  name: string;
+  description: string;
+  confidence?: number;
+  evidence?: string[];
+  planted: boolean;
+  // Legacy fields for backwards compatibility
+  target?: string;
+  target_type?: string;
+  plant_date?: string;
+  bloom_date?: string;
+  months_until_bloom?: number;
+  actions?: SeedAction[];
+  status?: 'planned' | 'active' | 'completed';
+  narrative_connection?: string;
+}
+
+export interface IdentitySynthesis {
+  spike: string;
+  spike_confidence?: number;
+  spike_evidence?: string[];
+  archetype: string;
+  archetype_confidence?: number;
+  pillars: string[];
+  portfolio_balance_score?: number;
 }
 
 export interface Phase {
@@ -87,15 +104,63 @@ export interface GamePlanResult {
     activities: Activity[];
     identity_seeds: IdentitySeed[];
     phases: Phase[];
+    // EC Agent data
+    identity_synthesis?: IdentitySynthesis;
+    archetype?: string;
+    spike?: string;
+    pillars?: string[];
+    portfolio_analysis?: {
+      strengths: string[];
+      gaps: string[];
+      theme?: string;
+    };
+    // Awards Agent data
+    awards?: {
+      portfolio: {
+        reach: AwardMatch[];
+        target: AwardMatch[];
+        safety: AwardMatch[];
+      };
+      top_recommendations?: AwardMatch[];
+      timeline?: Array<{ month: string; awards: string[] }>;
+      strategic_insights?: string[];
+    };
+    // Programs Agent data
+    programs?: {
+      portfolio: {
+        reach: ProgramMatch[];
+        target: ProgramMatch[];
+        safety: ProgramMatch[];
+      };
+      top_recommendations?: ProgramMatch[];
+      strategic_insights?: string[];
+    };
     summary: {
       total_activities: number;
       total_touchpoints: number;
       average_roi: number;
-      expected_completion_rate: number;
+      expected_completion_rate?: number;
+      total_awards_matched?: number;
+      total_programs_matched?: number;
     };
-    created_at: string;
+    strategic_insights?: string[];
+    created_at?: string;
   };
-  requires_handoff: boolean;
+  requires_handoff?: boolean;
+}
+
+export interface ProgramMatch {
+  id: string;
+  name: string;
+  organization?: string;
+  description?: string;
+  type?: string;
+  category?: string;
+  selectivity?: number;
+  fit_score?: number;
+  match_reason?: string;
+  deadline?: string;
+  url?: string;
 }
 
 export interface FilteredActivitiesData {
@@ -167,13 +232,17 @@ export interface AwardMatch {
 }
 
 export interface AwardPortfolio {
-  likely: AwardMatch[];
+  // Backend uses reach/target/safety (industry standard)
+  reach: AwardMatch[];
   target: AwardMatch[];
-  stretch: AwardMatch[];
-  total_recommended: number;
-  expected_wins: number;
-  total_effort_hours: number;
-  strategy_notes: string[];
+  safety: AwardMatch[];
+  // Legacy fields for backwards compatibility
+  likely?: AwardMatch[];
+  stretch?: AwardMatch[];
+  total_recommended?: number;
+  expected_wins?: number;
+  total_effort_hours?: number;
+  strategy_notes?: string[];
 }
 
 export interface OpportunityMatch {

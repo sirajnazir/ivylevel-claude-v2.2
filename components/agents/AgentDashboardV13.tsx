@@ -18,6 +18,7 @@ import { BRAND_COLORS } from '@/lib/constants/brand';
 import { useAgentV13Health, useDashboardV13Data } from '@/hooks/useAgentData';
 import {
   AssessmentAgentCard,
+  ECAgentCard,
   GamePlanAgentCard,
   ExecutionAgentCard,
   AwardsAgentCard,
@@ -168,6 +169,11 @@ export function AgentDashboardV13({ profileId, onAgentChat }: AgentDashboardV13P
           profileId={profileId}
           onChat={() => handleAgentChat('narrative')}
           onViewDetails={(data) => handleViewDetails('assessment', 'Assessment Agent - Narrative DNA', data)}
+        />
+        <ECAgentCard
+          profileId={profileId}
+          onChat={() => handleAgentChat('strategist')}
+          onViewDetails={(data) => handleViewDetails('ec', 'EC Agent - Identity Synthesis', data)}
         />
         <GamePlanAgentCard
           profileId={profileId}

@@ -1,13 +1,12 @@
 /**
  * AwardsAgentCard Component
- * v13.4 - Added 2-2-1 portfolio from Strategic Intelligence
+ * v4.0 - Uses game plan orchestration data with reach/target/safety portfolio
  */
 'use client';
 
-import { Award, Trophy, Target, Star, Zap, Shield } from 'lucide-react';
+import { Award, Target, Zap, Shield } from 'lucide-react';
 import { BRAND_COLORS } from '@/lib/constants/brand';
-import { useAwardMatches, useAwardPortfolio } from '@/hooks/useAgentData';
-import { useResultsStore } from '@/lib/store/useResultsStore';
+import { useGamePlan, useAwardMatches } from '@/hooks/useAgentData';
 import { AgentCardBase } from './AgentCardBase';
 
 interface AwardsAgentCardProps {
@@ -17,26 +16,46 @@ interface AwardsAgentCardProps {
 }
 
 export function AwardsAgentCard({ profileId, onChat, onViewDetails }: AwardsAgentCardProps) {
-  const { data: matchData, isLoading: matchLoading, isError: matchError, refetch } = useAwardMatches(profileId);
-  const { data: portfolioData, isLoading: portfolioLoading } = useAwardPortfolio(profileId);
-  const awards_portfolio = useResultsStore((state) => state.awards_portfolio);
+  const { data: gamePlan, isLoading: planLoading, refetch: refetchPlan } = useGamePlan(profileId);
+  const { data: matchData, isLoading: matchLoading, isError: matchError, refetch: refetchMatch } = useAwardMatches(profileId);
 
-  const isLoading = matchLoading || portfolioLoading;
+  const isLoading = planLoading || matchLoading;
   const isError = matchError;
 
-  // Get portfolio data - prefer strategic intelligence, fall back to legacy
-  const portfolio = portfolioData?.portfolio || matchData?.portfolio;
-  const hasStrategicPortfolio = awards_portfolio && (awards_portfolio.reach?.length > 0 || awards_portfolio.target?.length > 0 || awards_portfolio.safety?.length > 0);
+  // Get awards portfolio from game plan (orchestrated) or fallback to legacy match endpoint
+  const gamePlanAwards = gamePlan?.game_plan?.awards as Record<string, unknown> | undefined;
+  const gamePlanPortfolio = gamePlanAwards?.portfolio as Record<string, unknown[]> | undefined;
+  const legacyPortfolio = matchData?.portfolio;
+
+  // Use game plan data if available (has reach/target/safety)
+  const portfolio = gamePlanPortfolio || legacyPortfolio;
+
+  // Extract counts - support both new (reach/target/safety) and old (likely/target/stretch) field names
+  const reachCount = (portfolio?.reach as unknown[])?.length || (legacyPortfolio?.likely as unknown[])?.length || 0;
+  const targetCount = (portfolio?.target as unknown[])?.length || 0;
+  const safetyCount = (portfolio?.safety as unknown[])?.length || (legacyPortfolio?.stretch as unknown[])?.length || 0;
+  const totalCount = reachCount + targetCount + safetyCount;
+
+  // Get summary stats
+  const summary = gamePlan?.game_plan?.summary as Record<string, number> | undefined;
+  const totalAwardsMatched = summary?.total_awards_matched || totalCount;
 
   const handleClick = () => {
-    if (onViewDetails && (matchData || portfolioData)) {
-      onViewDetails({ matches: matchData?.matches || [], portfolio, ...matchData } as unknown as Record<string, unknown>);
+    if (onViewDetails) {
+      onViewDetails({
+        portfolio: gamePlanPortfolio || legacyPortfolio,
+        matches: matchData?.matches || [],
+        total_matched: totalAwardsMatched,
+        top_recommendations: gamePlanAwards?.top_recommendations,
+        strategic_insights: gamePlanAwards?.strategic_insights,
+      } as Record<string, unknown>);
     }
   };
-  const likelyCount = portfolio?.likely?.length || 0;
-  const targetCount = portfolio?.target?.length || 0;
-  const stretchCount = portfolio?.stretch?.length || 0;
-  const expectedWins = portfolio?.expected_wins || 0;
+
+  const handleRefresh = () => {
+    refetchPlan();
+    refetchMatch();
+  };
 
   return (
     <AgentCardBase
@@ -44,122 +63,66 @@ export function AwardsAgentCard({ profileId, onChat, onViewDetails }: AwardsAgen
       icon={<Award size={20} style={{ color: BRAND_COLORS.primary }} />}
       isLoading={isLoading}
       isError={isError}
-      onRefresh={() => refetch()}
+      onRefresh={handleRefresh}
       onChat={onChat}
       onClick={handleClick}
     >
       <div className="space-y-4">
-        {/* 2-2-1 Portfolio (Strategic Intelligence) */}
-        {hasStrategicPortfolio ? (
-          <div className="grid grid-cols-3 gap-2">
-            {/* Reach */}
+        {/* Reach/Target/Safety Portfolio */}
+        <div className="grid grid-cols-3 gap-2">
+          {/* Reach */}
+          <div
+            className="p-3 rounded-lg text-center"
+            style={{ backgroundColor: BRAND_COLORS.primaryBg }}
+          >
+            <Zap size={16} style={{ color: BRAND_COLORS.primary }} className="mx-auto mb-1" />
             <div
-              className="p-3 rounded-lg text-center"
-              style={{ backgroundColor: BRAND_COLORS.primaryBg }}
+              className="text-xl font-bold"
+              style={{ color: BRAND_COLORS.primary }}
             >
-              <Zap size={16} style={{ color: BRAND_COLORS.primary }} className="mx-auto mb-1" />
-              <div
-                className="text-xl font-bold"
-                style={{ color: BRAND_COLORS.primary }}
-              >
-                {awards_portfolio?.reach?.length || 0}
-              </div>
-              <div className="text-xs" style={{ color: BRAND_COLORS.primary }}>
-                Reach
-              </div>
+              {reachCount}
             </div>
-
-            {/* Target */}
-            <div
-              className="p-3 rounded-lg text-center"
-              style={{ backgroundColor: BRAND_COLORS.bgWarning }}
-            >
-              <Target size={16} style={{ color: BRAND_COLORS.warning }} className="mx-auto mb-1" />
-              <div
-                className="text-xl font-bold"
-                style={{ color: BRAND_COLORS.warning }}
-              >
-                {awards_portfolio?.target?.length || 0}
-              </div>
-              <div className="text-xs" style={{ color: BRAND_COLORS.warning }}>
-                Target
-              </div>
-            </div>
-
-            {/* Safety */}
-            <div
-              className="p-3 rounded-lg text-center"
-              style={{ backgroundColor: BRAND_COLORS.bgSuccess }}
-            >
-              <Shield size={16} style={{ color: BRAND_COLORS.success }} className="mx-auto mb-1" />
-              <div
-                className="text-xl font-bold"
-                style={{ color: BRAND_COLORS.success }}
-              >
-                {awards_portfolio?.safety?.length || 0}
-              </div>
-              <div className="text-xs" style={{ color: BRAND_COLORS.success }}>
-                Safety
-              </div>
+            <div className="text-xs" style={{ color: BRAND_COLORS.primary }}>
+              Reach
             </div>
           </div>
-        ) : (
-          /* Legacy Likely/Target/Stretch */
-          <div className="grid grid-cols-3 gap-2">
-            {/* Likely */}
-            <div
-              className="p-3 rounded-lg text-center"
-              style={{ backgroundColor: BRAND_COLORS.bgSuccess }}
-            >
-              <Trophy size={16} style={{ color: BRAND_COLORS.success }} className="mx-auto mb-1" />
-              <div
-                className="text-xl font-bold"
-                style={{ color: BRAND_COLORS.success }}
-              >
-                {likelyCount}
-              </div>
-              <div className="text-xs" style={{ color: BRAND_COLORS.success }}>
-                Likely
-              </div>
-            </div>
 
-            {/* Target */}
+          {/* Target */}
+          <div
+            className="p-3 rounded-lg text-center"
+            style={{ backgroundColor: BRAND_COLORS.bgWarning }}
+          >
+            <Target size={16} style={{ color: BRAND_COLORS.warning }} className="mx-auto mb-1" />
             <div
-              className="p-3 rounded-lg text-center"
-              style={{ backgroundColor: BRAND_COLORS.bgWarning }}
+              className="text-xl font-bold"
+              style={{ color: BRAND_COLORS.warning }}
             >
-              <Target size={16} style={{ color: BRAND_COLORS.warning }} className="mx-auto mb-1" />
-              <div
-                className="text-xl font-bold"
-                style={{ color: BRAND_COLORS.warning }}
-              >
-                {targetCount}
-              </div>
-              <div className="text-xs" style={{ color: BRAND_COLORS.warning }}>
-                Target
-              </div>
+              {targetCount}
             </div>
-
-            {/* Stretch */}
-            <div
-              className="p-3 rounded-lg text-center"
-              style={{ backgroundColor: BRAND_COLORS.primaryBg }}
-            >
-              <Star size={16} style={{ color: BRAND_COLORS.primary }} className="mx-auto mb-1" />
-              <div
-                className="text-xl font-bold"
-                style={{ color: BRAND_COLORS.primary }}
-              >
-                {stretchCount}
-              </div>
-              <div className="text-xs" style={{ color: BRAND_COLORS.primary }}>
-                Stretch
-              </div>
+            <div className="text-xs" style={{ color: BRAND_COLORS.warning }}>
+              Target
             </div>
           </div>
-        )}
 
-        {/* Expected Wins */}
+          {/* Safety */}
+          <div
+            className="p-3 rounded-lg text-center"
+            style={{ backgroundColor: BRAND_COLORS.bgSuccess }}
+          >
+            <Shield size={16} style={{ color: BRAND_COLORS.success }} className="mx-auto mb-1" />
+            <div
+              className="text-xl font-bold"
+              style={{ color: BRAND_COLORS.success }}
+            >
+              {safetyCount}
+            </div>
+            <div className="text-xs" style={{ color: BRAND_COLORS.success }}>
+              Safety
+            </div>
+          </div>
+        </div>
+
+        {/* Total Matched from Orchestration */}
         <div
           className="p-3 rounded-lg"
           style={{
@@ -169,36 +132,41 @@ export function AwardsAgentCard({ profileId, onChat, onViewDetails }: AwardsAgen
         >
           <div className="flex items-center justify-between">
             <span style={{ color: BRAND_COLORS.textMuted }} className="text-sm">
-              Expected Wins
+              Total Awards Matched
             </span>
             <span
               className="text-lg font-bold"
               style={{ color: BRAND_COLORS.success }}
             >
-              {expectedWins.toFixed(1)}
+              {totalAwardsMatched}
             </span>
           </div>
           <p className="text-xs mt-1" style={{ color: BRAND_COLORS.textMuted }}>
-            Based on probability analysis
+            From orchestrated matching
           </p>
         </div>
 
-        {/* Strategy Notes */}
-        {portfolio?.strategy_notes && portfolio.strategy_notes.length > 0 && (
+        {/* Strategic Insights */}
+        {Array.isArray(gamePlanAwards?.strategic_insights) && (gamePlanAwards.strategic_insights as unknown[]).length > 0 && (
           <div>
             <p className="text-xs mb-1" style={{ color: BRAND_COLORS.textMuted }}>
-              Strategy Tip
+              Strategy Insight
             </p>
             <p className="text-sm" style={{ color: BRAND_COLORS.textSecondary }}>
-              {portfolio.strategy_notes[0]}
+              {(() => {
+                const insight = (gamePlanAwards.strategic_insights as unknown[])[0];
+                if (typeof insight === 'string') return insight;
+                if (insight && typeof insight === 'object' && 'message' in insight) return String((insight as {message: string}).message);
+                if (insight && typeof insight === 'object' && 'title' in insight) return String((insight as {title: string}).title);
+                return '';
+              })()}
             </p>
           </div>
         )}
 
-        {/* Total Recommended */}
+        {/* Summary Stats */}
         <div className="text-xs text-center" style={{ color: BRAND_COLORS.textMuted }}>
-          {portfolio?.total_recommended || likelyCount + targetCount + stretchCount} awards recommended •
-          {portfolio?.total_effort_hours || 0} total hours
+          {totalCount} in portfolio • Click for details
         </div>
       </div>
     </AgentCardBase>
