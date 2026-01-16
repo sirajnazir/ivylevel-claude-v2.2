@@ -215,6 +215,144 @@ async def root():
 
 
 # =====================================================
+# ReAct Debug/Diagnostic Endpoints
+# =====================================================
+
+@app.get("/api/debug/react-status")
+async def check_react_status():
+    """Check current ReAct configuration and status."""
+    from config import FEATURE_FLAGS
+
+    return {
+        "react_enabled": FEATURE_FLAGS.get("enable_react", False),
+        "react_min_confidence": FEATURE_FLAGS.get("react_min_confidence", 0.70),
+        "react_max_cycles": FEATURE_FLAGS.get("react_max_cycles", 3),
+        "react_ab_test_enabled": FEATURE_FLAGS.get("react_ab_test_enabled", False),
+        "react_verbose_logging": FEATURE_FLAGS.get("react_verbose_logging", False),
+        "voice_enabled": FEATURE_FLAGS.get("enable_voice_validation", False),
+        "golden_enabled": FEATURE_FLAGS.get("enable_golden_benchmark", False),
+        "threshold_percentage": f"{FEATURE_FLAGS.get('react_min_confidence', 0.70) * 100:.0f}%",
+    }
+
+
+@app.post("/api/debug/set-threshold/{threshold}")
+async def set_quality_threshold(threshold: float):
+    """
+    Temporarily change quality threshold for testing.
+
+    Args:
+        threshold: New threshold (0.0 to 1.0)
+
+    Example:
+        POST /api/debug/set-threshold/0.90
+        This forces 90% quality requirement, almost guaranteeing multi-cycle.
+    """
+    from config import FEATURE_FLAGS
+
+    if threshold < 0 or threshold > 1:
+        raise HTTPException(400, "Threshold must be between 0.0 and 1.0")
+
+    old_threshold = FEATURE_FLAGS.get("react_min_confidence", 0.70)
+    FEATURE_FLAGS["react_min_confidence"] = threshold
+
+    return {
+        "message": f"Threshold changed from {old_threshold:.0%} to {threshold:.0%}",
+        "old_threshold": old_threshold,
+        "new_threshold": threshold,
+        "note": "This is temporary and resets on server restart"
+    }
+
+
+@app.get("/api/debug/test-quality-extraction/{profile_id}")
+async def test_quality_extraction(profile_id: str):
+    """
+    Test quality score extraction for a profile without full ReAct.
+
+    This shows exactly what quality score would be calculated,
+    helping diagnose why ReAct might always pass on first cycle.
+    """
+    try:
+        # Run EC agent directly (no ReAct)
+        result = await extracurriculars_agent.process(profile_id)
+
+        # Calculate quality score the way ReAct would
+        from agents.core.react_wrapper import ReActWrapper
+
+        wrapper = ReActWrapper(extracurriculars_agent)
+        calculated_score = wrapper._calculate_quality_from_content(result)
+
+        threshold = 0.70
+        from config import FEATURE_FLAGS
+        threshold = FEATURE_FLAGS.get("react_min_confidence", 0.70)
+
+        return {
+            "profile_id": profile_id,
+            "agent_success": result.get("success", False),
+            "calculated_score": calculated_score,
+            "threshold": threshold * 100,
+            "would_pass": calculated_score >= threshold * 100,
+            "would_need_cycles": calculated_score < threshold * 100,
+            "raw_confidence": result.get("confidence"),
+            "validation_confidence": result.get("validation", {}).get("confidence"),
+            "identity_synthesis": {
+                "archetype": result.get("identity_synthesis", {}).get("archetype"),
+                "archetype_confidence": result.get("identity_synthesis", {}).get("archetype_confidence"),
+                "spike": result.get("identity_synthesis", {}).get("spike"),
+                "pillars_count": len(result.get("identity_synthesis", {}).get("pillars", [])),
+            }
+        }
+    except Exception as e:
+        logger.error("test_quality_extraction_error", error=str(e), profile_id=profile_id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/debug/agent-types")
+async def check_agent_types():
+    """Check if agents are properly wrapped with ReAct."""
+    results = {}
+
+    try:
+        results["extracurriculars"] = {
+            "type": str(type(extracurriculars_agent).__name__),
+            "has_process": hasattr(extracurriculars_agent, 'process'),
+            "has_name": hasattr(extracurriculars_agent, 'name'),
+        }
+    except Exception as e:
+        results["extracurriculars"] = {"error": str(e)}
+
+    try:
+        results["awards"] = {
+            "type": str(type(awards_agent).__name__),
+            "has_process": hasattr(awards_agent, 'process'),
+            "has_match": hasattr(awards_agent, 'match'),
+        }
+    except Exception as e:
+        results["awards"] = {"error": str(e)}
+
+    try:
+        results["programs"] = {
+            "type": str(type(programs_agent).__name__),
+            "has_process": hasattr(programs_agent, 'process'),
+            "has_match": hasattr(programs_agent, 'match'),
+        }
+    except Exception as e:
+        results["programs"] = {"error": str(e)}
+
+    try:
+        results["gameplan"] = {
+            "type": str(type(gameplan_agent).__name__),
+            "has_process": hasattr(gameplan_agent, 'process'),
+        }
+    except Exception as e:
+        results["gameplan"] = {"error": str(e)}
+
+    return {
+        "agents": results,
+        "note": "Agents are wrapped with ReAct at request time when enable_react=True"
+    }
+
+
+# =====================================================
 # Assessment Agent Endpoints
 # =====================================================
 
@@ -612,16 +750,30 @@ async def get_gameplan_seeds(profile_id: str):
 @app.get("/agents/awards/match/{profile_id}")
 async def match_awards(profile_id: str):
     """
-    Match profile to awards with ROI calculation.
+    v4.1: Match profile to awards with ReAct self-correction.
 
     Returns: Portfolio balanced with likely + stretch + skip.
     Target: >40% win rate (Huda: 62.5%)
+
+    Now includes _react metadata showing:
+    - cycles_executed: Number of ReAct cycles run
+    - improvement_trajectory: Quality scores per cycle
+    - cycle_summary: Detailed breakdown of each cycle
     """
     if not settings.enable_agents:
         raise HTTPException(status_code=503, detail="Agents are disabled")
 
     try:
-        result = await awards_agent.match(profile_id)
+        from config import FEATURE_FLAGS
+        from agents.core.react_wrapper import create_react_wrapped_agent
+
+        # Wrap with ReAct if enabled
+        if FEATURE_FLAGS.get("enable_react", False):
+            wrapped_agent = create_react_wrapped_agent(awards_agent)
+            result = await wrapped_agent.process(profile_id)
+        else:
+            result = await awards_agent.match(profile_id)
+
         return result
     except Exception as e:
         logger.error("awards_error", error=str(e), profile_id=profile_id)
@@ -739,6 +891,40 @@ async def get_opportunity_alerts(profile_id: str):
             }
     except Exception as e:
         logger.error("opportunity_alerts_error", error=str(e), profile_id=profile_id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =====================================================
+# Programs Agent Endpoints
+# =====================================================
+
+@app.get("/agents/programs/match/{profile_id}")
+async def match_programs(profile_id: str):
+    """
+    v4.1: Match profile to summer programs with ReAct self-correction.
+
+    Returns:
+        - top_recommendations: Top matched programs
+        - advance_alerts: Programs with upcoming deadlines
+        - _react: ReAct metadata with cycles and quality scores
+    """
+    if not settings.enable_agents:
+        raise HTTPException(status_code=503, detail="Agents are disabled")
+
+    try:
+        from config import FEATURE_FLAGS
+        from agents.core.react_wrapper import create_react_wrapped_agent
+
+        # Wrap with ReAct if enabled
+        if FEATURE_FLAGS.get("enable_react", False):
+            wrapped_agent = create_react_wrapped_agent(programs_agent)
+            result = await wrapped_agent.process(profile_id)
+        else:
+            result = await programs_agent.match(profile_id)
+
+        return result
+    except Exception as e:
+        logger.error("programs_error", error=str(e), profile_id=profile_id)
         raise HTTPException(status_code=500, detail=str(e))
 
 

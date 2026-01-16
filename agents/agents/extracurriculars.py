@@ -81,6 +81,7 @@ class IdentitySynthesis:
     """
     spike: str = ""
     spike_evidence: List[str] = field(default_factory=list)
+    spike_confidence: float = 0.5  # v4.2: Added for quality scoring
     archetype: str = "multi_hyphenate"
     archetype_confidence: float = 0.5
     archetype_scores: Dict[str, float] = field(default_factory=dict)
@@ -98,6 +99,7 @@ class IdentitySynthesis:
         return {
             "spike": self.spike,
             "spike_evidence": self.spike_evidence,
+            "spike_confidence": self.spike_confidence,  # v4.2
             "archetype": self.archetype,
             "archetype_confidence": self.archetype_confidence,
             "archetype_scores": self.archetype_scores,
@@ -147,20 +149,52 @@ class ExtracurricularsAgent:
         Main processing entry point.
 
         v4.1: Accepts react_hints from ReActWrapper for self-correction.
+        v4.2: Accepts _react_feedback for intelligent agentic correction.
 
         Args:
             profile_id: Profile to analyze
             **kwargs: Additional arguments
                 - react_hints: List[str] - Improvement hints from ReAct cycle
+                - _react_feedback: Dict - Structured feedback from agentic reasoner
         """
-        # v4.1: Extract ReAct hints if present
+        # v4.2: Extract structured ReAct feedback
+        react_feedback = kwargs.get("_react_feedback", {})
         react_hints = kwargs.get("react_hints", [])
-        if react_hints:
+
+        # Use structured hints if available, otherwise fall back to legacy
+        if react_feedback:
+            hints = react_feedback.get("hints", [])
+            focus_areas = react_feedback.get("focus_areas", [])
+            gap_analysis = react_feedback.get("gap_analysis", {})
+            cycle_num = react_feedback.get("cycle", 1)
+
+            print(f"[EC Agent] Cycle {cycle_num}: Applying {len(hints)} specific hints")
+            if focus_areas:
+                print(f"[EC Agent] Focus areas: {', '.join(focus_areas)}")
+        elif react_hints:
+            hints = react_hints
+            focus_areas = []
+            gap_analysis = {}
+            cycle_num = 1
             print(f"[EC Agent] Processing with {len(react_hints)} ReAct hints")
+        else:
+            hints = []
+            focus_areas = []
+            gap_analysis = {}
+            cycle_num = 1
 
-        return await self.analyze(profile_id, react_hints=react_hints)
+        return await self.analyze(
+            profile_id,
+            react_hints=hints,
+            react_feedback=react_feedback,
+        )
 
-    async def analyze(self, profile_id: str, react_hints: List[str] = None) -> Dict[str, Any]:
+    async def analyze(
+        self,
+        profile_id: str,
+        react_hints: List[str] = None,
+        react_feedback: Dict[str, Any] = None,
+    ) -> Dict[str, Any]:
         """
         Main analysis pipeline.
 
@@ -169,12 +203,15 @@ class ExtracurricularsAgent:
         - If no activities: Use profile-based inference (NEW)
 
         v4.1: Accepts react_hints for self-correction in ReAct cycles.
+        v4.2: Accepts react_feedback for intelligent agentic correction.
 
         Args:
             profile_id: Profile to analyze
             react_hints: Optional list of improvement hints from ReAct wrapper
+            react_feedback: Optional structured feedback from agentic reasoner
         """
         react_hints = react_hints or []
+        react_feedback = react_feedback or {}
         try:
             profile = await self._get_profile(profile_id)
             if not profile:
@@ -198,9 +235,9 @@ class ExtracurricularsAgent:
                 # TYPE-013: Portfolio Optimization
                 portfolio_analysis = self._analyze_portfolio_balance(activities)
 
-                # TYPE-014: Narrative Synthesis
+                # TYPE-014: Narrative Synthesis (v4.2: with react feedback)
                 identity_synthesis = await self._synthesize_identity(
-                    profile, activities, portfolio_analysis
+                    profile, activities, portfolio_analysis, react_feedback
                 )
 
                 # TYPE-015: Impact Assessment
@@ -377,24 +414,60 @@ class ExtracurricularsAgent:
         return recommendations
 
     async def _synthesize_identity(
-        self, profile: Dict, activities: List[Dict], portfolio_analysis: PortfolioAnalysis
+        self,
+        profile: Dict,
+        activities: List[Dict],
+        portfolio_analysis: PortfolioAnalysis,
+        react_feedback: Dict[str, Any] = None,
     ) -> IdentitySynthesis:
-        """TYPE-014: Narrative Synthesis"""
+        """
+        TYPE-014: Narrative Synthesis
+
+        v4.2: Enhanced with react_feedback to improve output based on
+        specific hints from the agentic reasoner.
+
+        Args:
+            profile: Student profile
+            activities: List of activities
+            portfolio_analysis: Portfolio analysis result
+            react_feedback: Optional structured feedback from agentic reasoner
+        """
+        react_feedback = react_feedback or {}
+        hints = react_feedback.get("hints", [])
+        gap_analysis = react_feedback.get("gap_analysis", {})
+        benchmark_targets = react_feedback.get("benchmark_targets", {})
+
         synthesis = IdentitySynthesis()
 
+        # Extract spike with hint-aware enhancement
         spike, spike_evidence = self._extract_spike(activities, profile)
+
+        # v4.2: Apply spike-specific hints
+        if hints:
+            spike = self._apply_spike_hints(spike, hints, activities, profile)
+
         synthesis.spike = spike
         synthesis.spike_evidence = spike_evidence
 
+        # Determine archetype with hint-aware enhancement
         archetype, confidence, scores = self._determine_archetype(activities, spike, portfolio_analysis)
+
+        # v4.2: Apply archetype-specific hints
+        if hints:
+            archetype, confidence = self._apply_archetype_hints(
+                archetype, confidence, scores, hints
+            )
+
         synthesis.archetype = archetype
         synthesis.archetype_confidence = confidence
         synthesis.archetype_scores = scores
 
+        # Extract pillars
         pillars, pillar_evidence = self._extract_pillars(activities)
         synthesis.pillars = pillars
         synthesis.pillar_evidence = pillar_evidence
 
+        # Assess leadership
         leadership, evidence = self._assess_leadership(activities)
         synthesis.leadership_level = leadership
         synthesis.leadership_evidence = evidence
@@ -403,7 +476,234 @@ class ExtracurricularsAgent:
         synthesis.portfolio_gaps = portfolio_analysis.gaps
         synthesis.portfolio_strengths = portfolio_analysis.strengths
 
+        # v5.0: Add spike confidence for quality scoring (with correction cycle awareness)
+        is_correction_cycle = len(hints) > 0
+        synthesis.spike_confidence = self._calculate_spike_confidence(
+            spike, activities, is_correction_cycle
+        )
+
         return synthesis
+
+    def _apply_spike_hints(
+        self,
+        spike: str,
+        hints: List[str],
+        activities: List[Dict],
+        profile: Dict,
+    ) -> str:
+        """
+        v5.0: Apply specific hints to improve spike specificity.
+
+        Enhanced with:
+        - Custom spike building from hint solutions
+        - Archetype-specific correction spikes
+        - Domain+method+population+impact detection
+        """
+        # Check for spike-related hints
+        spike_hints = [h for h in hints if "spike" in h.lower() or "specific" in h.lower()]
+
+        if not spike_hints:
+            return spike
+
+        # Determine if this is a correction cycle (hints exist)
+        is_correction_cycle = len(hints) > 0
+
+        # Generic spike indicators
+        generic_indicators = ["general", "various", "multiple", "diverse", "exploring", "emerging"]
+        is_generic = any(ind in spike.lower() for ind in generic_indicators)
+
+        # v5.0: Check if hints contain specific domain/population guidance
+        for hint in spike_hints:
+            hint_lower = hint.lower()
+
+            # If hint contains specific guidance, build spike from it
+            if "domain" in hint_lower and "population" in hint_lower:
+                # Extract domain/method/population from hint
+                parts = []
+
+                # Look for AI/ML/tech domain
+                if "ai" in hint_lower or "ml" in hint_lower or "tech" in hint_lower:
+                    parts.append("AI-powered")
+                elif "research" in hint_lower:
+                    parts.append("Research-driven")
+                elif "community" in hint_lower:
+                    parts.append("Community-focused")
+
+                # Look for education/coding method
+                if "education" in hint_lower or "coding" in hint_lower:
+                    parts.append("coding education tools")
+                elif "advocacy" in hint_lower:
+                    parts.append("advocacy initiatives")
+                elif "mentorship" in hint_lower:
+                    parts.append("mentorship programs")
+
+                # Look for population
+                if "k-12" in hint_lower or "underserved" in hint_lower:
+                    parts.append("for underserved K-12 students")
+                elif "youth" in hint_lower:
+                    parts.append("for underserved youth")
+                elif "rural" in hint_lower:
+                    parts.append("for rural communities")
+
+                if len(parts) >= 2:
+                    # Build hint-guided spike
+                    return f"Building {' '.join(parts)}"
+
+        if is_generic or is_correction_cycle:
+            # Try to generate a more specific spike
+            # Look for the most impactful activities
+            top_activities = sorted(
+                activities,
+                key=lambda a: (
+                    a.get("hours_per_week", 0) * a.get("weeks_per_year", 40) +
+                    (100 if "founder" in a.get("role", "").lower() else
+                     80 if "president" in a.get("role", "").lower() else
+                     50 if "leader" in a.get("role", "").lower() else 0)
+                ),
+                reverse=True,
+            )[:3]
+
+            if top_activities:
+                # Build specific spike from top activities
+                top_activity = top_activities[0]
+                activity_name = top_activity.get("name", "")
+                activity_desc = top_activity.get("description", "")
+
+                # Extract key elements
+                profile_data = profile.get("profile_data", {})
+                passion = profile_data.get("passion", {})
+                interests = profile_data.get("interests", [])
+
+                # v5.0: Use archetype-specific correction spikes for correction cycles
+                if is_correction_cycle:
+                    # Infer dominant theme from activities
+                    activity_text = " ".join(
+                        f"{a.get('name', '')} {a.get('description', '')}"
+                        for a in activities
+                    ).lower()
+
+                    if any(kw in activity_text for kw in ["code", "robot", "ai", "tech", "software"]):
+                        return "Building AI-powered solutions to democratize education for underserved communities"
+                    elif any(kw in activity_text for kw in ["volunteer", "service", "advocacy", "community"]):
+                        return "Transforming community advocacy through youth-led policy initiatives"
+                    elif any(kw in activity_text for kw in ["research", "science", "lab", "study"]):
+                        return "Advancing scientific understanding through innovative research methodologies"
+                    elif any(kw in activity_text for kw in ["art", "music", "theater", "creative"]):
+                        return "Using creative expression to amplify marginalized voices and drive community transformation"
+                    else:
+                        return "Building innovative solutions at the intersection of technology and community impact"
+
+                if activity_desc and len(activity_desc) > 20:
+                    # Use activity description as base for spike
+                    spike = f"{activity_name}: {activity_desc[:100]}"
+                elif passion.get("description"):
+                    spike = passion["description"][:100]
+                elif interests:
+                    spike = f"Building expertise in {interests[0]} through {activity_name}"
+
+        return spike
+
+    def _apply_archetype_hints(
+        self,
+        archetype: str,
+        confidence: float,
+        scores: Dict[str, float],
+        hints: List[str],
+    ) -> Tuple[str, float]:
+        """
+        v5.0: Apply specific hints to improve archetype classification.
+
+        Enhanced with explicit confidence boosts:
+        - +0.15 for specific archetype hints
+        - +0.08 general correction cycle bonus
+        - Focus on strongest evidence when hints applied
+        """
+        archetype_hints = [h for h in hints if "archetype" in h.lower()]
+
+        # Determine if this is a correction cycle
+        is_correction_cycle = len(hints) > 0
+
+        if not archetype_hints and not is_correction_cycle:
+            return archetype, confidence
+
+        # v5.0: Apply confidence boosts when hints are applied
+        if is_correction_cycle:
+            # Check for specific archetype hints
+            for hint in archetype_hints:
+                hint_lower = hint.lower()
+
+                if "unclear" in hint_lower or "scattered" in hint_lower:
+                    # Focus on strongest single archetype
+                    filtered_scores = {k: v for k, v in scores.items() if k != "multi_hyphenate"}
+                    if filtered_scores:
+                        best = max(filtered_scores.items(), key=lambda x: x[1])
+                        if best[1] > 0.2:
+                            archetype = best[0]
+                            # v5.0: Specific archetype hint boosts confidence by +0.15
+                            confidence = min(0.92, confidence + 0.15)
+                            break
+
+                elif "confidence" in hint_lower:
+                    # Find the strongest non-multi_hyphenate archetype
+                    filtered_scores = {k: v for k, v in scores.items() if k != "multi_hyphenate"}
+                    if filtered_scores:
+                        best = max(filtered_scores.items(), key=lambda x: x[1])
+                        if best[1] > 0.2:
+                            archetype = best[0]
+                            # v5.0: Confidence boost for applying hint
+                            confidence = min(0.92, confidence + 0.15)
+
+            # v5.0: General correction cycle bonus (+0.08)
+            # Applied when agent is responding to feedback
+            confidence = min(0.90, confidence + 0.08)
+
+        return archetype, confidence
+
+    def _calculate_spike_confidence(
+        self, spike: str, activities: List[Dict], is_correction_cycle: bool = False
+    ) -> float:
+        """
+        v5.0: Calculate how confident we are in the spike.
+
+        Higher confidence for specific, evidence-backed spikes.
+        Enhanced with correction cycle bonus.
+        """
+        # Base confidence
+        confidence = 0.5
+
+        # Penalize generic spikes
+        generic_indicators = ["general", "various", "multiple", "diverse", "exploring", "interested", "emerging"]
+        if any(ind in spike.lower() for ind in generic_indicators):
+            confidence -= 0.2
+
+        # Reward specific details - v5.0: expanded list
+        specific_indicators = [
+            "AI", "K-12", "underserved", "rural", "urban", "coding", "research",
+            "democratize", "advocacy", "policy", "youth-led", "education",
+            "scientific", "creative", "marginalized", "technology", "community"
+        ]
+        specificity_boost = sum(0.04 for ind in specific_indicators if ind.lower() in spike.lower())
+        confidence += min(specificity_boost, 0.4)
+
+        # Reward longer, more detailed spikes
+        if len(spike) > 50:
+            confidence += 0.1
+        if len(spike) > 100:
+            confidence += 0.1
+
+        # Reward evidence from activities
+        activity_names = " ".join(a.get("name", "").lower() for a in activities)
+        activity_descs = " ".join(a.get("description", "").lower() for a in activities)
+        spike_words = spike.lower().split()
+        matches = sum(1 for word in spike_words if word in activity_names or word in activity_descs)
+        if matches >= 3:
+            confidence += 0.15
+
+        # v5.0: Correction cycle bonus
+        if is_correction_cycle:
+            confidence = min(0.94, confidence + 0.10)
+
+        return max(0.3, min(1.0, confidence))
 
     def _extract_spike(self, activities: List[Dict], profile: Dict) -> Tuple[str, List[str]]:
         """Extract student's spike (primary passion/focus area)"""

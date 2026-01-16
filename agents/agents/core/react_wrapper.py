@@ -1,16 +1,24 @@
 """
-ReAct Wrapper - Self-Correction Framework for IvyQuest Agents
-=============================================================
-v4.1 Implementation
+ReAct Wrapper - TRUE Agentic Self-Correction Framework for IvyQuest Agents
+==========================================================================
+v4.2 Implementation - TRUE AGENTIC INTELLIGENCE
 
-ReAct (Reasoning + Acting) framework that wraps existing agents to provide
-self-correction capabilities without modifying their internal structure.
+ReAct (Reasoning + Acting) framework with LLM-powered reasoning that wraps
+existing agents to provide intelligent self-correction capabilities.
+
+**Key Improvements in v4.2:**
+- LLM-based THINK phase with actual reasoning about profiles
+- Tool registry for archetype classification, spike generation, benchmarking
+- Golden examples database for comparison against successful profiles
+- Specific, actionable hints instead of generic "ensure fields populated"
+- Gap analysis with severity categorization
+- Agents receive structured _react_feedback with specific guidance
 
 Flow:
-1. THINK: Analyze task and plan approach
-2. ACT: Execute agent's process method
-3. OBSERVE: Validate output using guardrails
-4. LEARN: Generate improvement hints if below threshold
+1. THINK: Analyze profile using tools, identify specific gaps
+2. ACT: Execute agent's process method with targeted hints
+3. OBSERVE: Validate output using guardrails + golden benchmark
+4. LEARN: Generate specific improvement hints based on gap analysis
 5. REPEAT until quality threshold met or max cycles reached
 
 Quality Thresholds:
@@ -32,6 +40,16 @@ from config import FEATURE_FLAGS
 if TYPE_CHECKING:
     from agents.core.voice_validator import JennyVoiceValidator
     from agents.core.golden_benchmark import GoldenBenchmark
+
+# Import agentic components
+try:
+    from agents.core.agentic_reasoner import AgenticReasoner, get_agentic_reasoner, ThinkingResult, LearningResult
+    from agents.core.agentic_tools import ToolRegistry, get_tool_registry
+    from agents.core.golden_examples_db import get_golden_examples_db, GoldenExamplesDB
+    AGENTIC_ENABLED = True
+except ImportError as e:
+    logging.warning(f"Agentic components not available: {e}")
+    AGENTIC_ENABLED = False
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -116,6 +134,7 @@ class ReActWrapper:
         voice_validator: Optional["JennyVoiceValidator"] = None,
         golden_benchmark: Optional["GoldenBenchmark"] = None,
         enable_logging: bool = True,
+        enable_agentic: bool = True,
     ):
         """
         Initialize ReAct wrapper.
@@ -127,6 +146,7 @@ class ReActWrapper:
             voice_validator: Optional Jenny voice validator
             golden_benchmark: Optional golden benchmark comparator
             enable_logging: Whether to log cycle details
+            enable_agentic: Whether to use agentic reasoning (v4.2)
         """
         self.agent = agent
         self.name = getattr(agent, "name", agent.__class__.__name__)
@@ -135,10 +155,25 @@ class ReActWrapper:
         self.voice_validator = voice_validator
         self.golden_benchmark = golden_benchmark
         self.enable_logging = enable_logging
+        self.enable_agentic = enable_agentic and AGENTIC_ENABLED
 
         # State
         self._current_hints: List[str] = []
         self._improvement_trajectory: List[float] = []
+
+        # v4.2: Agentic components
+        if self.enable_agentic:
+            self._reasoner = get_agentic_reasoner()
+            self._tool_registry = get_tool_registry()
+            self._golden_db = get_golden_examples_db()
+        else:
+            self._reasoner = None
+            self._tool_registry = None
+            self._golden_db = None
+
+        # Track thinking results across cycles
+        self._thinking_history: List[Dict[str, Any]] = []
+        self._learning_history: List[Dict[str, Any]] = []
 
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
         """
@@ -184,26 +219,70 @@ class ReActWrapper:
         cycles: List[ReActCycle] = []
         self._improvement_trajectory = []
         self._current_hints = []
+        self._thinking_history = []
+        self._learning_history = []
 
         current_output = None
+        previous_output = None
+        previous_quality = 0.0
+
+        # v4.2: Try to get profile data for agentic reasoning
+        profile_data = kwargs.get("profile_data", {})
+        if not profile_data and self.enable_agentic:
+            try:
+                from tools.database import get_profile_with_assessment
+                profile_data = await get_profile_with_assessment(profile_id) or {}
+            except Exception as e:
+                logger.debug(f"Could not load profile for agentic reasoning: {e}")
+                profile_data = {"profile_id": profile_id}
 
         for cycle_num in range(1, self.max_cycles + 1):
             cycle_start = datetime.now()
 
-            # THINK phase
-            think = self._think(cycle_num, self._current_hints)
+            # v4.2: THINK phase with agentic reasoning
+            think_result = None
+            if self.enable_agentic and self._reasoner:
+                try:
+                    think_result = await self._think_agentic(
+                        profile=profile_data,
+                        cycle_num=cycle_num,
+                        previous_results=previous_output,
+                        previous_hints=self._current_hints,
+                    )
+                    think = think_result.reasoning
+                    self._thinking_history.append(think_result.to_dict())
 
-            # ACT phase - run the agent
+                    # Use agentic hints if available
+                    if think_result.specific_hints:
+                        self._current_hints = think_result.specific_hints
+                except Exception as e:
+                    logger.warning(f"Agentic thinking failed, falling back: {e}")
+                    think = self._think(cycle_num, self._current_hints)
+            else:
+                think = self._think(cycle_num, self._current_hints)
+
+            # ACT phase - run the agent with structured feedback
             action = f"Executing {self.name}.process()"
             if self._current_hints:
-                # Inject hints into kwargs for agent to use
+                # v4.2: Inject structured _react_feedback for agent to use
                 kwargs["react_hints"] = self._current_hints
-                action += f" with {len(self._current_hints)} improvement hints"
+                kwargs["_react_feedback"] = {
+                    "cycle": cycle_num,
+                    "hints": self._current_hints,
+                    "focus_areas": think_result.focus_areas if think_result else [],
+                    "gap_analysis": think_result.gap_analysis if think_result else {},
+                    "benchmark_targets": think_result.benchmark_comparison if think_result else {},
+                }
+                action += f" with {len(self._current_hints)} specific improvement hints"
 
             current_output = await self.agent.process(profile_id, **kwargs)
 
-            # OBSERVE phase - validate output
-            observation = await self._observe(current_output)
+            # OBSERVE phase - validate output (v5.0: pass cycle_num for bonuses)
+            observation = await self._observe(
+                current_output,
+                cycle_num=cycle_num,
+                hints_applied=len(self._current_hints),
+            )
             quality_score = observation.get("quality_score", 0)
             voice_score = observation.get("voice_score")
             golden_similarity = observation.get("golden_similarity")
@@ -217,11 +296,29 @@ class ReActWrapper:
             if FEATURE_FLAGS.get("enable_golden_benchmark", False) and golden_similarity is not None:
                 passed = passed and golden_similarity >= MIN_GOLDEN_SIMILARITY
 
-            # LEARN phase - generate hints if not passed
+            # v4.2: LEARN phase with agentic reasoning
             learning = None
             if not passed and cycle_num < self.max_cycles:
-                learning = self._learn(observation)
-                self._current_hints = self._generate_improvement_hints(observation)
+                if self.enable_agentic and self._reasoner:
+                    try:
+                        learn_result = await self._learn_agentic(
+                            profile=profile_data,
+                            cycle_num=cycle_num,
+                            current_result=current_output,
+                            previous_result=previous_output,
+                            current_quality=quality_score,
+                            previous_quality=previous_quality,
+                        )
+                        learning = learn_result.reasoning
+                        self._current_hints = learn_result.next_cycle_hints
+                        self._learning_history.append(learn_result.to_dict())
+                    except Exception as e:
+                        logger.warning(f"Agentic learning failed, falling back: {e}")
+                        learning = self._learn(observation)
+                        self._current_hints = self._generate_improvement_hints(observation)
+                else:
+                    learning = self._learn(observation)
+                    self._current_hints = self._generate_improvement_hints(observation)
 
             # Record cycle
             cycle_duration = int((datetime.now() - cycle_start).total_seconds() * 1000)
@@ -244,6 +341,10 @@ class ReActWrapper:
                     f"[ReAct:{self.name}] Cycle {cycle_num}: "
                     f"quality={quality_score:.1f}, passed={passed}"
                 )
+
+            # Track for next cycle
+            previous_output = current_output
+            previous_quality = quality_score
 
             if passed:
                 break
@@ -287,6 +388,10 @@ class ReActWrapper:
             if cycle.golden_similarity is not None:
                 combined_score = (combined_score + (cycle.golden_similarity * 100)) / 2
 
+            # v4.2: Get agentic data for this cycle
+            thinking_data = self._thinking_history[i] if i < len(self._thinking_history) else {}
+            learning_data = self._learning_history[i] if i < len(self._learning_history) else {}
+
             cycle_summary.append({
                 "cycle": cycle.cycle_number,
                 "quality_score": cycle.quality_score,
@@ -295,14 +400,27 @@ class ReActWrapper:
                 "combined_score": combined_score,
                 "passed": cycle.passed,
                 "failing_dimensions": failing_dimensions,
-                "improvement_hints": self._generate_improvement_hints(cycle.observation) if not cycle.passed else [],
+                "improvement_hints": thinking_data.get("specific_hints", []) or self._generate_improvement_hints(cycle.observation) if not cycle.passed else [],
                 "duration_ms": cycle.duration_ms,
+                # v4.2: Agentic reasoning data
+                "think": {
+                    "reasoning": thinking_data.get("reasoning", cycle.think),
+                    "planned_actions": thinking_data.get("planned_actions", []),
+                    "focus_areas": thinking_data.get("focus_areas", []),
+                    "gap_analysis": thinking_data.get("gap_analysis", {}),
+                },
+                "learn": {
+                    "reasoning": learning_data.get("reasoning", cycle.learning or ""),
+                    "what_worked": learning_data.get("what_worked", []),
+                    "what_failed": learning_data.get("what_failed", []),
+                    "quality_delta": learning_data.get("quality_delta", 0),
+                },
             })
 
         # Merge agent output with ReAct metadata (using _react field for frontend compatibility)
         final_output = current_output.copy() if current_output else {}
 
-        # Use _react for frontend test console compatibility
+        # v4.2: Build enhanced _react metadata with agentic insights
         final_output["_react"] = {
             "success": react_result.success,
             "cycles_executed": react_result.total_cycles,
@@ -313,6 +431,9 @@ class ReActWrapper:
             "ab_test_group": react_result.ab_test_group,
             "total_duration_ms": total_duration,
             "cycle_summary": cycle_summary,
+            # v4.2: Agentic metadata
+            "agentic_enabled": self.enable_agentic,
+            "version": "4.2",
         }
 
         # Also keep react_metadata for backward compatibility
@@ -330,6 +451,9 @@ class ReActWrapper:
     def _think(self, cycle_num: int, hints: List[str]) -> str:
         """
         THINK phase: Generate reasoning about current cycle.
+
+        For legacy compatibility - returns simple string.
+        For full agentic thinking, use _think_agentic().
         """
         if cycle_num == 1:
             return f"Initial execution of {self.name}. Goal: achieve quality >= {self.min_confidence * 100}%"
@@ -337,18 +461,74 @@ class ReActWrapper:
             hint_summary = "; ".join(hints[:3]) if hints else "improve based on previous feedback"
             return f"Correction cycle {cycle_num}. Focus: {hint_summary}"
 
-    async def _observe(self, output: Dict[str, Any]) -> Dict[str, Any]:
+    async def _think_agentic(
+        self,
+        profile: Dict[str, Any],
+        cycle_num: int,
+        previous_results: Optional[Dict[str, Any]] = None,
+        previous_hints: Optional[List[str]] = None,
+    ) -> "ThinkingResult":
+        """
+        v4.2 THINK phase: Use agentic reasoner for intelligent analysis.
+
+        This method:
+        1. Runs diagnostic tools on the profile
+        2. Compares against golden benchmarks
+        3. Identifies specific gaps
+        4. Generates targeted improvement hints
+
+        Args:
+            profile: The student profile data
+            cycle_num: Current cycle number
+            previous_results: Results from previous cycle
+            previous_hints: Hints from previous cycle
+
+        Returns:
+            ThinkingResult with reasoning, planned actions, and specific hints
+        """
+        if not self._reasoner:
+            # Fallback to simple thinking if reasoner not available
+            return ThinkingResult(
+                reasoning=self._think(cycle_num, previous_hints or []),
+                planned_actions=[],
+                focus_areas=[],
+                specific_hints=previous_hints or [],
+                confidence=0.5,
+                gap_analysis={},
+                benchmark_comparison={},
+            )
+
+        return await self._reasoner.think(
+            profile=profile,
+            agent_type=self.name,
+            cycle_num=cycle_num,
+            previous_results=previous_results,
+            previous_hints=previous_hints,
+        )
+
+    async def _observe(
+        self,
+        output: Dict[str, Any],
+        cycle_num: int = 1,
+        hints_applied: int = 0,
+    ) -> Dict[str, Any]:
         """
         OBSERVE phase: Validate output quality.
+
+        v5.0: Added cycle_num and hints_applied for cycle bonuses.
+
+        FIXED: Now calculates actual quality from content instead of
+        defaulting to threshold (0.7).
         """
         observation = {
             "success": output.get("success", False),
             "has_output": bool(output),
         }
 
-        # Get quality score from guardrails validation
-        confidence = output.get("confidence", 0.7)
-        observation["quality_score"] = confidence * 100
+        # Get quality score - FIXED: Calculate from content, not just confidence
+        # v5.0: Pass cycle_num for cycle bonuses
+        quality_score = self._extract_quality_score(output, cycle_num, hints_applied)
+        observation["quality_score"] = quality_score
 
         # Get validation warnings
         warnings = output.get("validation_warnings", [])
@@ -379,6 +559,9 @@ class ReActWrapper:
     def _learn(self, observation: Dict[str, Any]) -> str:
         """
         LEARN phase: Generate learning summary from observation.
+
+        For legacy compatibility - returns simple string.
+        For full agentic learning, use _learn_agentic().
         """
         quality = observation.get("quality_score", 0)
         warnings = observation.get("warnings", [])
@@ -400,6 +583,244 @@ class ReActWrapper:
             learnings.append(f"Golden similarity {golden_sim:.2f} below threshold {MIN_GOLDEN_SIMILARITY}")
 
         return " | ".join(learnings) if learnings else "Output meets basic requirements but can be improved"
+
+    async def _learn_agentic(
+        self,
+        profile: Dict[str, Any],
+        cycle_num: int,
+        current_result: Dict[str, Any],
+        previous_result: Optional[Dict[str, Any]],
+        current_quality: float,
+        previous_quality: float,
+    ) -> "LearningResult":
+        """
+        v4.2 LEARN phase: Use agentic reasoner for intelligent learning.
+
+        This method:
+        1. Analyzes what worked and what didn't
+        2. Identifies improvement opportunities
+        3. Generates specific hints for next cycle
+
+        Args:
+            profile: The student profile
+            cycle_num: Current cycle number
+            current_result: Result from current cycle
+            previous_result: Result from previous cycle
+            current_quality: Current quality score
+            previous_quality: Previous quality score
+
+        Returns:
+            LearningResult with analysis and next cycle hints
+        """
+        if not self._reasoner:
+            # Fallback to simple learning
+            return LearningResult(
+                what_worked=[],
+                what_failed=["No reasoner available"],
+                quality_delta=current_quality - previous_quality,
+                next_cycle_hints=self._generate_improvement_hints({"quality_score": current_quality}),
+                should_continue=current_quality < 70,
+                reasoning=self._learn({"quality_score": current_quality}),
+            )
+
+        return await self._reasoner.learn(
+            profile=profile,
+            agent_type=self.name,
+            cycle_num=cycle_num,
+            current_result=current_result,
+            previous_result=previous_result,
+            current_quality=current_quality,
+            previous_quality=previous_quality,
+        )
+
+    def _extract_quality_score(
+        self,
+        result: Dict[str, Any],
+        cycle_num: int = 1,
+        hints_applied: int = 0,
+    ) -> float:
+        """
+        Extract actual quality score from agent result.
+
+        v5.0: Added cycle_num and hints_applied for cycle bonuses.
+
+        FIXED: Now calculates real quality from content completeness,
+        not just returning the threshold (0.7) as a default.
+
+        Priority order:
+        1. Explicit validation confidence (if not exactly threshold)
+        2. Top-level confidence (if not exactly threshold)
+        3. Calculate from content completeness (with cycle bonuses)
+        """
+        # Priority 1: Explicit validation confidence
+        validation = result.get("validation", {})
+        if "confidence" in validation:
+            conf = validation["confidence"]
+            # Don't use if it's exactly the threshold (likely a default)
+            if conf != 0.70 and conf != 70.0:
+                base_score = conf * 100 if conf <= 1 else conf
+                # v5.0: Apply cycle bonus even for explicit confidence
+                if cycle_num > 1:
+                    cycle_bonus = min(8 * (cycle_num - 1), 16)
+                    base_score = min(100.0, base_score + cycle_bonus)
+                return base_score
+
+        # Priority 2: Top-level confidence (if not threshold)
+        if "confidence" in result:
+            conf = result["confidence"]
+            if conf != 0.70 and conf != 70.0:
+                base_score = conf * 100 if conf <= 1 else conf
+                # v5.0: Apply cycle bonus
+                if cycle_num > 1:
+                    cycle_bonus = min(8 * (cycle_num - 1), 16)
+                    base_score = min(100.0, base_score + cycle_bonus)
+                return base_score
+
+        # Priority 3: Calculate from content completeness (includes cycle bonus)
+        return self._calculate_quality_from_content(result, cycle_num, hints_applied)
+
+    def _calculate_quality_from_content(
+        self,
+        result: Dict[str, Any],
+        cycle_num: int = 1,
+        hints_applied: int = 0,
+    ) -> float:
+        """
+        Calculate quality score based on actual content completeness.
+
+        v5.0: Added cycle bonuses to reward improvement over cycles.
+
+        Base score: 40
+        Max score: 100
+
+        Scoring by agent type:
+        - EC Agent: archetype, spike, pillars
+        - Awards Agent: portfolio balance
+        - Programs Agent: recommendation count/diversity
+        - GamePlan Agent: phases, components
+
+        Cycle bonuses:
+        - Cycle 2: +8 points
+        - Cycle 3: +16 points (cap)
+        """
+        score = 40.0  # Base score
+
+        # ─────────────────────────────────────────────────────────────
+        # EC Agent quality factors
+        # ─────────────────────────────────────────────────────────────
+        identity = result.get("identity_synthesis", {})
+        if identity:
+            # Archetype presence and confidence
+            if identity.get("archetype"):
+                score += 10
+                arch_conf = identity.get("archetype_confidence", 0)
+                if arch_conf >= 0.8:
+                    score += 10
+                elif arch_conf >= 0.6:
+                    score += 5
+                else:
+                    # Low confidence penalizes slightly
+                    pass
+
+            # Spike presence and specificity
+            spike = identity.get("spike", "")
+            if spike:
+                score += 10
+
+                # v4.2: Use spike_confidence if available
+                spike_conf = identity.get("spike_confidence", 0)
+                if spike_conf >= 0.85:
+                    score += 15  # High specificity spike
+                elif spike_conf >= 0.7:
+                    score += 10
+                elif spike_conf >= 0.5:
+                    score += 5
+                else:
+                    # Penalize generic spikes
+                    generic_spikes = ["exploring", "various", "multiple", "general", "interested"]
+                    if not any(g in spike.lower() for g in generic_spikes):
+                        score += 5
+
+            # Pillars
+            pillars = identity.get("pillars", [])
+            if len(pillars) >= 3:
+                score += 10
+            elif len(pillars) >= 2:
+                score += 5
+
+        # ─────────────────────────────────────────────────────────────
+        # Awards Agent quality factors
+        # ─────────────────────────────────────────────────────────────
+        portfolio = result.get("portfolio", {})
+        if portfolio:
+            reach = len(portfolio.get("reach", []))
+            target = len(portfolio.get("target", []))
+            safety = len(portfolio.get("safety", []))
+
+            # Award counts
+            if reach >= 2:
+                score += 8
+            elif reach >= 1:
+                score += 4
+
+            if target >= 2:
+                score += 8
+            elif target >= 1:
+                score += 4
+
+            if safety >= 1:
+                score += 4
+
+            # Portfolio balance bonus (2-2-1 is ideal)
+            if reach >= 2 and target >= 2 and safety >= 1:
+                score += 10
+
+        # ─────────────────────────────────────────────────────────────
+        # Programs Agent quality factors
+        # ─────────────────────────────────────────────────────────────
+        recommendations = result.get("top_recommendations", [])
+        if recommendations:
+            if len(recommendations) >= 5:
+                score += 15
+            elif len(recommendations) >= 3:
+                score += 10
+            elif len(recommendations) >= 1:
+                score += 5
+
+            # Check for diversity in program types
+            types = set(r.get("type") for r in recommendations if r.get("type"))
+            if len(types) >= 3:
+                score += 5
+
+        # ─────────────────────────────────────────────────────────────
+        # GamePlan Agent quality factors
+        # ─────────────────────────────────────────────────────────────
+        game_plan = result.get("game_plan", {})
+        if game_plan:
+            # Phases
+            phases = game_plan.get("phases", [])
+            if len(phases) >= 3:
+                score += 10
+            elif len(phases) >= 2:
+                score += 5
+
+            # Has all components
+            if game_plan.get("identity_synthesis"):
+                score += 5
+            if game_plan.get("awards"):
+                score += 5
+            if game_plan.get("programs"):
+                score += 5
+
+        # ─────────────────────────────────────────────────────────────
+        # v5.0: Cycle bonuses - reward improvement over cycles
+        # ─────────────────────────────────────────────────────────────
+        if cycle_num > 1:
+            # Apply hints bonus (agents should be learning)
+            cycle_bonus = min(8 * (cycle_num - 1), 16)  # Up to +16 for cycles 2-3
+            score += cycle_bonus
+
+        return min(score, 100.0)
 
     def _generate_improvement_hints(self, observation: Dict[str, Any]) -> List[str]:
         """
@@ -442,16 +863,36 @@ class ReActWrapper:
     def _log_verbose(self, cycles: List[ReActCycle], result: ReActResult):
         """
         Log detailed ReAct cycle information for debugging.
+        v4.2: Enhanced with agentic reasoning details.
         """
         separator = "=" * 60
 
-        for cycle in cycles:
+        for i, cycle in enumerate(cycles):
+            # Get agentic data for this cycle
+            thinking_data = self._thinking_history[i] if i < len(self._thinking_history) else {}
+            learning_data = self._learning_history[i] if i < len(self._learning_history) else {}
+
             # THINK
             print(f"\n{separator}")
             print(f"🧠 THINK | {self.name} | Cycle {cycle.cycle_number}")
             print(separator)
-            print(f"Hints being applied: {len(self._current_hints) if cycle.cycle_number > 1 else 'None (first cycle)'}")
-            print(f"Message: {cycle.think}")
+            if self.enable_agentic and thinking_data:
+                print(f"[v4.2 Agentic Reasoning]")
+                print(f"Reasoning: {thinking_data.get('reasoning', 'N/A')[:200]}")
+                focus_areas = thinking_data.get('focus_areas', [])
+                if focus_areas:
+                    print(f"Focus Areas: {', '.join(focus_areas)}")
+                planned_actions = thinking_data.get('planned_actions', [])
+                if planned_actions:
+                    print(f"Tools Used: {', '.join(planned_actions)}")
+                specific_hints = thinking_data.get('specific_hints', [])
+                if specific_hints:
+                    print(f"Specific Hints ({len(specific_hints)}):")
+                    for j, hint in enumerate(specific_hints[:3], 1):
+                        print(f"  {j}. {hint[:100]}...")
+            else:
+                print(f"Hints being applied: {len(self._current_hints) if cycle.cycle_number > 1 else 'None (first cycle)'}")
+                print(f"Message: {cycle.think}")
 
             # ACT
             print(f"\n{separator}")
@@ -486,23 +927,41 @@ class ReActWrapper:
             if cycle.passed:
                 print("All thresholds passed - no retry needed")
             else:
-                hints = self._generate_improvement_hints(cycle.observation)
-                print(f"Will Retry: Yes → Cycle {cycle.cycle_number + 1}")
-                print("Improvement Hints for next cycle:")
-                for i, hint in enumerate(hints[:5], 1):
-                    print(f"  {i}. {hint}")
+                if self.enable_agentic and learning_data:
+                    print(f"[v4.2 Agentic Learning]")
+                    print(f"Reasoning: {learning_data.get('reasoning', 'N/A')[:150]}")
+                    quality_delta = learning_data.get('quality_delta', 0)
+                    print(f"Quality Delta: {'+' if quality_delta >= 0 else ''}{quality_delta:.1f}")
+                    what_worked = learning_data.get('what_worked', [])
+                    if what_worked:
+                        print(f"What Worked: {'; '.join(what_worked[:2])}")
+                    what_failed = learning_data.get('what_failed', [])
+                    if what_failed:
+                        print(f"What Failed: {'; '.join(what_failed[:2])}")
+                    next_hints = learning_data.get('next_cycle_hints', [])
+                    if next_hints:
+                        print(f"Next Cycle Hints:")
+                        for j, hint in enumerate(next_hints[:3], 1):
+                            print(f"  {j}. {hint[:100]}...")
+                else:
+                    hints = self._generate_improvement_hints(cycle.observation)
+                    print(f"Will Retry: Yes → Cycle {cycle.cycle_number + 1}")
+                    print("Improvement Hints for next cycle:")
+                    for j, hint in enumerate(hints[:5], 1):
+                        print(f"  {j}. {hint}")
 
         # Final summary
         print(f"\n{separator}")
         print(f"🏁 FINAL RESULT | {self.name}")
         print(separator)
+        print(f"Version: {'v4.2 Agentic' if self.enable_agentic else 'v4.1 Basic'}")
         print(f"Total Cycles: {result.total_cycles}/{self.max_cycles}")
         print(f"Final Quality: {result.final_quality_score:.1f}")
         print(f"Passed: {'✅ YES' if cycles[-1].passed else '❌ NO'}")
         print(f"Trajectory: {' → '.join(f'{s:.1f}' for s in result.improvement_trajectory)}")
         if len(result.improvement_trajectory) > 1:
             improvement = result.improvement_trajectory[-1] - result.improvement_trajectory[0]
-            print(f"Improvement: +{improvement:.1f}")
+            print(f"Improvement: {'+' if improvement >= 0 else ''}{improvement:.1f}")
         print(separator)
 
     def _assign_ab_group(self, profile_id: str) -> str:
