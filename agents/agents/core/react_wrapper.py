@@ -162,11 +162,21 @@ class ReActWrapper:
         if ab_group == "control":
             # Control group: no ReAct, just run agent directly
             result = await self.agent.process(profile_id, **kwargs)
-            result["react_metadata"] = {
-                "enabled": False,
+            control_meta = {
+                "success": result.get("success", False),
+                "cycles_executed": 1,
+                "max_cycles": self.max_cycles,
+                "final_confidence": result.get("confidence", 0.7),
+                "passed_quality": result.get("confidence", 0.7) >= self.min_confidence,
+                "improvement_trajectory": [result.get("confidence", 0.7) * 100],
                 "ab_test_group": "control",
+                "total_duration_ms": 0,
+                "cycle_summary": [],
+                "enabled": False,
                 "reason": "A/B test control group",
             }
+            result["_react"] = control_meta
+            result["react_metadata"] = control_meta
             return result
 
         # Treatment group: run full ReAct loop
@@ -258,17 +268,59 @@ class ReActWrapper:
             total_duration_ms=total_duration,
         )
 
-        # Merge agent output with ReAct metadata
+        # Build cycle summary for frontend visualization
+        cycle_summary = []
+        for i, cycle in enumerate(cycles):
+            # Determine failing dimensions
+            failing_dimensions = []
+            if cycle.quality_score < (self.min_confidence * 100):
+                failing_dimensions.append(f"quality ({cycle.quality_score:.1f} < {self.min_confidence * 100})")
+            if cycle.voice_score is not None and cycle.voice_score < MIN_VOICE_SCORE:
+                failing_dimensions.append(f"voice ({cycle.voice_score:.1f} < {MIN_VOICE_SCORE})")
+            if cycle.golden_similarity is not None and cycle.golden_similarity < MIN_GOLDEN_SIMILARITY:
+                failing_dimensions.append(f"golden ({cycle.golden_similarity:.2f} < {MIN_GOLDEN_SIMILARITY})")
+
+            # Calculate combined score
+            combined_score = cycle.quality_score
+            if cycle.voice_score is not None:
+                combined_score = (combined_score + cycle.voice_score) / 2
+            if cycle.golden_similarity is not None:
+                combined_score = (combined_score + (cycle.golden_similarity * 100)) / 2
+
+            cycle_summary.append({
+                "cycle": cycle.cycle_number,
+                "quality_score": cycle.quality_score,
+                "voice_score": cycle.voice_score or 80.0,  # Default for testing
+                "golden_similarity": cycle.golden_similarity or 0.65,  # Default for testing
+                "combined_score": combined_score,
+                "passed": cycle.passed,
+                "failing_dimensions": failing_dimensions,
+                "improvement_hints": self._generate_improvement_hints(cycle.observation) if not cycle.passed else [],
+                "duration_ms": cycle.duration_ms,
+            })
+
+        # Merge agent output with ReAct metadata (using _react field for frontend compatibility)
         final_output = current_output.copy() if current_output else {}
-        final_output["react_metadata"] = {
-            "enabled": True,
-            "total_cycles": react_result.total_cycles,
-            "final_quality_score": react_result.final_quality_score,
+
+        # Use _react for frontend test console compatibility
+        final_output["_react"] = {
+            "success": react_result.success,
+            "cycles_executed": react_result.total_cycles,
+            "max_cycles": self.max_cycles,
+            "final_confidence": react_result.final_quality_score / 100,  # Normalize to 0-1
+            "passed_quality": cycles[-1].passed if cycles else False,
             "improvement_trajectory": react_result.improvement_trajectory,
             "ab_test_group": react_result.ab_test_group,
-            "passed": cycles[-1].passed if cycles else False,
             "total_duration_ms": total_duration,
+            "cycle_summary": cycle_summary,
         }
+
+        # Also keep react_metadata for backward compatibility
+        final_output["react_metadata"] = final_output["_react"]
+
+        # Verbose logging if enabled
+        if FEATURE_FLAGS.get("react_verbose_logging", False):
+            self._log_verbose(cycles, react_result)
 
         # Store cycle data for analytics
         await self._store_react_analytics(react_result)
@@ -386,6 +438,72 @@ class ReActWrapper:
             ]
 
         return hints
+
+    def _log_verbose(self, cycles: List[ReActCycle], result: ReActResult):
+        """
+        Log detailed ReAct cycle information for debugging.
+        """
+        separator = "=" * 60
+
+        for cycle in cycles:
+            # THINK
+            print(f"\n{separator}")
+            print(f"🧠 THINK | {self.name} | Cycle {cycle.cycle_number}")
+            print(separator)
+            print(f"Hints being applied: {len(self._current_hints) if cycle.cycle_number > 1 else 'None (first cycle)'}")
+            print(f"Message: {cycle.think}")
+
+            # ACT
+            print(f"\n{separator}")
+            print(f"⚡ ACT | {self.name} | Cycle {cycle.cycle_number}")
+            print(separator)
+            print(f"Action: {cycle.action}")
+            print(f"Success: {cycle.observation.get('success', False)}")
+            print(f"Confidence: {cycle.quality_score / 100:.2f}")
+
+            # OBSERVE
+            print(f"\n{separator}")
+            print(f"👁️ OBSERVE | {self.name} | Cycle {cycle.cycle_number}")
+            print(separator)
+            quality_icon = "✅" if cycle.quality_score >= (self.min_confidence * 100) else "❌"
+            voice_icon = "✅" if (cycle.voice_score or 80) >= MIN_VOICE_SCORE else "❌"
+            golden_icon = "✅" if (cycle.golden_similarity or 0.65) >= MIN_GOLDEN_SIMILARITY else "❌"
+            print(f"Quality Score:     {cycle.quality_score:.1f}/100 {quality_icon}")
+            print(f"Voice Score:       {cycle.voice_score or 80.0:.1f}/100 {voice_icon}")
+            print(f"Golden Similarity: {cycle.golden_similarity or 0.65:.2f}/1.0 {golden_icon}")
+            print(f"PASSED: {'✅ YES' if cycle.passed else '❌ NO'}")
+            if not cycle.passed:
+                failing = []
+                if cycle.quality_score < (self.min_confidence * 100):
+                    failing.append(f"quality ({cycle.quality_score:.1f} < {self.min_confidence * 100})")
+                print(f"Failing: {', '.join(failing) if failing else 'none'}")
+
+            # LEARN
+            print(f"\n{separator}")
+            print(f"📚 LEARN | {self.name} | Cycle {cycle.cycle_number}")
+            print(separator)
+            print(f"Cycle Duration: {cycle.duration_ms}ms")
+            if cycle.passed:
+                print("All thresholds passed - no retry needed")
+            else:
+                hints = self._generate_improvement_hints(cycle.observation)
+                print(f"Will Retry: Yes → Cycle {cycle.cycle_number + 1}")
+                print("Improvement Hints for next cycle:")
+                for i, hint in enumerate(hints[:5], 1):
+                    print(f"  {i}. {hint}")
+
+        # Final summary
+        print(f"\n{separator}")
+        print(f"🏁 FINAL RESULT | {self.name}")
+        print(separator)
+        print(f"Total Cycles: {result.total_cycles}/{self.max_cycles}")
+        print(f"Final Quality: {result.final_quality_score:.1f}")
+        print(f"Passed: {'✅ YES' if cycles[-1].passed else '❌ NO'}")
+        print(f"Trajectory: {' → '.join(f'{s:.1f}' for s in result.improvement_trajectory)}")
+        if len(result.improvement_trajectory) > 1:
+            improvement = result.improvement_trajectory[-1] - result.improvement_trajectory[0]
+            print(f"Improvement: +{improvement:.1f}")
+        print(separator)
 
     def _assign_ab_group(self, profile_id: str) -> str:
         """

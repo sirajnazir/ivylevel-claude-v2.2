@@ -172,6 +172,29 @@ async def health_check():
     )
 
 
+@app.get("/api/react/config")
+async def get_react_config():
+    """
+    Get ReAct framework configuration for testing.
+    Used by the ReAct Test Console to verify ReAct is enabled.
+    """
+    from config import FEATURE_FLAGS, get_phase_config
+
+    return {
+        "enable_react": FEATURE_FLAGS.get("enable_react", False),
+        "react_max_cycles": FEATURE_FLAGS.get("react_max_cycles", 3),
+        "react_min_confidence": FEATURE_FLAGS.get("react_min_confidence", 0.70),
+        "react_enable_for_agents": FEATURE_FLAGS.get("react_enable_for_agents", []),
+        "react_ab_test_enabled": FEATURE_FLAGS.get("react_ab_test_enabled", False),
+        "react_ab_test_percentage": FEATURE_FLAGS.get("react_ab_test_percentage", 0.10),
+        "react_verbose_logging": FEATURE_FLAGS.get("react_verbose_logging", False),
+        "enable_guardrails": FEATURE_FLAGS.get("enable_guardrails", True),
+        "enable_voice_validation": FEATURE_FLAGS.get("enable_voice_validation", False),
+        "enable_golden_benchmark": FEATURE_FLAGS.get("enable_golden_benchmark", False),
+        "phase": get_phase_config(),
+    }
+
+
 @app.get("/")
 async def root():
     """Root endpoint with service info."""
@@ -396,6 +419,44 @@ async def get_eds(profile_id: str):
 
 
 # =====================================================
+# Extracurriculars (EC) Agent Endpoints
+# =====================================================
+
+@app.get("/agents/ec/analyze/{profile_id}")
+async def analyze_extracurriculars(profile_id: str):
+    """
+    v4.1: Analyze extracurriculars with ReAct self-correction.
+
+    This endpoint is used by the ReAct Test Console to test
+    the EC Agent's identity synthesis flow.
+
+    Returns:
+        EC analysis result with _react metadata showing:
+        - cycles_executed: Number of ReAct cycles run
+        - improvement_trajectory: Quality scores per cycle
+        - cycle_summary: Detailed breakdown of each cycle
+    """
+    if not settings.enable_agents:
+        raise HTTPException(status_code=503, detail="Agents are disabled")
+
+    try:
+        from config import FEATURE_FLAGS
+        from agents.core.react_wrapper import create_react_wrapped_agent
+
+        # Wrap with ReAct if enabled
+        if FEATURE_FLAGS.get("enable_react", False):
+            wrapped_agent = create_react_wrapped_agent(extracurriculars_agent)
+            result = await wrapped_agent.process(profile_id)
+        else:
+            result = await extracurriculars_agent.process(profile_id)
+
+        return result
+    except Exception as e:
+        logger.error("ec_analyze_error", error=str(e), profile_id=profile_id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =====================================================
 # Game Plan Agent Endpoints
 # =====================================================
 
@@ -423,6 +484,40 @@ async def generate_gameplan(input: ProfileInput):
         return result
     except Exception as e:
         logger.error("gameplan_error", error=str(e), profile_id=input.profile_id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/agents/gameplan/orchestrate/{profile_id}")
+async def orchestrate_gameplan(profile_id: str):
+    """
+    v4.1: Orchestrate GamePlan with ReAct self-correction.
+
+    This endpoint is used by the ReAct Test Console to test
+    the full THINK-ACT-OBSERVE-LEARN cycle.
+
+    Returns:
+        GamePlan result with _react metadata showing:
+        - cycles_executed: Number of ReAct cycles run
+        - improvement_trajectory: Quality scores per cycle
+        - cycle_summary: Detailed breakdown of each cycle
+    """
+    if not settings.enable_agents:
+        raise HTTPException(status_code=503, detail="Agents are disabled")
+
+    try:
+        from config import FEATURE_FLAGS
+        from agents.core.react_wrapper import create_react_wrapped_agent
+
+        # Wrap with ReAct if enabled
+        if FEATURE_FLAGS.get("enable_react", False):
+            wrapped_agent = create_react_wrapped_agent(gameplan_agent)
+            result = await wrapped_agent.process(profile_id)
+        else:
+            result = await gameplan_agent.process(profile_id)
+
+        return result
+    except Exception as e:
+        logger.error("gameplan_orchestrate_error", error=str(e), profile_id=profile_id)
         raise HTTPException(status_code=500, detail=str(e))
 
 

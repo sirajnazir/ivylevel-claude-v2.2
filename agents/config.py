@@ -124,7 +124,7 @@ FEATURE_FLAGS = {
     # -------------------------------------------------------------------------
     # v4.1 Phase 2: ReAct Self-Correction (A/B TEST)
     # -------------------------------------------------------------------------
-    "enable_react": False,              # Master switch for ReAct framework
+    "enable_react": True,               # Master switch for ReAct framework (ENABLED FOR TESTING)
     "react_max_cycles": 3,              # Maximum correction cycles before accepting output
     "react_min_confidence": 0.70,       # Minimum quality score threshold (0-1)
     "react_enable_for_agents": [        # Which agents get ReAct wrapping
@@ -147,6 +147,13 @@ FEATURE_FLAGS = {
     # -------------------------------------------------------------------------
     "react_ab_test_enabled": False,     # Enable A/B testing for ReAct
     "react_ab_test_percentage": 0.10,   # % of traffic to treatment group (0-1)
+
+    # -------------------------------------------------------------------------
+    # Verbose Logging (for testing/debugging)
+    # -------------------------------------------------------------------------
+    "react_verbose_logging": True,      # Enable detailed console output for ReAct cycles
+    "log_react_cycles": True,           # Log each THINK-ACT-OBSERVE-LEARN cycle
+    "log_validation_metrics": True,     # Log guardrails validation metrics
 }
 
 
