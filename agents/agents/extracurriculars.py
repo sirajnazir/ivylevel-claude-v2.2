@@ -143,17 +143,38 @@ class ExtracurricularsAgent:
         self.db = get_supabase_client()
 
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
-        """Main processing entry point."""
-        return await self.analyze(profile_id)
+        """
+        Main processing entry point.
 
-    async def analyze(self, profile_id: str) -> Dict[str, Any]:
+        v4.1: Accepts react_hints from ReActWrapper for self-correction.
+
+        Args:
+            profile_id: Profile to analyze
+            **kwargs: Additional arguments
+                - react_hints: List[str] - Improvement hints from ReAct cycle
+        """
+        # v4.1: Extract ReAct hints if present
+        react_hints = kwargs.get("react_hints", [])
+        if react_hints:
+            print(f"[EC Agent] Processing with {len(react_hints)} ReAct hints")
+
+        return await self.analyze(profile_id, react_hints=react_hints)
+
+    async def analyze(self, profile_id: str, react_hints: List[str] = None) -> Dict[str, Any]:
         """
         Main analysis pipeline.
 
         Hybrid Architecture v4.0:
         - If activities exist: Use activity-based analysis (existing logic)
         - If no activities: Use profile-based inference (NEW)
+
+        v4.1: Accepts react_hints for self-correction in ReAct cycles.
+
+        Args:
+            profile_id: Profile to analyze
+            react_hints: Optional list of improvement hints from ReAct wrapper
         """
+        react_hints = react_hints or []
         try:
             profile = await self._get_profile(profile_id)
             if not profile:
@@ -240,6 +261,10 @@ class ExtracurricularsAgent:
                 "activities_analyzed": len(activities),
                 "inference_mode": "activities" if activities else "profile_signals",
             }
+
+            # v4.1: Apply ReAct hints to improve output if provided
+            if react_hints:
+                result = self._apply_react_hints(result, react_hints, signals)
 
             # v4.1: Validate output against guardrails
             if FEATURE_FLAGS.get("enable_guardrails", True):
@@ -822,6 +847,103 @@ class ExtracurricularsAgent:
             return profile["activities"]
 
         return []
+
+    # =========================================================================
+    # v4.1: ReAct Self-Correction Support
+    # =========================================================================
+
+    def _apply_react_hints(
+        self,
+        result: Dict[str, Any],
+        hints: List[str],
+        signals: "ProfileSignals"
+    ) -> Dict[str, Any]:
+        """
+        Apply ReAct improvement hints to enhance output quality.
+
+        This method interprets hints from the ReAct wrapper and makes
+        targeted improvements to the result.
+
+        Args:
+            result: Current analysis result
+            hints: List of improvement hints from ReAct
+            signals: Profile signals for additional context
+
+        Returns:
+            Enhanced result with improvements applied
+        """
+        identity = result.get("identity_synthesis", {})
+
+        for hint in hints:
+            hint_lower = hint.lower()
+
+            # Handle missing archetype hints
+            if "archetype" in hint_lower and not identity.get("archetype"):
+                # Attempt to infer archetype from signals
+                if signals and signals.intended_major:
+                    inferred = self._infer_archetype_from_major(signals.intended_major)
+                    identity["archetype"] = inferred
+                    identity["archetype_confidence"] = 0.5  # Lower confidence for inferred
+                    print(f"[EC Agent] Applied hint: inferred archetype '{inferred}' from major")
+
+            # Handle missing spike hints
+            if "spike" in hint_lower and not identity.get("spike"):
+                if signals:
+                    components = signals.get_spike_components()
+                    if components:
+                        identity["spike"] = components[0]
+                        identity["spike_evidence"] = components[:3]
+                        print(f"[EC Agent] Applied hint: inferred spike from profile signals")
+
+            # Handle low confidence hints
+            if "confidence" in hint_lower and identity.get("archetype_confidence", 0) < 0.5:
+                # Add more evidence to boost confidence
+                if signals and signals.interests:
+                    identity["spike_evidence"] = identity.get("spike_evidence", []) + signals.interests[:2]
+                    print(f"[EC Agent] Applied hint: added evidence to boost confidence")
+
+            # Handle pillar hints
+            if "pillar" in hint_lower and len(identity.get("pillars", [])) < 3:
+                if signals:
+                    new_pillars = self._generate_pillars_from_signals(signals)
+                    identity["pillars"] = new_pillars
+                    print(f"[EC Agent] Applied hint: generated {len(new_pillars)} pillars from signals")
+
+        result["identity_synthesis"] = identity
+        result["react_hints_applied"] = len(hints)
+
+        return result
+
+    def _infer_archetype_from_major(self, intended_major: str) -> str:
+        """Infer archetype from intended major when activities are missing."""
+        major_lower = intended_major.lower()
+
+        archetype_mapping = {
+            "computer": "stem_innovator",
+            "engineering": "stem_innovator",
+            "physics": "academic_powerhouse",
+            "math": "academic_powerhouse",
+            "biology": "stem_innovator",
+            "chemistry": "academic_powerhouse",
+            "business": "entrepreneurial_leader",
+            "economics": "entrepreneurial_leader",
+            "art": "creative_visionary",
+            "music": "creative_visionary",
+            "film": "creative_visionary",
+            "theater": "creative_visionary",
+            "history": "humanities_scholar",
+            "political": "humanities_scholar",
+            "philosophy": "humanities_scholar",
+            "psychology": "community_changemaker",
+            "sociology": "community_changemaker",
+            "education": "community_changemaker",
+        }
+
+        for keyword, archetype in archetype_mapping.items():
+            if keyword in major_lower:
+                return archetype
+
+        return "multi_hyphenate"  # Default fallback
 
     def _placeholder_response(self, profile_id: str, message: str = None) -> Dict[str, Any]:
         """Return placeholder response"""

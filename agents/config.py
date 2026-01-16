@@ -108,12 +108,120 @@ class HudaBenchmarks:
 # HYBRID ARCHITECTURE v4.1 FEATURE FLAGS
 # =============================================================================
 FEATURE_FLAGS = {
-    # v4.0 flags
+    # -------------------------------------------------------------------------
+    # v4.0 Core Flags
+    # -------------------------------------------------------------------------
     "use_profile_inference": True,      # Enable profile-based spike/archetype inference
     "use_strategic_routing": True,      # Enable strategic routing (BUILD_FRESH/OPTIMIZE/REFRAME/URGENT)
     "enable_guardrails": True,          # Enable output validation against knowledge base
 
-    # v4.1 flags (disabled until fully tested)
+    # -------------------------------------------------------------------------
+    # v4.1 Phase 1: Enhanced Guardrails (ENABLED)
+    # -------------------------------------------------------------------------
+    "guardrails_strict_mode": False,    # If True, fail on any warning (not just errors)
+    "guardrails_log_metrics": True,     # Log validation metrics for analysis
+
+    # -------------------------------------------------------------------------
+    # v4.1 Phase 2: ReAct Self-Correction (A/B TEST)
+    # -------------------------------------------------------------------------
+    "enable_react": False,              # Master switch for ReAct framework
+    "react_max_cycles": 3,              # Maximum correction cycles before accepting output
+    "react_min_confidence": 0.70,       # Minimum quality score threshold (0-1)
+    "react_enable_for_agents": [        # Which agents get ReAct wrapping
+        "Extracurriculars",
+        "Awards",
+        "Programs",
+        "GamePlan",
+    ],
+
+    # -------------------------------------------------------------------------
+    # v4.1 Phase 3: Voice & Benchmark (FUTURE)
+    # -------------------------------------------------------------------------
     "enable_voice_validation": False,   # Enable Jenny voice compliance validation
+    "voice_min_score": 70,              # Minimum voice compliance score (0-100)
     "enable_golden_benchmark": False,   # Enable golden example comparison
+    "golden_min_similarity": 0.6,       # Minimum similarity to golden example (0-1)
+
+    # -------------------------------------------------------------------------
+    # A/B Testing Configuration
+    # -------------------------------------------------------------------------
+    "react_ab_test_enabled": False,     # Enable A/B testing for ReAct
+    "react_ab_test_percentage": 0.10,   # % of traffic to treatment group (0-1)
 }
+
+
+# =============================================================================
+# PHASE CONFIGURATION HELPERS
+# =============================================================================
+
+def get_phase_config() -> dict:
+    """
+    Get current phase configuration based on feature flags.
+
+    Returns dict with:
+        - phase: int (1, 2, or 3)
+        - name: str
+        - description: str
+        - features_enabled: list
+    """
+    if FEATURE_FLAGS.get("enable_golden_benchmark") or FEATURE_FLAGS.get("enable_voice_validation"):
+        return {
+            "phase": 3,
+            "name": "Full ReAct + Voice + Golden",
+            "description": "Complete v4.1 with all quality assurance features",
+            "features_enabled": [
+                "guardrails",
+                "react",
+                "voice_validation",
+                "golden_benchmark",
+            ],
+        }
+    elif FEATURE_FLAGS.get("enable_react"):
+        return {
+            "phase": 2,
+            "name": "ReAct A/B Test",
+            "description": "ReAct self-correction with A/B testing",
+            "features_enabled": [
+                "guardrails",
+                "react",
+            ],
+        }
+    else:
+        return {
+            "phase": 1,
+            "name": "Guardrails Only",
+            "description": "Output validation without self-correction",
+            "features_enabled": [
+                "guardrails",
+            ],
+        }
+
+
+def is_react_enabled_for_agent(agent_name: str) -> bool:
+    """Check if ReAct is enabled for a specific agent."""
+    if not FEATURE_FLAGS.get("enable_react", False):
+        return False
+
+    enabled_agents = FEATURE_FLAGS.get("react_enable_for_agents", [])
+    return agent_name in enabled_agents
+
+
+def get_react_config() -> dict:
+    """Get ReAct configuration."""
+    return {
+        "enabled": FEATURE_FLAGS.get("enable_react", False),
+        "max_cycles": FEATURE_FLAGS.get("react_max_cycles", 3),
+        "min_confidence": FEATURE_FLAGS.get("react_min_confidence", 0.70),
+        "enabled_agents": FEATURE_FLAGS.get("react_enable_for_agents", []),
+        "ab_test_enabled": FEATURE_FLAGS.get("react_ab_test_enabled", False),
+        "ab_test_percentage": FEATURE_FLAGS.get("react_ab_test_percentage", 0.10),
+    }
+
+
+def get_quality_thresholds() -> dict:
+    """Get quality thresholds for validation."""
+    return {
+        "min_confidence": FEATURE_FLAGS.get("react_min_confidence", 0.70),
+        "min_voice_score": FEATURE_FLAGS.get("voice_min_score", 70),
+        "min_golden_similarity": FEATURE_FLAGS.get("golden_min_similarity", 0.6),
+    }

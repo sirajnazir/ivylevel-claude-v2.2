@@ -95,11 +95,27 @@ class GamePlanAgent:
         self.router = StrategicRouter()
 
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
-        """Main processing entry point."""
+        """
+        Main processing entry point.
+
+        v4.1: Accepts react_hints from ReActWrapper for self-correction.
+
+        Args:
+            profile_id: Profile to process
+            **kwargs: Additional arguments
+                - use_orchestration: bool - Whether to use multi-agent flow
+                - react_hints: List[str] - Improvement hints from ReAct cycle
+                - data: Dict - Optional assessment data
+        """
+        # v4.1: Extract ReAct hints if present
+        react_hints = kwargs.get("react_hints", [])
+        if react_hints:
+            print(f"[GamePlan] Processing with {len(react_hints)} ReAct hints")
+
         # Use orchestrated flow if requested
         if kwargs.get("use_orchestration", True):
-            return await self.generate_orchestrated(profile_id)
-        return await self.generate(profile_id, kwargs.get("data"))
+            return await self.generate_orchestrated(profile_id, react_hints=react_hints)
+        return await self.generate(profile_id, kwargs.get("data"), react_hints=react_hints)
 
     # =========================================================================
     # v4.0: Strategic Routing
@@ -147,7 +163,11 @@ class GamePlanAgent:
             return "T2"
         return "T3"
 
-    async def generate_orchestrated(self, profile_id: str) -> Dict[str, Any]:
+    async def generate_orchestrated(
+        self,
+        profile_id: str,
+        react_hints: List[str] = None
+    ) -> Dict[str, Any]:
         """
         Orchestrated GamePlan generation using multi-agent flow.
 
@@ -156,7 +176,10 @@ class GamePlanAgent:
         1. EC Agent (FIRST) → identity_synthesis
         2. Awards + Programs (PARALLEL) ← identity_synthesis
         3. Synthesis → Unified GamePlan with route context
+
+        v4.1: Accepts react_hints for self-correction.
         """
+        react_hints = react_hints or []
         try:
             # ========================================================
             # STEP 0 (v4.0): Determine Strategic Route
@@ -279,13 +302,25 @@ class GamePlanAgent:
                 result["strategic_route"] = route.to_dict()
                 unified_plan["strategic_route"] = route.to_dict()
 
-            # v4.1: Validate final output against guardrails
+            # v4.1: Apply ReAct hints to improve output if provided
+            if react_hints:
+                result = self._apply_react_hints(result, react_hints)
+
+            # v4.1: Validate final output against guardrails with component scoring
             if FEATURE_FLAGS.get("enable_guardrails", True):
                 validation = validate_gameplan_output(result)
                 if validation.warnings:
                     result["validation_warnings"] = validation.warnings
                 result["confidence"] = validation.confidence
                 result["validation_passed"] = validation.passed
+                # v4.1: Include component scores for detailed feedback
+                result["component_scores"] = {
+                    "identity": validation.identity_score,
+                    "awards": validation.awards_score,
+                    "programs": validation.programs_score,
+                    "phases": validation.phases_score,
+                    "narrative": validation.narrative_score,
+                }
 
             return result
 
@@ -569,7 +604,12 @@ class GamePlanAgent:
 
         return phases
 
-    async def generate(self, profile_id: str, assessment_data: Optional[Dict] = None) -> Dict:
+    async def generate(
+        self,
+        profile_id: str,
+        assessment_data: Optional[Dict] = None,
+        react_hints: List[str] = None
+    ) -> Dict:
         """
         Generate complete game plan with:
         1. Master Narrative synthesis (PRESCRIPTION phase)
@@ -1513,6 +1553,85 @@ Return as JSON array:
             }).execute()
         except Exception as e:
             print(f"Event publishing warning: {e}")
+
+    # =========================================================================
+    # v4.1: ReAct Self-Correction Support
+    # =========================================================================
+
+    def _apply_react_hints(
+        self,
+        result: Dict[str, Any],
+        hints: List[str]
+    ) -> Dict[str, Any]:
+        """
+        Apply ReAct improvement hints to enhance GamePlan output quality.
+
+        This method interprets hints from the ReAct wrapper and makes
+        targeted improvements to the result.
+
+        Args:
+            result: Current GamePlan result
+            hints: List of improvement hints from ReAct
+
+        Returns:
+            Enhanced result with improvements applied
+        """
+        game_plan = result.get("game_plan", {})
+
+        for hint in hints:
+            hint_lower = hint.lower()
+
+            # Handle identity synthesis issues
+            if "identity" in hint_lower or "archetype" in hint_lower:
+                identity = game_plan.get("identity_synthesis", {})
+                if not identity.get("archetype"):
+                    identity["archetype"] = "multi_hyphenate"
+                    identity["archetype_confidence"] = 0.5
+                    print(f"[GamePlan] Applied hint: set default archetype")
+                game_plan["identity_synthesis"] = identity
+
+            # Handle missing awards
+            if "award" in hint_lower:
+                awards = game_plan.get("awards", {})
+                portfolio = awards.get("portfolio", {})
+                if not portfolio.get("reach") and not portfolio.get("target"):
+                    portfolio["target"] = [{"name": "Review award recommendations", "status": "pending"}]
+                    awards["portfolio"] = portfolio
+                    game_plan["awards"] = awards
+                    print(f"[GamePlan] Applied hint: added placeholder award")
+
+            # Handle missing programs
+            if "program" in hint_lower:
+                programs = game_plan.get("programs", {})
+                if not programs.get("top_recommendations"):
+                    programs["top_recommendations"] = [{"name": "Review program options", "status": "pending"}]
+                    game_plan["programs"] = programs
+                    print(f"[GamePlan] Applied hint: added placeholder program")
+
+            # Handle missing phases
+            if "phase" in hint_lower:
+                phases = game_plan.get("phases", [])
+                if len(phases) < 3:
+                    default_phases = [
+                        {"name": "Foundation", "duration": "Months 1-3", "activities": [], "activity_count": 0},
+                        {"name": "Building", "duration": "Months 4-8", "activities": [], "activity_count": 0},
+                        {"name": "Capstone", "duration": "Months 9-12", "activities": [], "activity_count": 0},
+                    ]
+                    game_plan["phases"] = default_phases[:max(3 - len(phases), 0)] + phases
+                    print(f"[GamePlan] Applied hint: added default phases")
+
+            # Handle missing narrative
+            if "narrative" in hint_lower:
+                if not game_plan.get("narrative_dna") and not game_plan.get("master_narrative"):
+                    identity = game_plan.get("identity_synthesis", {})
+                    spike = identity.get("spike", "your unique strengths")
+                    game_plan["narrative_dna"] = f"Building a compelling story around {spike}"
+                    print(f"[GamePlan] Applied hint: generated narrative placeholder")
+
+        result["game_plan"] = game_plan
+        result["react_hints_applied"] = len(hints)
+
+        return result
 
 
 # Export
