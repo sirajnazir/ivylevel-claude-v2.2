@@ -222,3 +222,75 @@ def validate_identity_synthesis(output: Dict) -> ValidationResult:
     """Validate identity synthesis output."""
     engine = GuardrailsEngine()
     return engine.validate_identity_synthesis(output)
+
+
+def validate_gameplan_output(output: Dict) -> ValidationResult:
+    """
+    Validate GamePlan orchestrated output.
+
+    Checks:
+    - Identity synthesis present and valid
+    - Awards recommendations exist
+    - Programs recommendations exist
+    - Phases are properly structured
+    - Narrative coherence
+    """
+    checks = []
+    warnings = []
+    errors = []
+    confidence = 0.85
+
+    game_plan = output.get("game_plan", {})
+
+    # Check identity synthesis
+    identity = game_plan.get("identity_synthesis", {})
+    if not identity.get("archetype"):
+        warnings.append("Missing archetype in identity synthesis")
+        confidence -= 0.1
+    if not identity.get("spike"):
+        warnings.append("Missing spike in identity synthesis")
+        confidence -= 0.1
+
+    # Check awards
+    awards = game_plan.get("awards", {})
+    portfolio = awards.get("portfolio", {})
+    total_awards = (
+        len(portfolio.get("reach", [])) +
+        len(portfolio.get("target", [])) +
+        len(portfolio.get("safety", []))
+    )
+    if total_awards == 0:
+        warnings.append("No awards in portfolio")
+        confidence -= 0.15
+    elif total_awards < 3:
+        warnings.append(f"Only {total_awards} awards in portfolio (recommend 5)")
+        confidence -= 0.05
+
+    # Check programs
+    programs = game_plan.get("programs", {})
+    if not programs.get("top_recommendations"):
+        warnings.append("No program recommendations")
+        confidence -= 0.1
+
+    # Check phases
+    phases = game_plan.get("phases", [])
+    if len(phases) < 2:
+        warnings.append(f"Only {len(phases)} phases (recommend 3)")
+        confidence -= 0.1
+
+    # Check narrative
+    if not game_plan.get("master_narrative") and not game_plan.get("narrative_dna"):
+        warnings.append("Missing narrative synthesis")
+        confidence -= 0.1
+
+    # Normalize confidence
+    confidence = max(0.5, min(1.0, confidence))
+    passed = confidence >= 0.7
+
+    return ValidationResult(
+        passed=passed,
+        warnings=warnings,
+        errors=errors,
+        confidence=confidence,
+        checks=checks,
+    )

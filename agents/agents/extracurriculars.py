@@ -23,6 +23,7 @@ from tools.database import get_supabase_client, get_profile_with_assessment
 
 # v4.0: Hybrid Architecture imports
 from agents.core.profile_signals import ProfileSignals, extract_profile_signals
+from agents.core.guardrails import validate_identity_synthesis
 from config import FEATURE_FLAGS
 
 
@@ -224,7 +225,7 @@ class ExtracurricularsAgent:
                 "inference_mode": "activities" if activities else "profile_signals",
             })
 
-            return {
+            result = {
                 "success": True,
                 "profile_id": profile_id,
                 "identity_synthesis": identity_synthesis.to_dict(),
@@ -239,6 +240,15 @@ class ExtracurricularsAgent:
                 "activities_analyzed": len(activities),
                 "inference_mode": "activities" if activities else "profile_signals",
             }
+
+            # v4.1: Validate output against guardrails
+            if FEATURE_FLAGS.get("enable_guardrails", True):
+                validation = validate_identity_synthesis(result)
+                if validation.warnings:
+                    result["validation_warnings"] = validation.warnings
+                result["confidence"] = validation.confidence
+
+            return result
 
         except Exception as e:
             import traceback

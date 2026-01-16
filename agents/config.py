@@ -105,10 +105,15 @@ class HudaBenchmarks:
 
 
 # =============================================================================
-# HYBRID ARCHITECTURE v4.0 FEATURE FLAGS
+# HYBRID ARCHITECTURE v4.1 FEATURE FLAGS
 # =============================================================================
 FEATURE_FLAGS = {
-    "use_profile_inference": True,   # Enable profile-based spike/archetype inference
-    "use_strategic_routing": True,   # Enable strategic routing (BUILD_FRESH/OPTIMIZE/REFRAME/URGENT)
-    "enable_guardrails": True,       # Enable output validation
+    # v4.0 flags
+    "use_profile_inference": True,      # Enable profile-based spike/archetype inference
+    "use_strategic_routing": True,      # Enable strategic routing (BUILD_FRESH/OPTIMIZE/REFRAME/URGENT)
+    "enable_guardrails": True,          # Enable output validation against knowledge base
+
+    # v4.1 flags (disabled until fully tested)
+    "enable_voice_validation": False,   # Enable Jenny voice compliance validation
+    "enable_golden_benchmark": False,   # Enable golden example comparison
 }

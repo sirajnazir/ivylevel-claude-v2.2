@@ -41,6 +41,7 @@ from .programs import programs_agent
 
 # v4.0: Hybrid Architecture imports
 from agents.core.strategic_router import StrategicRouter, StrategicRoute, calculate_months_to_ed
+from agents.core.guardrails import validate_gameplan_output
 from config import FEATURE_FLAGS
 
 
@@ -277,6 +278,14 @@ class GamePlanAgent:
             if route:
                 result["strategic_route"] = route.to_dict()
                 unified_plan["strategic_route"] = route.to_dict()
+
+            # v4.1: Validate final output against guardrails
+            if FEATURE_FLAGS.get("enable_guardrails", True):
+                validation = validate_gameplan_output(result)
+                if validation.warnings:
+                    result["validation_warnings"] = validation.warnings
+                result["confidence"] = validation.confidence
+                result["validation_passed"] = validation.passed
 
             return result
 
