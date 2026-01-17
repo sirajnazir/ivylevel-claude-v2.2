@@ -34,10 +34,14 @@ from .gameplan_narrative import (
     FirstPrinciplePassion,
 )
 
-# Import sub-agents for orchestration
-from .extracurriculars import extracurriculars_agent
-from .awards import awards_agent
-from .programs import programs_agent
+# Import sub-agent CLASSES for orchestration (not singletons)
+# v5.0: We import classes to create ReAct-wrapped instances
+from .extracurriculars import ExtracurricularsAgent
+from .awards import AwardsAgent
+from .programs import ProgramsAgent
+
+# Import ReAct wrapper for sub-agent wrapping
+from agents.core.react_wrapper import create_react_wrapped_agent
 
 # v4.0: Hybrid Architecture imports
 from agents.core.strategic_router import StrategicRouter, StrategicRoute, calculate_months_to_ed
@@ -87,12 +91,43 @@ class GamePlanAgent:
         self.master_narrative: Optional[MasterNarrative] = None
 
         # Sub-agents (orchestration)
-        self.ec_agent = extracurriculars_agent
-        self.awards_agent = awards_agent
-        self.programs_agent = programs_agent
+        # v5.0: Initialize sub-agents with optional ReAct wrapping
+        self._init_sub_agents()
 
         # v4.0: Strategic Router for approach selection (deterministic rules)
         self.router = StrategicRouter()
+
+    def _init_sub_agents(self):
+        """
+        Initialize sub-agents with ReAct wrappers for per-agent cycles.
+
+        v5.0: Each sub-agent (EC, Awards, Programs) gets its own ReAct cycle,
+        so each agent card in the UI shows its own THINK/ACT/OBSERVE/LEARN data.
+        """
+        use_react = FEATURE_FLAGS.get("enable_react", False)
+        wrap_subs = FEATURE_FLAGS.get("react_wrap_sub_agents", True)
+
+        if use_react and wrap_subs:
+            # Each sub-agent gets its own ReAct cycle
+            self.ec_agent = create_react_wrapped_agent(
+                ExtracurricularsAgent(),
+                max_cycles=FEATURE_FLAGS.get("react_max_cycles", 3),
+            )
+            self.awards_agent = create_react_wrapped_agent(
+                AwardsAgent(),
+                max_cycles=FEATURE_FLAGS.get("react_max_cycles", 3),
+            )
+            self.programs_agent = create_react_wrapped_agent(
+                ProgramsAgent(),
+                max_cycles=FEATURE_FLAGS.get("react_max_cycles", 3),
+            )
+            print("[GamePlan] v5.0: Sub-agents wrapped with individual ReAct cycles")
+        else:
+            # Raw agents (backward compatibility or ReAct disabled)
+            self.ec_agent = ExtracurricularsAgent()
+            self.awards_agent = AwardsAgent()
+            self.programs_agent = ProgramsAgent()
+            print("[GamePlan] Using raw sub-agents (ReAct wrapping disabled)")
 
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
         """
@@ -287,15 +322,39 @@ class GamePlanAgent:
                 "programs_count": programs_result.get("total_matches", 0),
             })
 
+            # v5.0: Extract each sub-agent's _react metadata for per-agent visualization
+            ec_react = ec_result.get("_react") if isinstance(ec_result, dict) else None
+            awards_react = awards_result.get("_react") if isinstance(awards_result, dict) else None
+            programs_react = programs_result.get("_react") if isinstance(programs_result, dict) else None
+
+            # Log what we found
+            print(f"[GamePlan] Sub-agent _react status: EC={ec_react is not None}, Awards={awards_react is not None}, Programs={programs_react is not None}")
+
             result = {
                 "success": True,
                 "game_plan": unified_plan,
                 "orchestration": {
                     "ec_agent": "completed",
-                    "awards_agent": "completed" if awards_result.get("success") else "failed",
-                    "programs_agent": "completed" if programs_result.get("success") else "failed",
+                    "awards_agent": "completed" if isinstance(awards_result, dict) and awards_result.get("success") else "failed",
+                    "programs_agent": "completed" if isinstance(programs_result, dict) and programs_result.get("success") else "failed",
+                },
+                # v5.0: Store each sub-agent's ReAct data for frontend access
+                "_react_by_agent": {
+                    "ec": ec_react,
+                    "awards": awards_react,
+                    "programs": programs_react,
                 },
             }
+
+            # v5.0: Also embed _react inside each section of unified_plan for easier frontend access
+            if ec_react and "identity_synthesis" in unified_plan:
+                unified_plan["identity_synthesis"]["_react"] = ec_react
+
+            if awards_react and "awards" in unified_plan:
+                unified_plan["awards"]["_react"] = awards_react
+
+            if programs_react and "programs" in unified_plan:
+                unified_plan["programs"]["_react"] = programs_react
 
             # v4.0: Include strategic route if routing was used
             if route:
@@ -367,8 +426,23 @@ class GamePlanAgent:
             programs_result.get("strategic_insights", [])
         )
 
-        # Build top-level activities from all phase activities
+        # Build top-level activities - PRIORITIZE EC Engine activities
         all_activities = []
+
+        # 1. First add EC Engine recommended activities (Signature Projects, Leadership, etc.)
+        ec_gen = ec_result.get("ec_generation", {})
+        ec_activities = ec_gen.get("recommended_activities", [])
+        for act in ec_activities:
+            all_activities.append({
+                "name": act.get("title") or act.get("name", ""),
+                "type": act.get("activity_type") or act.get("gap_addressed", "activity"),
+                "category": "ec_activity",
+                "description": act.get("description", ""),
+                "source": "ec_engine",
+                "priority": act.get("priority", 0),
+            })
+
+        # 2. Then add phase activities (awards/programs) - these are secondary
         for phase in phases:
             all_activities.extend(phase.get("activities", []))
 
@@ -379,6 +453,10 @@ class GamePlanAgent:
             top_awards[:3],
             top_programs[:3],
         )
+
+        # Log EC Engine activity count for monitoring
+        if ec_activities:
+            print(f"[GamePlan] Including {len(ec_activities)} EC Engine activities in game plan")
 
         return {
             "profile_id": profile_id,
@@ -393,6 +471,8 @@ class GamePlanAgent:
             # Portfolio Analysis (from EC Agent)
             "portfolio_analysis": ec_result.get("portfolio_analysis", {}),
             "impact_assessment": ec_result.get("impact_assessment", {}),
+            # EC Generation Engine data (recommended activities, 4 pillars, etc.)
+            "ec_generation": ec_gen,
             # Awards (from Awards Agent)
             "awards": {
                 "portfolio": awards_portfolio,

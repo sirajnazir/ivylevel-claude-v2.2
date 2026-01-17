@@ -612,13 +612,23 @@ async def generate_gameplan(input: ProfileInput):
     - Filters activities by ROI (4+ touchpoints)
     - Plants identity seeds (6-12mo ahead)
     - Applies Strategic Overwhelm (1.4x)
+
+    v5.0: Now uses ReAct wrapper when enabled for _react metadata.
     """
     if not settings.enable_agents:
         raise HTTPException(status_code=503, detail="Agents are disabled")
 
     try:
-        # Use process() to trigger orchestrated flow
-        result = await gameplan_agent.process(input.profile_id)
+        from config import FEATURE_FLAGS
+        from agents.core.react_wrapper import create_react_wrapped_agent
+
+        # v5.0: Use ReAct wrapper when enabled to get _react metadata
+        if FEATURE_FLAGS.get("enable_react", False):
+            wrapped_agent = create_react_wrapped_agent(gameplan_agent)
+            result = await wrapped_agent.process(input.profile_id)
+        else:
+            result = await gameplan_agent.process(input.profile_id)
+
         return result
     except Exception as e:
         logger.error("gameplan_error", error=str(e), profile_id=input.profile_id)

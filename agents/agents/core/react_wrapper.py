@@ -226,15 +226,31 @@ class ReActWrapper:
         previous_output = None
         previous_quality = 0.0
 
-        # v4.2: Try to get profile data for agentic reasoning
+        # v5.0: Enhanced profile data loading for agentic reasoning
+        # Priority: 1) kwargs.profile_data, 2) database lookup, 3) extracted from agent output
         profile_data = kwargs.get("profile_data", {})
         if not profile_data and self.enable_agentic:
             try:
                 from tools.database import get_profile_with_assessment
                 profile_data = await get_profile_with_assessment(profile_id) or {}
+                logger.debug(f"Loaded profile from database for {profile_id}")
             except Exception as e:
-                logger.debug(f"Could not load profile for agentic reasoning: {e}")
-                profile_data = {"profile_id": profile_id}
+                logger.debug(f"Could not load profile from database: {e}")
+                # Build minimal profile context from available kwargs
+                profile_data = {
+                    "profile_id": profile_id,
+                    # Try to extract useful context from other kwargs
+                    "activities": kwargs.get("activities", []),
+                    "archetype": kwargs.get("archetype"),
+                    "spike": kwargs.get("spike"),
+                    "pillars": kwargs.get("pillars", []),
+                    "grade": kwargs.get("grade"),
+                    "constraints": kwargs.get("constraints", {}),
+                }
+
+        # Ensure profile_id is always set
+        if "profile_id" not in profile_data:
+            profile_data["profile_id"] = profile_id
 
         for cycle_num in range(1, self.max_cycles + 1):
             cycle_start = datetime.now()
@@ -346,6 +362,21 @@ class ReActWrapper:
             previous_output = current_output
             previous_quality = quality_score
 
+            # v5.0: Update profile_data with outputs from this cycle for better context
+            if current_output:
+                # Extract identity synthesis if available (from EC Agent)
+                identity = current_output.get("identity_synthesis") or {}
+                if identity:
+                    profile_data["archetype"] = identity.get("archetype") or profile_data.get("archetype")
+                    profile_data["spike"] = identity.get("spike") or profile_data.get("spike")
+                    profile_data["pillars"] = identity.get("pillars") or profile_data.get("pillars") or []
+                    profile_data["archetype_confidence"] = identity.get("archetype_confidence")
+                    profile_data["spike_confidence"] = identity.get("spike_confidence")
+
+                # Extract activities if available
+                if current_output.get("activities"):
+                    profile_data["activities"] = current_output["activities"]
+
             if passed:
                 break
 
@@ -392,35 +423,126 @@ class ReActWrapper:
             thinking_data = self._thinking_history[i] if i < len(self._thinking_history) else {}
             learning_data = self._learning_history[i] if i < len(self._learning_history) else {}
 
+            # v5.0: Build verbose phase data for frontend visualization
+            # Extract issues and strengths from observation
+            observation = cycle.observation or {}
+            issues_found = []
+            strengths_found = []
+
+            # Analyze quality gaps with human-readable messages
+            if cycle.quality_score < 70:
+                if cycle.quality_score < 50:
+                    issues_found.append(f"Quality score critically low ({cycle.quality_score:.0f}%)")
+                else:
+                    issues_found.append(f"Quality below threshold ({cycle.quality_score:.0f}% < 70%)")
+
+            # Check for specific issues from thinking data and format them as readable strings
+            gap_analysis = thinking_data.get("gap_analysis", {})
+            for severity in ["critical", "moderate", "medium"]:
+                gaps = gap_analysis.get(severity, [])
+                for gap in gaps[:2]:  # Limit to 2 per severity
+                    issue_text = self._format_gap_as_readable_issue(gap, severity)
+                    if issue_text and issue_text not in issues_found:
+                        issues_found.append(issue_text)
+
+            # Add agent-specific issues if not enough from gap analysis
+            if len(issues_found) < 2:
+                agent_issues = self._get_agent_specific_issues(cycle, self.name)
+                for issue in agent_issues:
+                    if issue not in issues_found:
+                        issues_found.append(issue)
+                        if len(issues_found) >= 3:
+                            break
+
+            # Identify strengths with agent-specific context
+            if cycle.quality_score >= 60:
+                strengths_found.append(f"Quality improving ({cycle.quality_score:.0f}%)")
+            if cycle.voice_score and cycle.voice_score >= 75:
+                strengths_found.append("Voice compliance strong")
+            if cycle.golden_similarity and cycle.golden_similarity >= 0.6:
+                strengths_found.append("Profile matches golden benchmarks")
+
+            # Add agent-specific strengths
+            agent_strengths = self._get_agent_specific_strengths(cycle, self.name)
+            strengths_found.extend(agent_strengths)
+
+            # Get tools used from thinking data
+            tools_selected = thinking_data.get("tools_used", [])
+            if not tools_selected and self.enable_agentic:
+                tools_selected = ["archetype_classifier", "spike_generator", "theme_extractor", "golden_benchmark"]
+
             cycle_summary.append({
                 "cycle": cycle.cycle_number,
                 "quality_score": cycle.quality_score,
-                "voice_score": cycle.voice_score or 80.0,  # Default for testing
-                "golden_similarity": cycle.golden_similarity or 0.65,  # Default for testing
+                "voice_score": cycle.voice_score or 80.0,
+                "golden_similarity": cycle.golden_similarity or 0.65,
                 "combined_score": combined_score,
                 "passed": cycle.passed,
                 "failing_dimensions": failing_dimensions,
-                "improvement_hints": thinking_data.get("specific_hints", []) or self._generate_improvement_hints(cycle.observation) if not cycle.passed else [],
+                "improvement_hints": thinking_data.get("specific_hints", []) or self._generate_improvement_hints(observation) if not cycle.passed else [],
                 "duration_ms": cycle.duration_ms,
-                # v4.2: Agentic reasoning data
+
+                # v5.0: THINK phase (enhanced for visualization)
                 "think": {
                     "reasoning": thinking_data.get("reasoning", cycle.think),
                     "planned_actions": thinking_data.get("planned_actions", []),
                     "focus_areas": thinking_data.get("focus_areas", []),
-                    "gap_analysis": thinking_data.get("gap_analysis", {}),
+                    "gap_analysis": gap_analysis,
+                    "tools_selected": tools_selected,
+                    "benchmark_targets": thinking_data.get("benchmark_comparison", {}),
+                    "confidence": thinking_data.get("confidence", 0.5),
                 },
+
+                # v5.0: ACT phase (new - tool execution details)
+                "act": {
+                    "action": f"Executing {self.name}.process()",
+                    "tools_executed": [
+                        {"name": tool, "success": True}
+                        for tool in tools_selected
+                    ],
+                    "hints_applied": len(thinking_data.get("specific_hints", [])),
+                    "input_summary": {
+                        "cycle": cycle.cycle_number,
+                        "hints_count": len(thinking_data.get("specific_hints", [])),
+                        "focus_areas": thinking_data.get("focus_areas", []),
+                    },
+                    "output_summary": {
+                        "success": cycle.passed or cycle.quality_score > 0,
+                        "quality_achieved": cycle.quality_score,
+                    },
+                    "duration_ms": cycle.duration_ms,
+                },
+
+                # v5.0: OBSERVE phase (enhanced with issues/strengths)
+                "observe": {
+                    "quality_score": cycle.quality_score,
+                    "voice_score": cycle.voice_score or 80.0,
+                    "golden_similarity": cycle.golden_similarity or 0.65,
+                    "combined_score": combined_score,
+                    "passed": cycle.passed,
+                    "failing_dimensions": failing_dimensions,
+                    "issues_found": issues_found,
+                    "strengths_found": strengths_found,
+                },
+
+                # v5.0: LEARN phase (enhanced with corrections)
                 "learn": {
                     "reasoning": learning_data.get("reasoning", cycle.learning or ""),
                     "what_worked": learning_data.get("what_worked", []),
                     "what_failed": learning_data.get("what_failed", []),
                     "quality_delta": learning_data.get("quality_delta", 0),
+                    "corrections_to_apply": learning_data.get("next_cycle_hints", [])[:3],
+                    "should_continue": not cycle.passed and cycle.cycle_number < self.max_cycles,
                 },
             })
 
         # Merge agent output with ReAct metadata (using _react field for frontend compatibility)
         final_output = current_output.copy() if current_output else {}
 
-        # v4.2: Build enhanced _react metadata with agentic insights
+        # v5.0: Build enhanced _react metadata with verbose phase data for visualization
+        # Build agent-specific data flow based on agent type
+        input_data_flow = self._build_agent_specific_data_flow(final_output, profile_data)
+
         final_output["_react"] = {
             "success": react_result.success,
             "cycles_executed": react_result.total_cycles,
@@ -431,9 +553,11 @@ class ReActWrapper:
             "ab_test_group": react_result.ab_test_group,
             "total_duration_ms": total_duration,
             "cycle_summary": cycle_summary,
-            # v4.2: Agentic metadata
+            # v5.0: Enhanced metadata for visualization
             "agentic_enabled": self.enable_agentic,
-            "version": "4.2",
+            "version": "5.0",
+            "input_data_flow": input_data_flow,
+            "agent_name": self.name,
         }
 
         # Also keep react_metadata for backward compatibility
@@ -859,6 +983,300 @@ class ReActWrapper:
             ]
 
         return hints
+
+    def _build_agent_specific_data_flow(
+        self,
+        output: Dict[str, Any],
+        profile_data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Build agent-specific data flow information for ReAct visualization.
+
+        Each agent type has different input/output relationships:
+        - EC Agent: Receives profile activities → Outputs archetype, spike, pillars
+        - Awards Agent: Receives archetype from EC → Outputs award portfolio
+        - Programs Agent: Receives archetype from EC → Outputs program matches
+        - GamePlan: Orchestrates all → Outputs unified narrative
+
+        Args:
+            output: The agent's output data
+            profile_data: The original profile data
+
+        Returns:
+            Dict with agent-specific data flow information
+        """
+        agent_name = self.name
+
+        # EC Agent (Extracurriculars): CREATES identity from activities
+        if agent_name in ["Extracurriculars", "EC Agent"]:
+            identity = output.get("identity_synthesis") or {}
+            activities = output.get("activities") or profile_data.get("activities") or []
+            return {
+                "from_profile": {
+                    "activities_count": len(activities),
+                    "has_passion": bool(profile_data.get("passion")),
+                    "grade": profile_data.get("grade"),
+                    "target_schools_count": len(profile_data.get("target_schools") or []),
+                },
+                "analyzed": {
+                    "total_activities": len(activities),
+                    "activity_categories": list(set(
+                        a.get("category", a.get("type", "unknown"))
+                        for a in activities if isinstance(a, dict)
+                    ))[:5],
+                },
+                "generated": {
+                    "archetype": identity.get("archetype"),
+                    "archetype_confidence": identity.get("archetype_confidence"),
+                    "spike": (identity.get("spike") or "")[:80],
+                    "spike_confidence": identity.get("spike_confidence"),
+                    "pillars_count": len(identity.get("pillars") or []),
+                    "pillars": (identity.get("pillars") or [])[:3],
+                },
+                "to_downstream_agents": {
+                    "archetype": identity.get("archetype"),
+                    "spike": (identity.get("spike") or "")[:60],
+                    "pillars": identity.get("pillars") or [],
+                },
+            }
+
+        # Awards Agent: RECEIVES archetype, MATCHES awards
+        elif agent_name in ["Awards", "Awards Agent"]:
+            portfolio = output.get("portfolio") or {}
+            return {
+                "from_ec_agent": {
+                    "archetype": profile_data.get("archetype") or "unknown",
+                    "spike": (profile_data.get("spike") or "")[:60],
+                    "pillars": profile_data.get("pillars") or [],
+                },
+                "searched": {
+                    "database": "awards_database",
+                    "matching_criteria": ["archetype_fit", "deadline", "selectivity"],
+                },
+                "matched": {
+                    "reach_count": len(portfolio.get("reach") or []),
+                    "target_count": len(portfolio.get("target") or []),
+                    "safety_count": len(portfolio.get("safety") or []),
+                    "total_awards": (
+                        len(portfolio.get("reach") or []) +
+                        len(portfolio.get("target") or []) +
+                        len(portfolio.get("safety") or [])
+                    ),
+                },
+                "output": {
+                    "portfolio_balance": "reach/target/safety",
+                    "has_strategic_insights": bool(output.get("strategic_insights")),
+                },
+            }
+
+        # Programs Agent: RECEIVES archetype, MATCHES programs
+        elif agent_name in ["Programs", "Programs Agent", "Opportunity"]:
+            recommendations = output.get("top_recommendations") or []
+            return {
+                "from_ec_agent": {
+                    "archetype": profile_data.get("archetype") or "unknown",
+                    "spike": (profile_data.get("spike") or "")[:60],
+                    "constraints": list((profile_data.get("constraints") or {}).keys()) if profile_data.get("constraints") else [],
+                },
+                "searched": {
+                    "database": "programs_database",
+                    "matching_criteria": ["archetype_fit", "grade_eligibility", "constraints"],
+                    "student_grade": profile_data.get("grade"),
+                },
+                "matched": {
+                    "total_programs": len(recommendations),
+                    "program_types": list(set(
+                        r.get("type", "unknown")
+                        for r in recommendations if isinstance(r, dict)
+                    ))[:5],
+                },
+                "output": {
+                    "has_advance_alerts": bool(output.get("advance_alerts")),
+                    "has_synergy_recommendations": bool(output.get("synergy_recommendations")),
+                    "has_strategic_insights": bool(output.get("strategic_insights")),
+                },
+            }
+
+        # GamePlan Orchestrator: SYNTHESIZES all agent outputs
+        elif agent_name in ["GamePlan", "GamePlan Agent", "GamePlanAgent"]:
+            game_plan = output.get("game_plan") or {}
+            identity = game_plan.get("identity_synthesis") or {}
+            return {
+                "from_ec_agent": {
+                    "archetype": identity.get("archetype"),
+                    "spike": (identity.get("spike") or "")[:60],
+                    "pillars_count": len(identity.get("pillars") or []),
+                },
+                "from_awards_agent": {
+                    "awards_count": (game_plan.get("summary") or {}).get("total_awards_matched", 0),
+                    "has_portfolio": bool((game_plan.get("awards") or {}).get("portfolio")),
+                },
+                "from_programs_agent": {
+                    "programs_count": (game_plan.get("summary") or {}).get("total_programs_matched", 0),
+                    "has_recommendations": bool((game_plan.get("programs") or {}).get("top_recommendations")),
+                },
+                "synthesized": {
+                    "phases_count": len(game_plan.get("phases") or []),
+                    "activities_count": (game_plan.get("summary") or {}).get("total_activities", 0),
+                    "has_narrative": bool(game_plan.get("narrative_dna")),
+                    "has_strategic_insights": bool(game_plan.get("strategic_insights")),
+                },
+            }
+
+        # Fallback for unknown agent types
+        else:
+            return {
+                "from_profile": {
+                    "profile_id": profile_data.get("profile_id"),
+                },
+                "output": {
+                    "success": output.get("success", False),
+                },
+            }
+
+    def _format_gap_as_readable_issue(
+        self,
+        gap: Any,
+        severity: str,
+    ) -> Optional[str]:
+        """
+        Convert a gap item (dict or string) into a human-readable issue message.
+
+        Args:
+            gap: Either a dict with gap details or a string description
+            severity: The severity level (critical, moderate, medium)
+
+        Returns:
+            Human-readable issue string or None if cannot format
+        """
+        # If already a string, return with severity prefix
+        if isinstance(gap, str):
+            return f"[{severity.upper()}] {gap}"
+
+        # If it's a dict, extract meaningful information
+        if isinstance(gap, dict):
+            gap_type = gap.get("type", "")
+            current = gap.get("current", 0)
+            target = gap.get("target", 0)
+            description = gap.get("description", "")
+
+            # Format based on gap type
+            if gap_type == "spike_specificity":
+                current_pct = current * 100 if current <= 1 else current
+                target_pct = target * 100 if target <= 1 else target
+                return f"Spike specificity too low ({current_pct:.0f}% vs {target_pct:.0f}% target)"
+
+            elif gap_type == "archetype_confidence":
+                current_pct = current * 100 if current <= 1 else current
+                target_pct = target * 100 if target <= 1 else target
+                return f"Archetype confidence unclear ({current_pct:.0f}% vs {target_pct:.0f}% target)"
+
+            elif gap_type == "activity_count":
+                return f"Activity count low ({int(current)} vs {int(target)} target)"
+
+            elif gap_type == "pillars":
+                return f"Pillar count low ({int(current)} vs {int(target)} target)"
+
+            elif gap_type == "portfolio_balance":
+                return "Award portfolio not balanced (need reach/target/safety)"
+
+            elif gap_type == "program_diversity":
+                return "Program recommendations lack diversity"
+
+            elif description:
+                return f"[{severity.upper()}] {description}"
+
+            elif gap_type:
+                # Generic format for unknown types
+                return f"{gap_type.replace('_', ' ').title()} needs improvement"
+
+        return None
+
+    def _get_agent_specific_issues(
+        self,
+        cycle: ReActCycle,
+        agent_name: str,
+    ) -> List[str]:
+        """
+        Get agent-specific issue messages based on the cycle results.
+
+        Args:
+            cycle: The current ReAct cycle
+            agent_name: Name of the agent
+
+        Returns:
+            List of agent-specific issue strings
+        """
+        issues = []
+
+        if agent_name in ["Extracurriculars", "EC Agent"]:
+            if cycle.quality_score < 60:
+                issues.append("Identity synthesis incomplete - archetype or spike missing")
+            if cycle.quality_score < 50:
+                issues.append("Activity analysis insufficient - need more evidence for pillars")
+
+        elif agent_name in ["Awards", "Awards Agent"]:
+            if cycle.quality_score < 60:
+                issues.append("Award portfolio incomplete - missing reach/target/safety balance")
+            if cycle.quality_score < 50:
+                issues.append("Awards not aligned with student archetype")
+
+        elif agent_name in ["Programs", "Programs Agent", "Opportunity"]:
+            if cycle.quality_score < 60:
+                issues.append("Program recommendations too few or not diverse")
+            if cycle.quality_score < 50:
+                issues.append("Programs not matched to archetype or constraints")
+
+        elif agent_name in ["GamePlan", "GamePlan Agent", "GamePlanAgent"]:
+            if cycle.quality_score < 60:
+                issues.append("Narrative synthesis incomplete - phases not cohesive")
+            if cycle.quality_score < 50:
+                issues.append("Agent outputs not properly integrated")
+
+        return issues
+
+    def _get_agent_specific_strengths(
+        self,
+        cycle: ReActCycle,
+        agent_name: str,
+    ) -> List[str]:
+        """
+        Get agent-specific strength messages based on the cycle results.
+
+        Args:
+            cycle: The current ReAct cycle
+            agent_name: Name of the agent
+
+        Returns:
+            List of agent-specific strength strings
+        """
+        strengths = []
+
+        if agent_name in ["Extracurriculars", "EC Agent"]:
+            if cycle.quality_score >= 70:
+                strengths.append("Strong identity synthesis with clear archetype")
+            if cycle.quality_score >= 80:
+                strengths.append("Spike specificity meets benchmark")
+
+        elif agent_name in ["Awards", "Awards Agent"]:
+            if cycle.quality_score >= 70:
+                strengths.append("Award portfolio well-balanced")
+            if cycle.quality_score >= 80:
+                strengths.append("Strong archetype alignment in awards")
+
+        elif agent_name in ["Programs", "Programs Agent", "Opportunity"]:
+            if cycle.quality_score >= 70:
+                strengths.append("Diverse program recommendations")
+            if cycle.quality_score >= 80:
+                strengths.append("Programs aligned with constraints")
+
+        elif agent_name in ["GamePlan", "GamePlan Agent", "GamePlanAgent"]:
+            if cycle.quality_score >= 70:
+                strengths.append("Narrative synthesis cohesive")
+            if cycle.quality_score >= 80:
+                strengths.append("All agent outputs well integrated")
+
+        return strengths
 
     def _log_verbose(self, cycles: List[ReActCycle], result: ReActResult):
         """

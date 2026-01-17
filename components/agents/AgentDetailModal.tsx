@@ -12,6 +12,9 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { X, Brain, Target, Award, Lightbulb, AlertTriangle, Zap, Calendar, Clock, CheckCircle2, TrendingUp, GraduationCap, Shield, ChevronDown, ChevronRight } from 'lucide-react';
 import { BRAND_COLORS } from '@/lib/constants/brand';
+import { ReActVisualization } from './react';
+import { FourPillarsGrid, TenDimensionsAccordion, ActivityOutputCard } from './ec-engine';
+import type { ReactMetadata, FourPillarsData, TenDimensionsData, GeneratedActivity } from '@/lib/types/react-visualization';
 
 export type AgentType = 'assessment' | 'ec' | 'gameplan' | 'execution' | 'awards' | 'opportunity' | 'crisis';
 
@@ -21,6 +24,67 @@ interface AgentDetailModalProps {
   agentType: AgentType;
   title: string;
   data: Record<string, unknown> | null;
+}
+
+/**
+ * v5.0: Extract per-agent ReAct data from orchestration result
+ *
+ * The GamePlan orchestrator stores individual agent _react data in:
+ * - _react_by_agent: { ec: {...}, awards: {...}, programs: {...} }
+ * - Or embedded in sections: identity_synthesis._react, awards._react, programs._react
+ */
+function getReactDataForAgent(
+  data: Record<string, unknown> | null,
+  agentType: AgentType
+): ReactMetadata | undefined {
+  if (!data) return undefined;
+
+  // Extract _react_by_agent if available (v5.0 structure)
+  const reactByAgent = data._react_by_agent as Record<string, ReactMetadata> | undefined;
+
+  // Get game_plan if present (data may be wrapped)
+  const gamePlan = data.game_plan as Record<string, unknown> | undefined;
+  const gamePlanReactByAgent = gamePlan?._react_by_agent as Record<string, ReactMetadata> | undefined;
+
+  switch (agentType) {
+    case 'ec':
+      // EC Agent: check _react_by_agent.ec or identity_synthesis._react
+      return (
+        reactByAgent?.ec ||
+        gamePlanReactByAgent?.ec ||
+        (data.identity_synthesis as Record<string, unknown>)?._react as ReactMetadata ||
+        (gamePlan?.identity_synthesis as Record<string, unknown>)?._react as ReactMetadata ||
+        data._react as ReactMetadata // fallback to top-level
+      );
+
+    case 'awards':
+      // Awards Agent: check _react_by_agent.awards or awards._react
+      return (
+        reactByAgent?.awards ||
+        gamePlanReactByAgent?.awards ||
+        (data.awards as Record<string, unknown>)?._react as ReactMetadata ||
+        (gamePlan?.awards as Record<string, unknown>)?._react as ReactMetadata ||
+        data._react as ReactMetadata
+      );
+
+    case 'opportunity':
+      // Programs Agent: check _react_by_agent.programs or programs._react
+      return (
+        reactByAgent?.programs ||
+        gamePlanReactByAgent?.programs ||
+        (data.programs as Record<string, unknown>)?._react as ReactMetadata ||
+        (gamePlan?.programs as Record<string, unknown>)?._react as ReactMetadata ||
+        data._react as ReactMetadata
+      );
+
+    case 'gameplan':
+      // GamePlan orchestrator: use top-level _react (orchestrator's own cycles)
+      return data._react as ReactMetadata || gamePlan?._react as ReactMetadata;
+
+    default:
+      // Other agents: use top-level _react if available
+      return data._react as ReactMetadata;
+  }
 }
 
 export function AgentDetailModal({
@@ -56,24 +120,80 @@ export function AgentDetailModal({
       );
     }
 
+    // v5.0: Extract per-agent ReAct metadata using helper
+    const reactData = getReactDataForAgent(data, agentType);
+    const hasReactData = reactData && reactData.cycle_summary && reactData.cycle_summary.length > 0;
+
+    // Debug logging for ReAct visualization
+    console.log('[AgentDetailModal] Agent type:', agentType);
+    console.log('[AgentDetailModal] Data keys:', Object.keys(data));
+    console.log('[AgentDetailModal] _react_by_agent present:', !!(data._react_by_agent));
+    console.log('[AgentDetailModal] Per-agent _react found:', !!reactData);
+    if (reactData) {
+      console.log('[AgentDetailModal] _react data:', {
+        agentName: reactData.agent_name,
+        cycles: reactData.cycles_executed,
+        hasCycleSummary: !!reactData.cycle_summary,
+        cycleSummaryLength: reactData.cycle_summary?.length,
+      });
+    }
+
+    // Get agent-specific content
+    let agentContent: JSX.Element;
     switch (agentType) {
       case 'assessment':
-        return <AssessmentDetail data={data} />;
+        agentContent = <AssessmentDetail data={data} />;
+        break;
       case 'ec':
-        return <ECDetail data={data} />;
+        agentContent = <ECDetail data={data} />;
+        break;
       case 'gameplan':
-        return <GamePlanDetail data={data} />;
+        agentContent = <GamePlanDetail data={data} />;
+        break;
       case 'execution':
-        return <ExecutionDetail data={data} />;
+        agentContent = <ExecutionDetail data={data} />;
+        break;
       case 'awards':
-        return <AwardsDetail data={data} />;
+        agentContent = <AwardsDetail data={data} />;
+        break;
       case 'opportunity':
-        return <OpportunityDetail data={data} />;
+        agentContent = <OpportunityDetail data={data} />;
+        break;
       case 'crisis':
-        return <CrisisDetail data={data} />;
+        agentContent = <CrisisDetail data={data} />;
+        break;
       default:
-        return <pre className="text-xs overflow-auto">{JSON.stringify(data, null, 2)}</pre>;
+        agentContent = <pre className="text-xs overflow-auto">{JSON.stringify(data, null, 2)}</pre>;
     }
+
+    return (
+      <div className="space-y-6">
+        {/* Agent-specific content */}
+        {agentContent}
+
+        {/* ReAct Visualization - Show when agent has _react data */}
+        {hasReactData && (
+          <ReActVisualization
+            agentName={getAgentDisplayName(agentType)}
+            reactData={reactData}
+          />
+        )}
+      </div>
+    );
+  };
+
+  // Helper to get display name for agent
+  const getAgentDisplayName = (type: AgentType): string => {
+    const names: Record<AgentType, string> = {
+      assessment: 'Assessment Agent',
+      ec: 'Extracurriculars Agent',
+      gameplan: 'GamePlan Orchestrator',
+      execution: 'Execution Agent',
+      awards: 'Awards Agent',
+      opportunity: 'Programs Agent',
+      crisis: 'Crisis Agent',
+    };
+    return names[type] || type;
   };
 
   return (
@@ -207,17 +327,169 @@ function AssessmentDetail({ data }: { data: Record<string, unknown> }) {
 
 // ============================================================
 // EC AGENT DETAIL VIEW - Activities/Extracurriculars
+// Enhanced with 4 Pillars + 10 Dimensions (v5.0)
 // ============================================================
 function ECDetail({ data }: { data: Record<string, unknown> }) {
-  const activities = (data.activities as Array<{name?: string; type?: string; category?: string; description?: string}>) || [];
+  // v5.0: Extract EC Generation Engine data from nested structure
+  // Data can be at: data.ec_generation, data.identity_synthesis, or top level
+  const ecGeneration = (data.ec_generation as Record<string, unknown>) || {};
+  const identitySynthesis = (data.identity_synthesis as Record<string, unknown>) || {};
+
+  // Extract activities - prefer recommended_activities from EC Engine (signature projects, etc.)
+  const ecEngineActivities = (ecGeneration.recommended_activities as GeneratedActivity[]) || [];
+  const fallbackActivities = (data.activities as Array<{name?: string; type?: string; category?: string; description?: string}>) || [];
+
+  // Filter out awards and programs from fallback activities (those come from other agents)
+  const filteredActivities = fallbackActivities.filter(a => {
+    const category = (a.category || a.type || '').toLowerCase();
+    return !['award', 'program', 'awards', 'programs'].includes(category);
+  });
+
   const seeds = (data.identity_seeds as Array<{name?: string; type?: string; description?: string; planted?: boolean}>) || [];
   const categories = (data.categories as Record<string, unknown[]>) || {};
-  const totalActivities = (data.total_activities as number) || activities.length;
+  const totalActivities = (data.total_activities as number) || ecEngineActivities.length || filteredActivities.length;
   const plantedSeeds = (data.planted_seeds as number) || seeds.filter(s => s.planted).length;
+
+  // v5.0: Extract EC Generation Engine data from nested locations
+  const fourPillars = (
+    data.four_pillars ||
+    ecGeneration.four_pillars ||
+    identitySynthesis.four_pillars
+  ) as FourPillarsData | undefined;
+
+  const tenDimensions = (
+    data.ten_dimensions ||
+    ecGeneration.ten_dimensions
+  ) as TenDimensionsData | undefined;
+
+  // Use EC Engine generated activities (signature projects, leadership, research, etc.)
+  const generatedActivities = ecEngineActivities.length > 0 ? ecEngineActivities : undefined;
+
+  // Spike and archetype can be at multiple levels
+  const spike = (
+    data.spike ||
+    identitySynthesis.spike ||
+    ecGeneration.spike
+  ) as string | undefined;
+
+  const archetype = (
+    data.archetype ||
+    identitySynthesis.archetype ||
+    ecGeneration.archetype
+  ) as string | undefined;
+
+  const onlyTheyPassed = (
+    data.only_they_passed ||
+    ecGeneration.only_they_passed
+  ) as boolean | undefined;
+
+  // Check if we have EC Engine data
+  const hasECEngineData = fourPillars || tenDimensions || generatedActivities;
 
   return (
     <div className="space-y-6">
-      {/* Summary Stats */}
+      {/* v5.0: Spike & Archetype Header (if available) */}
+      {(spike || archetype) && (
+        <div
+          className="p-4 rounded-xl"
+          style={{
+            backgroundColor: BRAND_COLORS.primaryBg,
+            border: `1px solid ${BRAND_COLORS.primary}40`,
+          }}
+        >
+          {spike && (
+            <div className="mb-3">
+              <p className="text-xs font-medium mb-1" style={{ color: BRAND_COLORS.primary }}>
+                Identity Spike
+              </p>
+              <p className="text-base font-semibold" style={{ color: BRAND_COLORS.textHeading }}>
+                {spike}
+              </p>
+            </div>
+          )}
+          {archetype && (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium mb-1" style={{ color: BRAND_COLORS.textMuted }}>
+                  Archetype
+                </p>
+                <span
+                  className="px-3 py-1 rounded-full text-sm font-medium"
+                  style={{ backgroundColor: BRAND_COLORS.secondary, color: 'white' }}
+                >
+                  {archetype}
+                </span>
+              </div>
+              {onlyTheyPassed !== undefined && (
+                <div className="text-right">
+                  <p className="text-xs font-medium mb-1" style={{ color: BRAND_COLORS.textMuted }}>
+                    "Only They" Test
+                  </p>
+                  <span
+                    className="px-3 py-1 rounded-full text-sm font-medium"
+                    style={{
+                      backgroundColor: onlyTheyPassed ? BRAND_COLORS.success : BRAND_COLORS.error,
+                      color: 'white',
+                    }}
+                  >
+                    {onlyTheyPassed ? 'Passed' : 'Needs Work'}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* v5.0: 4 Pillars Grid (if available) */}
+      {fourPillars && (
+        <ExpandableSection
+          title="4 Pillars Analysis"
+          icon={<Target size={20} />}
+          defaultExpanded={true}
+          itemCount={4}
+        >
+          <FourPillarsGrid data={fourPillars} />
+        </ExpandableSection>
+      )}
+
+      {/* v5.0: 10 Dimensions Accordion (if available) */}
+      {tenDimensions && (
+        <ExpandableSection
+          title="10 Dimensions of Hyper-Personalization"
+          icon={<Lightbulb size={20} />}
+          defaultExpanded={false}
+          itemCount={tenDimensions.dimensions_met}
+        >
+          <TenDimensionsAccordion data={tenDimensions} />
+        </ExpandableSection>
+      )}
+
+      {/* v5.0: Generated Activities with full context (if available) */}
+      {generatedActivities && generatedActivities.length > 0 && (
+        <ExpandableSection
+          title="Generated Activities"
+          icon={<Zap size={20} />}
+          defaultExpanded={true}
+          itemCount={generatedActivities.length}
+        >
+          <div className="space-y-4">
+            {generatedActivities.map((activity, i) => (
+              <ActivityOutputCard
+                key={i}
+                activity={activity}
+                index={i}
+                showPillars={true}
+                showDimensions={true}
+                showReframe={true}
+                showMetrics={true}
+              />
+            ))}
+          </div>
+        </ExpandableSection>
+      )}
+
+      {/* Summary Stats (always show) */}
       <Section title="Activity Summary" icon={<Target size={20} />}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard label="Total Activities" value={totalActivities} />
@@ -270,11 +542,11 @@ function ECDetail({ data }: { data: Record<string, unknown> }) {
         </Section>
       )}
 
-      {/* All Activities */}
-      {activities.length > 0 && (
+      {/* All Activities (excluding awards/programs which are handled by their agents) */}
+      {filteredActivities.length > 0 && (
         <Section title="Recommended Activities" icon={<TrendingUp size={20} />}>
           <div className="space-y-3">
-            {activities.map((activity, i) => (
+            {filteredActivities.map((activity, i) => (
               <div
                 key={i}
                 className="p-4 rounded-lg border"
@@ -456,15 +728,21 @@ function GamePlanDetail({ data }: { data: Record<string, unknown> }) {
           defaultExpanded={false}
           preview={
             <div className="flex flex-wrap gap-2">
-              {activities.slice(0, 4).map((act, i) => (
-                <span
-                  key={i}
-                  className="px-3 py-1 rounded-full text-xs"
-                  style={{ backgroundColor: BRAND_COLORS.bgSuccess, color: BRAND_COLORS.success }}
-                >
-                  {(act.name as string) || (act.activity_name as string) || `Activity ${i + 1}`}
-                </span>
-              ))}
+              {activities.slice(0, 4).map((act, i) => {
+                const isECActivity = act.source === 'ec_engine' || act.category === 'ec_activity';
+                return (
+                  <span
+                    key={i}
+                    className="px-3 py-1 rounded-full text-xs"
+                    style={{
+                      backgroundColor: isECActivity ? BRAND_COLORS.bgSuccess : BRAND_COLORS.bgWarning,
+                      color: isECActivity ? BRAND_COLORS.success : BRAND_COLORS.warning,
+                    }}
+                  >
+                    {(act.name as string) || (act.activity_name as string) || `Activity ${i + 1}`}
+                  </span>
+                );
+              })}
               {activities.length > 4 && (
                 <span className="text-xs" style={{ color: BRAND_COLORS.textMuted }}>
                   +{activities.length - 4} more
@@ -474,39 +752,66 @@ function GamePlanDetail({ data }: { data: Record<string, unknown> }) {
           }
         >
           <div className="space-y-2">
-            {activities.map((act, i) => (
-              <div
-                key={i}
-                className="p-3 rounded-lg"
-                style={{ backgroundColor: 'white', border: `1px solid ${BRAND_COLORS.borderLight}` }}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="font-medium text-sm" style={{ color: BRAND_COLORS.textHeading }}>
-                      {(act.name as string) || (act.activity_name as string) || `Activity ${i + 1}`}
-                    </h4>
-                    {typeof act.category === 'string' && act.category && (
-                      <span className="text-xs" style={{ color: BRAND_COLORS.textMuted }}>
-                        {act.category}
+            {activities.map((act, i) => {
+              // Determine if this is an EC Engine activity
+              const isECActivity = act.source === 'ec_engine' || act.category === 'ec_activity';
+              const isAward = (act.type as string)?.toLowerCase() === 'award';
+              const isProgram = (act.type as string)?.toLowerCase() === 'program';
+
+              // Format activity type label
+              const typeLabel = (() => {
+                const type = (act.type as string) || '';
+                if (type === 'activity_count') return 'Core Activity';
+                if (type === 'signature_project') return 'Signature Project';
+                if (type === 'leadership') return 'Leadership';
+                if (type === 'research') return 'Research';
+                if (type === 'community_service') return 'Community Service';
+                return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+              })();
+
+              // Style based on activity type
+              const typeBgColor = isECActivity ? BRAND_COLORS.bgSuccess : (isAward ? BRAND_COLORS.bgWarning : BRAND_COLORS.primaryBg);
+              const typeTextColor = isECActivity ? BRAND_COLORS.success : (isAward ? BRAND_COLORS.warning : BRAND_COLORS.primary);
+              const borderColor = isECActivity ? BRAND_COLORS.success : BRAND_COLORS.borderLight;
+
+              return (
+                <div
+                  key={i}
+                  className="p-3 rounded-lg"
+                  style={{
+                    backgroundColor: 'white',
+                    border: `1px solid ${borderColor}`,
+                    borderLeft: isECActivity ? `3px solid ${BRAND_COLORS.success}` : undefined,
+                  }}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-medium text-sm" style={{ color: BRAND_COLORS.textHeading }}>
+                        {(act.name as string) || (act.activity_name as string) || `Activity ${i + 1}`}
+                      </h4>
+                      {isECActivity && (
+                        <span className="text-xs font-medium" style={{ color: BRAND_COLORS.success }}>
+                          EC Engine Generated
+                        </span>
+                      )}
+                    </div>
+                    {typeLabel && (
+                      <span
+                        className="px-2 py-0.5 rounded-full text-xs"
+                        style={{ backgroundColor: typeBgColor, color: typeTextColor }}
+                      >
+                        {typeLabel}
                       </span>
                     )}
                   </div>
-                  {typeof act.type === 'string' && act.type && (
-                    <span
-                      className="px-2 py-0.5 rounded-full text-xs"
-                      style={{ backgroundColor: BRAND_COLORS.primaryBg, color: BRAND_COLORS.primary }}
-                    >
-                      {act.type}
-                    </span>
+                  {typeof act.description === 'string' && act.description && (
+                    <p className="text-sm mt-1" style={{ color: BRAND_COLORS.textMuted }}>
+                      {act.description.slice(0, 150)}...
+                    </p>
                   )}
                 </div>
-                {typeof act.description === 'string' && act.description && (
-                  <p className="text-sm mt-1" style={{ color: BRAND_COLORS.textMuted }}>
-                    {act.description.slice(0, 100)}
-                  </p>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ExpandableSection>
       )}

@@ -42,12 +42,20 @@ export function AwardsAgentCard({ profileId, onChat, onViewDetails }: AwardsAgen
 
   const handleClick = () => {
     if (onViewDetails) {
+      // v5.0: Get Awards-specific ReAct data from _react_by_agent or awards._react
+      const awardsReact =
+        (gamePlan as Record<string, unknown>)?._react_by_agent?.awards ||
+        gamePlanAwards?._react ||
+        gamePlan?.game_plan?._react;
+
       onViewDetails({
         portfolio: gamePlanPortfolio || legacyPortfolio,
         matches: matchData?.matches || [],
         total_matched: totalAwardsMatched,
         top_recommendations: gamePlanAwards?.top_recommendations,
         strategic_insights: gamePlanAwards?.strategic_insights,
+        // v5.0: Include Awards-specific ReAct metadata for cycle visualization
+        _react: awardsReact,
       } as Record<string, unknown>);
     }
   };

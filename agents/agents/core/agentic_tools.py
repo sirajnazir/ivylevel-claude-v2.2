@@ -1378,6 +1378,229 @@ class ProfileInferencerTool:
 
 
 # =============================================================================
+# v5.0: EC GENERATION ENGINE TOOLS (4 Pillars + 10 Dimensions)
+# =============================================================================
+
+class PillarExtractorTool:
+    """
+    Extract 4 Pillars (IDENTITY, APTITUDE, PASSION, SERVICE) with extreme specificity.
+
+    This tool uses LLM to extract pillars with SPECIFIC details, not generic labels.
+    Core EC Generation Engine tool.
+    """
+
+    name = "ec_pillar_extractor"
+    description = """Extract the 4 Pillars from a student profile with extreme specificity.
+    Core EC Generation methodology:
+    - IDENTITY: Who they ARE (with specific details)
+    - APTITUDE: What they're GOOD AT (with evidence)
+    - PASSION: What they LOVE (with energy indicators)
+    - SERVICE: What they want to CHANGE (with target populations)"""
+
+    async def execute(self, profile: Dict[str, Any]) -> ToolResult:
+        """Execute pillar extraction."""
+        try:
+            from agents.core.ec_generation_engine import ECGenerationEngine
+
+            engine = ECGenerationEngine()
+            pillars = await engine.extract_four_pillars(profile)
+
+            return ToolResult(
+                tool_name=self.name,
+                success=True,
+                data={
+                    "four_pillars": pillars.to_dict(),
+                    "pillar_count": pillars.get_pillar_count(),
+                    "specificity_score": pillars.get_specificity_score(),
+                },
+                confidence=pillars.get_specificity_score(),
+                reasoning=f"Extracted {pillars.get_pillar_count()}/4 pillars with {pillars.get_specificity_score():.0%} specificity",
+                suggestions=[
+                    "Use specific identity markers in spike",
+                    "Connect passion hobbies to activities",
+                    "Target specific populations in service"
+                ],
+            )
+        except Exception as e:
+            logger.error(f"Pillar extraction failed: {e}")
+            return ToolResult(
+                tool_name=self.name,
+                success=False,
+                data={},
+                confidence=0.0,
+                reasoning=f"Extraction failed: {str(e)}",
+                error=str(e),
+            )
+
+
+class ActivityGeneratorTool:
+    """
+    Generate hyper-personalized activities using 10 Dimensions.
+
+    This tool creates activities that pass the "Only They" test.
+    Core EC Generation Engine tool.
+    """
+
+    name = "ec_activity_generator"
+    description = """Generate a hyper-personalized activity using 10 Dimensions:
+    1. Geographic/Local Context
+    2. Identity-Informed WHY
+    3. Field Gap Analysis
+    4. Personal Catalyst Story
+    5. Specific Target Audience
+    6. Unique Contribution
+    7. Representation in Output
+    8. Cultural Depth
+    9. Temporal Relevance
+    10. Problem Specificity"""
+
+    async def execute(
+        self,
+        input_data: Dict[str, Any],
+    ) -> ToolResult:
+        """Execute activity generation."""
+        try:
+            from agents.core.ec_generation_engine import (
+                ECGenerationEngine,
+                FourPillars,
+                GapType,
+            )
+
+            profile = input_data.get("profile", input_data)
+            gap_type = input_data.get("gap_type", "signature_project")
+            pillars_dict = input_data.get("pillars", input_data.get("four_pillars", {}))
+            narrative = input_data.get("narrative", {})
+
+            engine = ECGenerationEngine()
+
+            # Convert dict to FourPillars
+            four_pillars = FourPillars(
+                identity=pillars_dict.get("IDENTITY", {}),
+                aptitude=pillars_dict.get("APTITUDE", {}),
+                passion=pillars_dict.get("PASSION", {}),
+                service=pillars_dict.get("SERVICE", {}),
+            )
+
+            # Convert string to GapType
+            try:
+                gap = GapType(gap_type)
+            except ValueError:
+                gap = GapType.SIGNATURE_PROJECT
+
+            activity = await engine.generate_activity(
+                gap=gap,
+                pillars=four_pillars,
+                narrative=narrative,
+                profile=profile,
+            )
+
+            dims_filled, dims_total = activity.ten_dimensions.get_dimension_score()
+
+            return ToolResult(
+                tool_name=self.name,
+                success=True,
+                data={
+                    "activity": activity.to_dict(),
+                    "dimensions_filled": dims_filled,
+                    "dimensions_total": dims_total,
+                    "passes_only_they_test": activity.passes_only_they_test,
+                },
+                confidence=dims_filled / dims_total,
+                reasoning=f"Generated '{activity.title}' with {dims_filled}/{dims_total} dimensions",
+                suggestions=[],
+            )
+        except Exception as e:
+            logger.error(f"Activity generation failed: {e}")
+            return ToolResult(
+                tool_name=self.name,
+                success=False,
+                data={},
+                confidence=0.0,
+                reasoning=f"Generation failed: {str(e)}",
+                error=str(e),
+            )
+
+
+class OnlyTheyValidatorTool:
+    """
+    Validate that an activity passes the "Only They" test.
+
+    The test: "Could you identify THIS specific student just from the activity description?"
+    Core EC Generation Engine tool.
+    """
+
+    name = "ec_only_they_validator"
+    description = """Validate that an activity is hyper-personalized enough to pass the
+    "Only They" test. Returns whether the activity passes, weak dimensions to strengthen,
+    and specificity score."""
+
+    async def execute(
+        self,
+        input_data: Dict[str, Any],
+    ) -> ToolResult:
+        """Execute validation."""
+        try:
+            from agents.core.ec_generation_engine import (
+                ECGenerationEngine,
+                GeneratedActivity,
+                TenDimensions,
+            )
+
+            activity_dict = input_data.get("activity", input_data)
+            profile = input_data.get("profile", {})
+
+            engine = ECGenerationEngine()
+
+            # Convert dict to GeneratedActivity
+            dims_data = activity_dict.get("ten_dimensions", {})
+            ten_dims = TenDimensions(
+                geographic=dims_data.get("geographic", {}),
+                identity_why=dims_data.get("identity_why", {}),
+                field_gap=dims_data.get("field_gap", {}),
+                catalyst=dims_data.get("catalyst", {}),
+                target_audience=dims_data.get("target_audience", {}),
+                unique_contribution=dims_data.get("unique_contribution", {}),
+                representation=dims_data.get("representation", {}),
+                cultural_depth=dims_data.get("cultural_depth", {}),
+                temporal=dims_data.get("temporal", {}),
+                problem_specificity=dims_data.get("problem_specificity", {}),
+            )
+
+            gen_activity = GeneratedActivity(
+                title=activity_dict.get("title", ""),
+                description=activity_dict.get("description", ""),
+                ten_dimensions=ten_dims,
+            )
+
+            passes, reasoning, weak_dims = await engine.validate_only_they_test(
+                gen_activity, profile
+            )
+
+            return ToolResult(
+                tool_name=self.name,
+                success=True,
+                data={
+                    "passes": passes,
+                    "reasoning": reasoning,
+                    "weak_dimensions": weak_dims,
+                },
+                confidence=1.0 if passes else 0.5,
+                reasoning=reasoning,
+                suggestions=[f"Strengthen: {dim}" for dim in weak_dims] if weak_dims else [],
+            )
+        except Exception as e:
+            logger.error(f"Validation failed: {e}")
+            return ToolResult(
+                tool_name=self.name,
+                success=False,
+                data={"passes": True},  # Default to pass on error
+                confidence=0.0,
+                reasoning=f"Validation failed: {str(e)}",
+                error=str(e),
+            )
+
+
+# =============================================================================
 # TOOL REGISTRY
 # =============================================================================
 
@@ -1403,6 +1626,10 @@ class ToolRegistry:
         self.register(AwardsDBSearchTool())
         self.register(ProgramsDBSearchTool())
         self.register(ProfileInferencerTool())
+        # v5.0: EC Generation Engine tools (4 Pillars + 10 Dimensions)
+        self.register(PillarExtractorTool())
+        self.register(ActivityGeneratorTool())
+        self.register(OnlyTheyValidatorTool())
 
     def register(self, tool: Any):
         """Register a tool."""

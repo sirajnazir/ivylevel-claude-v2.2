@@ -133,6 +133,7 @@ FEATURE_FLAGS = {
         "Programs",
         "GamePlan",
     ],
+    "react_wrap_sub_agents": True,      # v5.0: Wrap EC/Awards/Programs in their own ReAct cycles
 
     # -------------------------------------------------------------------------
     # v4.1 Phase 3: Voice & Benchmark (FUTURE)
@@ -141,6 +142,22 @@ FEATURE_FLAGS = {
     "voice_min_score": 70,              # Minimum voice compliance score (0-100)
     "enable_golden_benchmark": False,   # Enable golden example comparison
     "golden_min_similarity": 0.6,       # Minimum similarity to golden example (0-1)
+
+    # -------------------------------------------------------------------------
+    # v5.0: EC Generation Engine - Core 4 Pillars + 10 Dimensions (Always On)
+    # -------------------------------------------------------------------------
+    # NOTE: This is the core EC generation methodology, always enabled.
+    # No feature flag needed - this is the foundational framework.
+    "ec_engine_max_activities": 3,           # Max activities to generate per analysis
+    "ec_engine_require_only_they_pass": True,  # Require "Only They" test validation
+    "ec_engine_min_dimensions": 8,           # Minimum dimensions required (out of 10)
+    "ec_engine_min_pillars": 2,              # Minimum pillars required per activity
+
+    # -------------------------------------------------------------------------
+    # v5.0: Coach Augmentation Settings
+    # -------------------------------------------------------------------------
+    "coach_augmentations_enabled": True,     # Allow coach-specific methodology layers
+    "default_coach_augmentation": None,      # Default coach augmentation to apply (if any)
 
     # -------------------------------------------------------------------------
     # A/B Testing Configuration

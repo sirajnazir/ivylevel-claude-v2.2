@@ -33,7 +33,13 @@ export function GamePlanAgentCard({ profileId, onChat, onViewDetails }: GamePlan
 
   const handleClick = () => {
     if (onViewDetails && gamePlan) {
-      onViewDetails(gamePlan as unknown as Record<string, unknown>);
+      // Include _react at top level for modal to find it
+      onViewDetails({
+        ...gamePlan,
+        ...gamePlan.game_plan,
+        // v5.0: Include ReAct metadata for cycle visualization
+        _react: gamePlan.game_plan?._react,
+      } as unknown as Record<string, unknown>);
     }
   };
 

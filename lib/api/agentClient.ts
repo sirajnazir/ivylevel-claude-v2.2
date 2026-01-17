@@ -35,6 +35,11 @@ async function apiCall<T>(endpoint: string, options: ApiCallOptions = {}): Promi
     return { success: true, data };
   } catch (error) {
     clearTimeout(timeoutId);
+    // Check if this is an abort error
+    if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('abort'))) {
+      // Return a special response for aborts that the caller can detect
+      return { success: false, error: 'REQUEST_ABORTED' };
+    }
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }

@@ -39,6 +39,12 @@ export function OpportunityAgentCard({ profileId, onChat, onViewDetails }: Oppor
 
   const handleClick = () => {
     if (onViewDetails) {
+      // v5.0: Get Programs-specific ReAct data from _react_by_agent or programs._react
+      const programsReact =
+        (gamePlan as Record<string, unknown>)?._react_by_agent?.programs ||
+        gamePlanPrograms?._react ||
+        gamePlan?.game_plan?._react;
+
       onViewDetails({
         programs: topRecommendations,
         total_matched: totalProgramsMatched,
@@ -48,6 +54,8 @@ export function OpportunityAgentCard({ profileId, onChat, onViewDetails }: Oppor
         strategic_insights: gamePlanPrograms?.strategic_insights,
         alerts: alertsData?.alerts || [],
         urgent_count: alertsData?.urgent_count || 0,
+        // v5.0: Include Programs-specific ReAct metadata for cycle visualization
+        _react: programsReact,
       } as Record<string, unknown>);
     }
   };

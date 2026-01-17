@@ -26,6 +26,9 @@ from agents.core.profile_signals import ProfileSignals, extract_profile_signals
 from agents.core.guardrails import validate_identity_synthesis
 from config import FEATURE_FLAGS
 
+# v5.0: EC Generation Engine - Core 4 Pillars + 10 Dimensions (Always On)
+from agents.core.ec_generation_engine import ECGenerationEngine
+
 
 # =============================================================================
 # CONSTANTS & TYPES
@@ -143,6 +146,8 @@ class ExtracurricularsAgent:
         self.name = "Extracurriculars"
         self.llm = ChatOpenAI(model="gpt-4o", temperature=0.3)
         self.db = get_supabase_client()
+        # v5.0: Core EC Generation Engine (4 Pillars + 10 Dimensions) - Always On
+        self._ec_engine = ECGenerationEngine()
 
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
         """
@@ -224,10 +229,123 @@ class ExtracurricularsAgent:
             activities = self._extract_activities(profile)
 
             # =========================================================
-            # HYBRID PATH SELECTION (v4.0)
+            # PATH SELECTION (v5.0: EC Generation Engine - Always On)
             # =========================================================
             use_profile_inference = FEATURE_FLAGS.get("use_profile_inference", True)
 
+            # =========================================================
+            # PRIMARY PATH: EC Generation Engine (4 Pillars + 10 Dimensions)
+            # This is the core methodology for ALL students - always enabled.
+            # =========================================================
+            print(f"[EC Agent] Using EC Generation Engine (4 Pillars + 10 Dimensions)")
+
+            try:
+                max_activities = FEATURE_FLAGS.get("ec_engine_max_activities", 3)
+                ec_result = await self._ec_engine.generate_identity_and_activities(
+                    profile=profile,
+                    max_activities=max_activities,
+                )
+
+                # Debug: Log what the EC Engine returned
+                print(f"[EC Agent] EC Engine returned: recommended_activities={len(ec_result.get('recommended_activities', []))}, gaps={ec_result.get('portfolio_gaps', [])}")
+                if ec_result.get('recommended_activities'):
+                    for act in ec_result.get('recommended_activities', []):
+                        print(f"[EC Agent]   Activity: {act.get('title', 'no title')} - {act.get('activity_type', 'no type')}")
+
+                # Convert EC Engine result to standard format
+                ec_identity = ec_result.get("identity_synthesis", {})
+
+                # Create IdentitySynthesis from EC Engine output
+                identity_synthesis = IdentitySynthesis(
+                    spike=ec_identity.get("spike", ""),
+                    spike_evidence=[],
+                    spike_confidence=ec_identity.get("spike_confidence", 0.7),
+                    archetype=ec_identity.get("archetype", "multi_hyphenate"),
+                    archetype_confidence=ec_identity.get("archetype_confidence", 0.7),
+                    archetype_scores={},
+                    pillars=ec_identity.get("pillars", []),
+                    pillar_evidence={},
+                    portfolio_balance_score=ec_identity.get("pillar_specificity_score", 0.5),
+                    portfolio_gaps=ec_result.get("portfolio_gaps", []),
+                    portfolio_strengths=[],
+                    total_impact_score=0.0,
+                    top_impact_activities=[],
+                    leadership_level="potential",
+                    leadership_evidence=[],
+                )
+
+                # Also run standard portfolio analysis if activities exist
+                if activities:
+                    portfolio_analysis = self._analyze_portfolio_balance(activities)
+                    impact_assessment = self._assess_impact(activities)
+                    identity_synthesis.total_impact_score = impact_assessment["total_score"]
+                    identity_synthesis.top_impact_activities = impact_assessment["top_activities"]
+                    identity_synthesis.portfolio_balance_score = portfolio_analysis.balance_score
+                    identity_synthesis.portfolio_gaps = portfolio_analysis.gaps
+                    identity_synthesis.portfolio_strengths = portfolio_analysis.strengths
+                else:
+                    portfolio_analysis = PortfolioAnalysis()
+                    impact_assessment = {"total_score": 0, "activities_assessed": 0, "top_activities": []}
+
+                # Build enhanced result with EC Engine data
+                result = {
+                    "success": True,
+                    "profile_id": profile_id,
+                    "identity_synthesis": identity_synthesis.to_dict(),
+                    "portfolio_analysis": {
+                        "category_counts": getattr(portfolio_analysis, 'category_counts', {}),
+                        "balance_score": getattr(portfolio_analysis, 'balance_score', 0),
+                        "gaps": getattr(portfolio_analysis, 'gaps', []),
+                        "strengths": getattr(portfolio_analysis, 'strengths', []),
+                        "recommendations": getattr(portfolio_analysis, 'recommendations', []),
+                    },
+                    "impact_assessment": impact_assessment,
+                    "activities_analyzed": len(activities),
+                    "inference_mode": "ec_generation_engine",
+                    # v5.0: Include EC Engine-specific data
+                    "ec_generation": {
+                        "four_pillars": ec_identity.get("four_pillars", {}),
+                        "master_narrative": ec_identity.get("master_narrative", ""),
+                        "reframe_applied": ec_identity.get("reframe_applied"),
+                        "recommended_activities": ec_result.get("recommended_activities", []),
+                        "methodology_version": ec_result.get("methodology_version", "ec_engine_v1.0"),
+                    },
+                }
+
+                # Version state
+                await self._version_state(profile_id, "ec_analyzed", {
+                    "activities_count": len(activities),
+                    "spike": identity_synthesis.spike,
+                    "archetype": identity_synthesis.archetype,
+                    "inference_mode": "ec_generation_engine",
+                    "pillar_specificity": ec_identity.get("pillar_specificity_score", 0),
+                })
+
+                # Publish event
+                await self._publish_event("EC_IDENTITY_SYNTHESIZED", {
+                    "profileId": profile_id,
+                    "spike": identity_synthesis.spike,
+                    "archetype": identity_synthesis.archetype,
+                    "pillars": identity_synthesis.pillars,
+                    "inference_mode": "ec_generation_engine",
+                })
+
+                # v4.1: Validate output against guardrails
+                if FEATURE_FLAGS.get("enable_guardrails", True):
+                    validation = validate_identity_synthesis(result)
+                    if validation.warnings:
+                        result["validation_warnings"] = validation.warnings
+                    result["confidence"] = validation.confidence
+
+                return result
+
+            except Exception as ec_error:
+                print(f"[EC Agent] EC Engine failed, falling back to legacy: {ec_error}")
+                # Fall through to legacy analysis on error
+
+            # =========================================================
+            # FALLBACK PATHS: Legacy Analysis (used only if EC Engine fails)
+            # =========================================================
             if activities:
                 # PATH A: Activity-based analysis (existing logic)
                 print(f"[EC Agent] Using activity-based analysis ({len(activities)} activities)")

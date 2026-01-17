@@ -595,17 +595,56 @@ class AgenticReasoner:
         agent_type: str,
         gap_analysis: Dict[str, Any],
     ) -> List[str]:
-        """Select tools to run based on agent type and gaps."""
+        """
+        Select tools to run based on agent type and gaps.
+
+        Agent roles determine which tools are appropriate:
+        - EC Agent (Extracurriculars): DIAGNOSTIC + GENERATIVE
+          Runs archetype_classifier, spike_generator, theme_extractor
+          Because it CREATES the identity synthesis from scratch
+          v5.0: ALWAYS includes EC Generation Engine tools:
+                ec_pillar_extractor, ec_activity_generator, ec_only_they_validator
+
+        - Awards Agent: MATCHING ONLY
+          Does NOT run archetype_classifier (receives archetype FROM EC Agent)
+          Runs award_matcher, golden_benchmark for portfolio quality
+
+        - Programs Agent: MATCHING ONLY
+          Does NOT run archetype_classifier (receives archetype FROM EC Agent)
+          Runs program_matcher, golden_benchmark for portfolio quality
+
+        - GamePlan Orchestrator: SYNTHESIS
+          Runs golden_benchmark for overall quality validation
+        """
+        # v5.0: Agent-role-specific tool selection
+        # EC Generation Engine tools are ALWAYS available for EC Agent
         base_tools = {
-            "Extracurriculars": ["archetype_classifier", "spike_generator", "theme_extractor"],
-            "Awards": ["archetype_classifier", "golden_benchmark"],
-            "Programs": ["archetype_classifier", "golden_benchmark"],
-            "GamePlan": ["archetype_classifier", "spike_generator", "golden_benchmark"],
+            # EC Agent: Full diagnostic suite + EC Generation Engine tools
+            # EC Agent CREATES the identity using 4 Pillars + 10 Dimensions
+            "Extracurriculars": [
+                # Standard diagnostic tools
+                "archetype_classifier",
+                "spike_generator",
+                "theme_extractor",
+                # v5.0: EC Generation Engine tools (always on)
+                "ec_pillar_extractor",
+                "ec_activity_generator",
+                "ec_only_they_validator",
+            ],
+
+            # Awards: Matching tools only - receives archetype from EC
+            "Awards": ["award_matcher", "golden_benchmark"],
+
+            # Programs: Matching tools only - receives archetype from EC
+            "Programs": ["program_matcher", "golden_benchmark"],
+
+            # GamePlan: Synthesis quality validation
+            "GamePlan": ["golden_benchmark"],
         }
 
-        tools = base_tools.get(agent_type, ["archetype_classifier"])
+        tools = base_tools.get(agent_type, ["golden_benchmark"])
 
-        # Add golden_benchmark if we have critical gaps
+        # Add golden_benchmark if we have critical gaps (quality check)
         critical_gaps = gap_analysis.get("critical", [])
         if critical_gaps and "golden_benchmark" not in tools:
             tools.append("golden_benchmark")
@@ -652,68 +691,230 @@ class AgenticReasoner:
         specific_hints: List[str],
         previous_results: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """Build a narrative reasoning explanation."""
-        activities = profile.get("activities", [])
-        activity_count = len(activities)
+        """
+        Build an agent-specific reasoning narrative.
 
-        # Start reasoning
+        Each agent type has a distinct role in the multi-agent system:
+        - EC Agent: Analyzes activities to CREATE archetype, spike, pillars
+        - Awards Agent: RECEIVES archetype from EC, matches to award database
+        - Programs Agent: RECEIVES archetype from EC, matches to program database
+        - GamePlan: Orchestrates all agents, synthesizes final narrative
+        """
         reasoning_parts = []
 
-        # Cycle context
-        if cycle_num == 1:
-            reasoning_parts.append(
-                f"Initial execution of {agent_type} agent. "
-                f"Profile has {activity_count} activities."
-            )
+        # Agent-specific cycle context
+        if agent_type == "Extracurriculars":
+            reasoning_parts.append(self._build_ec_reasoning(
+                profile, cycle_num, tool_results, specific_hints
+            ))
+        elif agent_type == "Awards":
+            reasoning_parts.append(self._build_awards_reasoning(
+                profile, cycle_num, tool_results, specific_hints
+            ))
+        elif agent_type == "Programs":
+            reasoning_parts.append(self._build_programs_reasoning(
+                profile, cycle_num, tool_results, specific_hints
+            ))
+        elif agent_type == "GamePlan":
+            reasoning_parts.append(self._build_gameplan_reasoning(
+                profile, cycle_num, tool_results, specific_hints
+            ))
         else:
+            # Fallback for unknown agent types
             reasoning_parts.append(
-                f"Correction cycle {cycle_num} for {agent_type} agent. "
+                f"Cycle {cycle_num} for {agent_type} agent. "
                 f"Applying {len(specific_hints)} improvement hints."
             )
 
-        # Tool insights
+        # Gap summary (common to all)
+        critical_count = len(gap_analysis.get("critical", []))
+        moderate_count = len(gap_analysis.get("moderate", []))
+        if critical_count > 0:
+            reasoning_parts.append(
+                f"Found {critical_count} critical gaps to address."
+            )
+        if moderate_count > 0:
+            reasoning_parts.append(
+                f"Found {moderate_count} moderate improvements possible."
+            )
+
+        return " ".join(reasoning_parts)
+
+    def _build_ec_reasoning(
+        self,
+        profile: Dict[str, Any],
+        cycle_num: int,
+        tool_results: Dict[str, ToolResult],
+        specific_hints: List[str],
+    ) -> str:
+        """
+        Build EC Agent-specific reasoning using Jenny's 4 Pillars framework.
+
+        Jenny's Formula: IDENTITY + APTITUDE + PASSION + SERVICE = UNIQUE NARRATIVE
+        - Identity: Personal story, background, constraints
+        - Aptitude: Academic strength, intellectual capability
+        - Passion: Extracurricular depth, genuine engagement
+        - Service: Community impact, leadership initiative
+        """
+        activities = profile.get("activities", [])
+        activity_count = len(activities)
+
+        # Extract pillar signals from profile
+        has_identity = bool(profile.get("background") or profile.get("constraints"))
+        has_aptitude = bool(profile.get("gpa") or profile.get("test_scores"))
+        has_passion = activity_count > 0
+        has_service = any(
+            "service" in str(a.get("category", "")).lower() or
+            "volunteer" in str(a.get("description", "")).lower()
+            for a in activities
+        )
+        pillars_detected = sum([has_identity, has_aptitude, has_passion, has_service])
+
+        if cycle_num == 1:
+            parts = [
+                f"EC Agent analyzing {activity_count} activities using Jenny's 4 Pillars framework. "
+                f"Detected signals in {pillars_detected}/4 pillars (Identity, Aptitude, Passion, Service). "
+                "Running diagnostic tools: classify archetype, generate spike, extract thematic pillars."
+            ]
+        else:
+            parts = [
+                f"EC Agent correction cycle {cycle_num}. "
+                f"Refining identity synthesis across {pillars_detected} pillars. "
+                f"Applying {len(specific_hints)} targeted hints to strengthen narrative coherence. "
+            ]
+
+        # Add tool-specific insights for EC
         for tool_name, result in tool_results.items():
             if result.success:
                 if tool_name == "archetype_classifier":
                     arch = result.data.get("archetype", "unknown")
                     conf = result.data.get("archetype_confidence", 0)
-                    reasoning_parts.append(
-                        f"Archetype classified as {arch} ({conf:.0%} confidence)."
+                    parts.append(
+                        f"Classified archetype: {arch} ({conf:.0%} confidence)."
                     )
                 elif tool_name == "spike_generator":
                     spike = result.data.get("spike", "")
                     spec = result.data.get("spike_specificity", 0)
                     if spike:
-                        reasoning_parts.append(
-                            f"Generated spike: '{spike[:80]}...' ({spec:.0%} specificity)."
+                        parts.append(
+                            f"Generated spike: '{spike[:60]}...' ({spec:.0%} specificity)."
                         )
                 elif tool_name == "theme_extractor":
                     pillars = result.data.get("pillars", [])
                     if pillars:
                         pillar_names = [p.get("name", "") for p in pillars[:3]]
-                        reasoning_parts.append(
-                            f"Identified pillars: {', '.join(pillar_names)}."
+                        parts.append(
+                            f"Extracted pillars: {', '.join(pillar_names)}."
                         )
 
-        # Gap summary
-        critical_count = len(gap_analysis.get("critical", []))
-        moderate_count = len(gap_analysis.get("moderate", []))
-        if critical_count > 0:
-            reasoning_parts.append(
-                f"Found {critical_count} critical gaps that must be addressed."
-            )
-        if moderate_count > 0:
-            reasoning_parts.append(
-                f"Found {moderate_count} moderate gaps for improvement."
-            )
+        return " ".join(parts)
 
-        # Action plan
-        if specific_hints:
-            reasoning_parts.append(
-                f"Plan: Address {len(specific_hints)} specific issues."
-            )
+    def _build_awards_reasoning(
+        self,
+        profile: Dict[str, Any],
+        cycle_num: int,
+        tool_results: Dict[str, ToolResult],
+        specific_hints: List[str],
+    ) -> str:
+        """Build Awards Agent-specific reasoning."""
+        # Awards receives archetype from EC Agent
+        archetype = profile.get("archetype", "unknown")
+        spike = profile.get("spike", "")[:50] if profile.get("spike") else "not provided"
 
-        return " ".join(reasoning_parts)
+        if cycle_num == 1:
+            parts = [
+                f"Awards Agent received archetype '{archetype}' from EC Agent. "
+                f"Searching award database for matches aligned with spike: '{spike}...'. "
+                "Building reach/target/safety portfolio."
+            ]
+        else:
+            parts = [
+                f"Awards Agent refinement cycle {cycle_num}. "
+                f"Adjusting portfolio balance based on {len(specific_hints)} hints. "
+                "Re-matching awards for better archetype alignment."
+            ]
+
+        # Add award-specific insights
+        for tool_name, result in tool_results.items():
+            if result.success:
+                if tool_name == "award_matcher":
+                    matches = result.data.get("matches", [])
+                    parts.append(f"Found {len(matches)} potential award matches.")
+                elif tool_name == "golden_benchmark":
+                    score = result.data.get("similarity_score", 0)
+                    parts.append(f"Portfolio quality score: {score:.0%}.")
+
+        return " ".join(parts)
+
+    def _build_programs_reasoning(
+        self,
+        profile: Dict[str, Any],
+        cycle_num: int,
+        tool_results: Dict[str, ToolResult],
+        specific_hints: List[str],
+    ) -> str:
+        """Build Programs Agent-specific reasoning."""
+        # Programs receives archetype from EC Agent
+        archetype = profile.get("archetype", "unknown")
+        grade = profile.get("grade", "unknown")
+        constraints = profile.get("constraints", {})
+
+        if cycle_num == 1:
+            parts = [
+                f"Programs Agent received archetype '{archetype}' from EC Agent. "
+                f"Searching program database for grade {grade} student. "
+                "Matching summer programs, internships, and research opportunities."
+            ]
+            if constraints:
+                parts.append(f"Applying constraints: {list(constraints.keys())}.")
+        else:
+            parts = [
+                f"Programs Agent refinement cycle {cycle_num}. "
+                f"Adjusting recommendations based on {len(specific_hints)} hints. "
+                "Re-matching programs for better fit."
+            ]
+
+        # Add program-specific insights
+        for tool_name, result in tool_results.items():
+            if result.success:
+                if tool_name == "program_matcher":
+                    matches = result.data.get("matches", [])
+                    parts.append(f"Found {len(matches)} potential program matches.")
+                elif tool_name == "golden_benchmark":
+                    score = result.data.get("similarity_score", 0)
+                    parts.append(f"Portfolio quality score: {score:.0%}.")
+
+        return " ".join(parts)
+
+    def _build_gameplan_reasoning(
+        self,
+        profile: Dict[str, Any],
+        cycle_num: int,
+        tool_results: Dict[str, ToolResult],
+        specific_hints: List[str],
+    ) -> str:
+        """Build GamePlan Orchestrator-specific reasoning."""
+        if cycle_num == 1:
+            parts = [
+                "GamePlan Orchestrator synthesizing outputs from all agents. "
+                "Weaving EC identity, Awards portfolio, and Programs recommendations "
+                "into unified strategic narrative."
+            ]
+        else:
+            parts = [
+                f"GamePlan refinement cycle {cycle_num}. "
+                f"Improving narrative coherence based on {len(specific_hints)} hints. "
+                "Ensuring all recommendations align with master narrative."
+            ]
+
+        # Add synthesis insights
+        for tool_name, result in tool_results.items():
+            if result.success:
+                if tool_name == "golden_benchmark":
+                    score = result.data.get("similarity_score", 0)
+                    parts.append(f"Overall synthesis quality: {score:.0%}.")
+
+        return " ".join(parts)
 
     def _build_learning_reasoning(
         self,

@@ -85,6 +85,10 @@ export function useGamePlan(profileId: string | null) {
       try {
         const result = await agentApi.generateGamePlan(profileId);
         if (!result.success) {
+          // Handle abort specially - return undefined to trigger refetch
+          if (result.error === 'REQUEST_ABORTED') {
+            return undefined;
+          }
           console.error('[useGamePlan] API error:', result.error);
           throw new Error(result.error || 'Failed to generate game plan');
         }
@@ -92,6 +96,24 @@ export function useGamePlan(profileId: string | null) {
         const rawData = (result.data || {}) as Record<string, unknown>;
         // Handle nested game_plan structure from backend
         const gamePlanData = (rawData.game_plan || rawData) as Record<string, unknown>;
+        // v5.0: ReAct metadata can be at rawData level (from ReActWrapper) or inside gamePlanData
+        const reactMetadata = (rawData._react || gamePlanData._react) as Record<string, unknown> | undefined;
+        // v5.0: Per-agent ReAct metadata from _react_by_agent
+        const reactByAgent = (rawData._react_by_agent || gamePlanData._react_by_agent) as Record<string, unknown> | undefined;
+
+        // Debug logging for ReAct data
+        if (reactMetadata) {
+          console.log('[useGamePlan] Found _react metadata:', {
+            cycles: (reactMetadata as { cycles_executed?: number }).cycles_executed,
+            version: (reactMetadata as { version?: string }).version,
+          });
+        }
+        if (reactByAgent) {
+          console.log('[useGamePlan] Found _react_by_agent:', Object.keys(reactByAgent));
+        }
+        if (!reactMetadata && !reactByAgent) {
+          console.log('[useGamePlan] No _react metadata found. rawData keys:', Object.keys(rawData));
+        }
         return {
           success: true,
           game_plan: {
@@ -107,29 +129,43 @@ export function useGamePlan(profileId: string | null) {
             spike: (gamePlanData.spike as string) || undefined,
             pillars: (gamePlanData.pillars as string[]) || undefined,
             portfolio_analysis: gamePlanData.portfolio_analysis as Record<string, unknown> | undefined,
+            // v5.0: EC Generation Engine data (recommended activities, 4 pillars, etc.)
+            ec_generation: gamePlanData.ec_generation as Record<string, unknown> | undefined,
             // Awards and Programs data
             awards: gamePlanData.awards as Record<string, unknown> | undefined,
             programs: gamePlanData.programs as Record<string, unknown> | undefined,
             strategic_insights: (gamePlanData.strategic_insights as string[]) || [],
             summary: (gamePlanData.summary || { total_activities: 0, total_touchpoints: 0, average_roi: 0 }) as Record<string, unknown>,
+            // v5.0: ReAct metadata for cycle visualization (check both levels)
+            _react: reactMetadata,
           },
+          // v5.0: Per-agent ReAct metadata for individual agent visualization
+          _react_by_agent: reactByAgent,
         } as GamePlanResult;
       } catch (error) {
-        // Ignore abort errors from React Strict Mode double-renders
+        // Don't log abort errors - they're expected from React Strict Mode double-renders
         if (error instanceof Error && error.message.includes('abort')) {
-          console.log('[useGamePlan] Request aborted (likely React Strict Mode)');
-          return null;
+          // Don't throw or return null - just let React Query handle this silently
+          // by returning undefined which will cause a refetch
+          return undefined;
         }
         console.error('[useGamePlan] Error:', error);
         throw error;
       }
     },
     enabled: !!profileId,
-    staleTime: 10 * 60 * 1000, // 10 minutes - game plan generation is slow
+    staleTime: 5 * 60 * 1000, // 5 minutes - balance between freshness and API calls
     gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
-    retry: false, // Don't retry on failure (it's a long operation)
+    retry: (failureCount, error) => {
+      // Retry up to 2 times, but not for abort errors
+      if (error instanceof Error && error.message.includes('abort')) {
+        return failureCount < 2;
+      }
+      return false;
+    },
+    retryDelay: 1000, // Wait 1 second between retries
     refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnMount: 'always', // Always fetch on mount since aborts return null
+    refetchOnMount: true, // Only refetch if stale
   });
 }
 

@@ -85,6 +85,8 @@ export interface IdentitySynthesis {
   archetype_confidence?: number;
   pillars: string[];
   portfolio_balance_score?: number;
+  // v5.0: ReAct metadata for EC Agent visualization
+  _react?: Record<string, unknown>;
 }
 
 export interface Phase {
@@ -113,6 +115,27 @@ export interface GamePlanResult {
       strengths: string[];
       gaps: string[];
       theme?: string;
+    };
+    // v5.0: EC Generation Engine data (recommended activities, 4 pillars, etc.)
+    ec_generation?: {
+      four_pillars?: Record<string, unknown>;
+      master_narrative?: string;
+      reframe_applied?: unknown;
+      recommended_activities?: Array<{
+        title?: string;
+        name?: string;
+        activity_type?: string;
+        gap_addressed?: string;
+        description?: string;
+        implementation_steps?: string[];
+        validation_criteria?: {
+          only_they_test?: string;
+          success_metrics?: string[];
+          timeline?: string;
+        };
+        priority?: number;
+      }>;
+      methodology_version?: string;
     };
     // Awards Agent data
     awards?: {
@@ -145,6 +168,14 @@ export interface GamePlanResult {
     };
     strategic_insights?: string[];
     created_at?: string;
+    // v5.0: ReAct metadata for orchestrator visualization
+    _react?: Record<string, unknown>;
+  };
+  // v5.0: Per-agent ReAct metadata for individual agent visualization
+  _react_by_agent?: {
+    ec?: Record<string, unknown>;
+    awards?: Record<string, unknown>;
+    programs?: Record<string, unknown>;
   };
   requires_handoff?: boolean;
 }
