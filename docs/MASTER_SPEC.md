@@ -1,7 +1,7 @@
 # IvyQuest Master Specification
 
-> **Version**: 2.2.0
-> **Last Updated**: 2026-01-16
+> **Version**: 2.3.0
+> **Last Updated**: 2026-01-17
 > **Status**: AUTHORITATIVE
 
 ---
@@ -22,7 +22,8 @@
 12. [Error Handling](#12-error-handling)
 13. [Testing Strategy](#13-testing-strategy)
 14. [Known Issues](#14-known-issues)
-15. [Change Log](#15-change-log)
+15. [Multi-Agent System](#15-multi-agent-system)
+16. [Change Log](#16-change-log)
 
 ---
 
@@ -525,7 +526,153 @@ See `/docs/REFACTOR_AUDIT.md` for detailed analysis and remediation plans.
 
 ---
 
-## 15. Change Log
+## 15. Multi-Agent System
+
+### 15.1 Overview
+
+IvyQuest uses a multi-agent architecture powered by the ReAct (Reasoning + Acting) framework. Each agent operates in cycles of THINK → ACT → OBSERVE → LEARN until quality thresholds are met.
+
+### 15.2 Agent Types
+
+| Agent | Purpose | Version |
+|-------|---------|---------|
+| EC Agent | Identity synthesis, spike generation, archetype classification | v5.1 |
+| Awards Agent | Award matching with reach/target/safety portfolio balancing | v5.1 |
+| Programs Agent | Program recommendations aligned with constraints | v5.1 |
+| GamePlan Agent | Strategic roadmap orchestration across all agents | v5.1 |
+
+### 15.3 ReAct Framework (v5.1)
+
+#### Cycle Structure
+
+```
+1. THINK (LLM): Analyze profile → select tools → identify gaps → plan actions
+2. ACT: Execute agent with structured feedback and hints
+3. OBSERVE: Validate quality scores (guardrails, voice, golden, only_they)
+4. LEARN (LLM): Analyze results → generate corrections → decide continue/stop
+5. REPEAT until quality threshold (70) met or max cycles (3) reached
+```
+
+#### Quality Scoring Formula
+
+```
+combined_score = (
+    guardrails_score * 0.25 +
+    voice_score * 0.20 +
+    golden_score * 0.25 +
+    only_they_score * 0.30
+)
+```
+
+### 15.4 ReAct Visualization (v5.1)
+
+The dashboard provides real-time visibility into agent reasoning via expandable phase accordions.
+
+#### Phase Display Components
+
+| Phase | Icon | Color | Content |
+|-------|------|-------|---------|
+| THINK | 🧠 Brain | Orange (#FF4A23) | Reasoning, tools selected, focus areas, gap analysis |
+| ACT | ⚡ Lightning | Blue (#3B82F6) | Tools executed, hints applied, input/output summaries |
+| OBSERVE | 👁️ Eye | Purple (#8B5CF6) | Quality scores, pass/fail, issues/strengths found |
+| LEARN | 📚 Book | Green (#10B981) | What worked/failed, quality delta, corrections |
+
+#### Data Structures (v5.1)
+
+```typescript
+// Tool Selection (THINK phase)
+interface ToolSelection {
+  tool_id: string;
+  tool_name: string;
+  purpose: string;
+  priority: number;
+  estimated_duration_ms: number;
+}
+
+// Tool Execution (ACT phase)
+interface ToolExecution {
+  tool_id: string;
+  tool_name: string;
+  status: 'planned' | 'executing' | 'completed' | 'failed' | 'skipped';
+  duration_ms: number;
+  success: boolean;
+  purpose?: string;
+  input_summary?: Record<string, unknown>;
+  output_summary?: Record<string, unknown>;
+}
+
+// Verbose Cycle Summary
+interface CycleSummary {
+  cycle: number;
+  think: ThinkPhaseData;
+  act: ActPhaseData;
+  observe: ObservePhaseData;
+  learn: LearnPhaseData;
+  combined_score: number;
+  quality_delta: number;
+  passed: boolean;
+  duration_ms: number;
+}
+```
+
+### 15.5 Cycle Persistence (v5.1)
+
+ReAct cycles are persisted to database for analytics and debugging.
+
+#### Database Schema
+
+```sql
+-- react_cycles: Individual cycle data
+CREATE TABLE react_cycles (
+    id UUID PRIMARY KEY,
+    profile_id UUID REFERENCES profiles(id),
+    session_id TEXT NOT NULL,
+    agent_id TEXT NOT NULL,
+    cycle_number INT NOT NULL,
+    think_data JSONB,
+    act_data JSONB,
+    observe_data JSONB,
+    learn_data JSONB,
+    combined_score FLOAT,
+    passed BOOLEAN,
+    duration_ms INT,
+    created_at TIMESTAMPTZ
+);
+
+-- react_sessions: Aggregated session data
+CREATE TABLE react_sessions (
+    id UUID PRIMARY KEY,
+    session_id TEXT UNIQUE NOT NULL,
+    profile_id UUID REFERENCES profiles(id),
+    agents_executed TEXT[],
+    final_score FLOAT,
+    total_cycles INT,
+    success BOOLEAN,
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ
+);
+```
+
+#### Analytics Functions
+
+- `get_session_cycles(session_id)`: Returns all cycles for a session
+- `get_agent_trajectory(session_id, agent_id)`: Returns improvement trajectory
+- `get_agent_success_rate(agent_id, days)`: Returns success rate statistics
+
+### 15.6 File Locations
+
+| File | Purpose |
+|------|---------|
+| `agents/core/react_wrapper.py` | ReAct cycle orchestration |
+| `agents/core/react_types.py` | Python type definitions |
+| `agents/core/cycle_persistence.py` | Database persistence helper |
+| `lib/types/react-visualization.ts` | TypeScript type definitions |
+| `components/agents/react/` | React visualization components |
+| `supabase/migrations/032_*.sql` | Database migration |
+
+---
+
+## 16. Change Log
 
 ### [2025-12-18] - v2.1.0 - Initial Specification
 

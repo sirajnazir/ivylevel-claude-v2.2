@@ -39,7 +39,24 @@ export type ReActPhase = 'think' | 'act' | 'observe' | 'learn';
 export type PhaseType = ReActPhase;
 
 /**
+ * v5.1: Tool status enum
+ */
+export type ToolStatus = 'planned' | 'executing' | 'completed' | 'failed' | 'skipped';
+
+/**
+ * v5.1: Tool selection in THINK phase
+ */
+export interface ToolSelection {
+  tool_id: string;
+  tool_name: string;
+  purpose: string;
+  priority: number;
+  estimated_duration_ms?: number;
+}
+
+/**
  * THINK phase data - Agent's reasoning and planning
+ * v5.1: Enhanced with structured tool selection
  */
 export interface ThinkPhaseData {
   reasoning: string;
@@ -50,18 +67,20 @@ export interface ThinkPhaseData {
     medium: string[];
     low: string[];
   };
-  tools_selected: string[];
+  tools_selected: ToolSelection[];  // v5.1: Now structured objects
   benchmark_targets: Record<string, number>;
   confidence: number;
+  duration_ms?: number;
 }
 
 /**
  * ACT phase data - Tool execution and actions taken
+ * v5.1: Enhanced with structured tool execution and hints array
  */
 export interface ActPhaseData {
   action: string;
   tools_executed: ToolExecution[];
-  hints_applied: number;
+  hints_applied: string[];  // v5.1: Now array of hint strings
   input_summary: Record<string, unknown>;
   output_summary: Record<string, unknown>;
   duration_ms: number;
@@ -69,11 +88,18 @@ export interface ActPhaseData {
 
 /**
  * Tool execution record
+ * v5.1: Enhanced with tool_id, status, and purpose
  */
 export interface ToolExecution {
-  name: string;
+  tool_id: string;
+  tool_name: string;
+  name?: string;  // Backwards compat alias for tool_name
+  status: ToolStatus;
   duration_ms: number;
   success: boolean;
+  purpose?: string;
+  input_summary?: Record<string, unknown>;
+  output_summary?: Record<string, unknown>;
   error?: string;
 }
 
@@ -190,13 +216,40 @@ export interface CycleSummary {
 }
 
 // ============================================================================
-// INPUT/OUTPUT DATA FLOW TYPES
+// INPUT/OUTPUT DATA FLOW TYPES (v5.1 Enhanced)
 // ============================================================================
 
 /**
+ * v5.1: Data flow node in visualization graph
+ */
+export interface DataFlowNode {
+  node_id: string;
+  node_type: 'agent' | 'data' | 'external';
+  label: string;
+  data_summary: Record<string, unknown>;
+}
+
+/**
+ * v5.1: Data flow edge in visualization graph
+ */
+export interface DataFlowEdge {
+  from_node: string;
+  to_node: string;
+  data_type: string;
+  fields_passed: string[];
+}
+
+/**
  * Data flow between agents in orchestration
+ * v5.1: Enhanced with graph structure (nodes/edges) for visualization
  */
 export interface InputDataFlow {
+  // v5.1: Graph structure for visualization
+  agent_id?: string;
+  nodes?: DataFlowNode[];
+  edges?: DataFlowEdge[];
+
+  // Original agent-to-agent flow (kept for backwards compat)
   from_assessment?: {
     narrative_dna?: string;
     archetype?: string;
@@ -216,7 +269,8 @@ export interface InputDataFlow {
     constraints?: Record<string, unknown>;
   };
   from_profile?: Record<string, unknown>;
-  to_downstream_agents?: Record<string, unknown>;
+  from_upstream_agent?: Record<string, unknown>;
+  to_downstream_agents?: Record<string, Record<string, unknown>>;
 }
 
 /**

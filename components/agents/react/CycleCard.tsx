@@ -117,7 +117,7 @@ export function CycleCard({
           icon={<Zap size={16} />}
           title="ACT"
           duration={cycle.act?.duration_ms}
-          badge={cycle.act?.hints_applied > 0 ? `${cycle.act.hints_applied} hints` : undefined}
+          badge={cycle.act?.hints_applied?.length > 0 ? `${cycle.act.hints_applied.length} hints` : undefined}
         >
           <ActPhaseContent act={cycle.act} />
         </PhaseAccordion>
@@ -201,19 +201,25 @@ function ThinkPhaseContent({ think }: { think: CycleSummary['think'] }) {
             Tools Selected
           </p>
           <div className="flex flex-wrap gap-2">
-            {think.tools_selected.map((tool, i) => (
-              <span
-                key={i}
-                className="px-2 py-1 rounded text-xs font-mono"
-                style={{
-                  backgroundColor: BRAND_COLORS.bgSecondary,
-                  color: BRAND_COLORS.textSecondary,
-                  border: `1px solid ${BRAND_COLORS.borderLight}`,
-                }}
-              >
-                {safeString(tool)}
-              </span>
-            ))}
+            {think.tools_selected.map((tool, i) => {
+              // Handle both string (legacy) and ToolSelection object formats
+              const toolName = typeof tool === 'string' ? tool : tool.tool_name || tool.tool_id;
+              const toolPurpose = typeof tool === 'object' && tool.purpose ? tool.purpose : undefined;
+              return (
+                <span
+                  key={i}
+                  className="px-2 py-1 rounded text-xs font-mono"
+                  style={{
+                    backgroundColor: BRAND_COLORS.bgSecondary,
+                    color: BRAND_COLORS.textSecondary,
+                    border: `1px solid ${BRAND_COLORS.borderLight}`,
+                  }}
+                  title={toolPurpose}
+                >
+                  {toolName}
+                </span>
+              );
+            })}
           </div>
         </div>
       )}
@@ -328,7 +334,7 @@ function ActPhaseContent({ act }: { act: CycleSummary['act'] }) {
       </div>
 
       {/* Hints Applied */}
-      {act.hints_applied > 0 && (
+      {act.hints_applied && act.hints_applied.length > 0 && (
         <div className="flex items-center gap-2">
           <span className="text-xs" style={{ color: BRAND_COLORS.textMuted }}>
             Hints applied:
@@ -340,7 +346,7 @@ function ActPhaseContent({ act }: { act: CycleSummary['act'] }) {
               color: PHASE_COLORS.act.color,
             }}
           >
-            {act.hints_applied}
+            {act.hints_applied.length}
           </span>
         </div>
       )}

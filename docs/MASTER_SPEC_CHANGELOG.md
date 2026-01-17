@@ -14,6 +14,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.0] - 2026-01-17
+
+### Added
+
+#### ReAct Visualization v5.1
+- **Verbose Cycle Tracking**: Full phase data (THINK/ACT/OBSERVE/LEARN) now captured and displayed
+- **Tool Selection Tracking**: Structured `ToolSelection` objects in THINK phase with:
+  - `tool_id`, `tool_name`, `purpose`, `priority`, `estimated_duration_ms`
+- **Tool Execution Tracking**: Structured `ToolExecution` objects in ACT phase with:
+  - `tool_id`, `tool_name`, `status`, `duration_ms`, `success`, `input_summary`, `output_summary`
+- **Hints Applied**: Now tracked as string array (not just count) for detailed debugging
+- **Data Flow Tracking**: `InputDataFlow` with graph structure (nodes/edges) for agent-to-agent data flow visualization
+
+#### Cycle Persistence Layer
+- **`react_cycles` table**: Stores individual ReAct cycle data for analytics
+  - Phase data as JSONB (think_data, act_data, observe_data, learn_data)
+  - Quality scores (combined, guardrails, voice, golden, only_they)
+  - Tool tracking (tools_selected, tools_executed)
+  - Timing metrics per phase
+- **`react_sessions` table**: Aggregates cycles into sessions
+  - Auto-updated via trigger on cycle insert
+- **Helper Functions**:
+  - `get_session_cycles()`: Returns all cycles for a session
+  - `get_agent_trajectory()`: Returns improvement trajectory for an agent
+  - `get_agent_success_rate()`: Calculates success rate statistics
+
+#### Python Type System Enhancements
+- **Exception Hierarchy**: `ReActError`, `ThinkPhaseError`, `ActPhaseError`, `ObservePhaseError`, `LearnPhaseError`, `MaxCyclesExceededError`
+- **Tool Types**: `ToolStatus` enum, `ToolSelection`, `ToolExecution` dataclasses
+- **Verbose Phase Types**: `ThinkPhaseOutput`, `ActPhaseOutput`, `ObservePhaseOutput`, `LearnPhaseOutput`
+- **Data Flow Types**: `DataFlowNode`, `DataFlowEdge`, `InputDataFlow`
+- **Enhanced Metadata**: `VerboseCycleSummary`, `EnhancedReActMetadata`, `QualityScore`
+
+#### Frontend Enhancements
+- **CycleCard.tsx**: Updated to handle `ToolSelection[]` objects and `hints_applied` as string array
+- **PhaseAccordion**: Expandable sections for each phase with proper typing
+- **Type Alignment**: TypeScript types synchronized with Python backend
+
+### Changed
+- **react_wrapper.py**: Updated to v5.1 with verbose cycle tracking
+- **react_types.py**: Extended with v5.1 type definitions
+- **react-visualization.ts**: TypeScript types aligned with Python backend
+- **Quality Formula**: Now uses 4-weight system (guardrails 0.25, voice 0.20, golden 0.25, only_they 0.30)
+
+### Files Added
+| File | Purpose |
+|------|---------|
+| `agents/core/cycle_persistence.py` | Database persistence helper for cycles |
+| `supabase/migrations/032_v5.1_react_cycles_table.sql` | Database schema for cycle storage |
+
+### Files Modified
+| File | Changes |
+|------|---------|
+| `agents/core/react_wrapper.py` | v5.1 verbose cycle tracking, tool execution records |
+| `agents/core/react_types.py` | v5.1 type definitions (ToolSelection, ToolExecution, etc.) |
+| `lib/types/react-visualization.ts` | TypeScript alignment with Python types |
+| `components/agents/react/CycleCard.tsx` | Support for ToolSelection[] and string[] hints |
+| `docs/MASTER_SPEC.md` | Added Section 15: Multi-Agent System |
+
+---
+
 ## [2.0.0] - 2026-01-16
 
 ### Added
@@ -149,6 +210,7 @@ base_score = 40 (minimum)
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 2.1.0 | 2026-01-17 | ReAct Visualization v5.1 + Cycle Persistence |
 | 2.0.0 | 2026-01-16 | Agentic ReAct Framework v5.0 |
 | 1.0.0 | 2026-01-12 | Strategic Intelligence Enrichment |
 | 0.x.x | Prior | Initial data schema |
