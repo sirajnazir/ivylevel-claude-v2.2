@@ -40,25 +40,74 @@ export function useAssessmentEnhancement(profileId: string | null) {
   });
 }
 
+/**
+ * useNarrativeDNA - v5.2 Data Unification
+ *
+ * REVISED: Reads from DB first, generates if not found.
+ * Keeps refetch capability for regeneration.
+ *
+ * Data flow:
+ * 1. Check DB for existing narrative (via get_profile_identity RPC)
+ * 2. If found, return from DB (isFromDB: true)
+ * 3. If not found, call API to generate
+ * 4. After generation, invalidate profile identity cache
+ */
 export function useNarrativeDNA(profileId: string | null) {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: ['assessment', 'narrative', profileId],
     queryFn: async () => {
       if (!profileId) return null;
+
+      // v5.2: Try DB first via API that reads from profiles table
+      try {
+        // First check if we have data in DB by calling a lightweight API
+        const profileIdentityQuery = queryClient.getQueryData<{
+          brandStatement?: string;
+          narrativeDna?: string;
+          narrativeThemes?: string[];
+        }>(['profile', 'identity', profileId]);
+
+        // If profile identity is already cached and has brand statement, use it
+        if (profileIdentityQuery?.brandStatement) {
+          return {
+            dna: profileIdentityQuery.narrativeDna || '',
+            themes: profileIdentityQuery.narrativeThemes || [],
+            confidence: 0.8, // Assume high confidence for DB data
+            rationale: profileIdentityQuery.brandStatement || '',
+            identity_markers: [],
+            isFromDB: true,
+          } as NarrativeDNA & { isFromDB: boolean };
+        }
+      } catch {
+        // Continue to API call if cache check fails
+      }
+
+      // Generate via API (which will persist to DB)
       const result = await agentApi.synthesizeNarrativeDNA(profileId);
       if (!result.success) throw new Error(result.error);
+
       // Transform backend response (narrative_dna) to frontend type (dna)
       const rawData = result.data as Record<string, unknown>;
+
+      // Invalidate profile identity cache so it picks up new data
+      queryClient.invalidateQueries({
+        queryKey: ['profile', 'identity', profileId],
+      });
+
       return {
         dna: rawData.narrative_dna || rawData.dna || '',
         themes: rawData.themes || [],
         confidence: rawData.confidence || 0,
         rationale: rawData.brand_statement || rawData.rationale || '',
         identity_markers: rawData.identity_markers || [],
-      } as NarrativeDNA;
+        isFromDB: false,
+      } as NarrativeDNA & { isFromDB: boolean };
     },
     enabled: !!profileId,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 1000, // 1 minute - shorter for freshness
+    gcTime: 10 * 60 * 1000, // 10 minutes cache
   });
 }
 

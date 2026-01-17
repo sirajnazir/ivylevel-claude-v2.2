@@ -3,6 +3,9 @@
  * Caches scoring results and twin fleet data
  *
  * v1.1.0 - Added Strategic Intelligence fields
+ * v1.2.0 - Data Unification: Identity data moved to database
+ *          - Scoring data (results, ivy_score) still persisted to localStorage
+ *          - Identity data (narrative, brand_statement) now from DB via useProfileIdentity
  */
 
 import { create } from 'zustand';
@@ -354,13 +357,21 @@ export const useResultsStore = create<ResultsStoreState>()(
       })),
       {
         name: 'ivyquest-results',
+        // =====================================================================
+        // v5.2 DATA UNIFICATION: partialize - what gets persisted to localStorage
+        // =====================================================================
+        // KEEP: Scoring data (Frames 4/5/6 depend on these)
+        // REMOVE: Identity data (now in database)
+        // =====================================================================
         partialize: (state) => ({
+          // KEEP these - Frames 4/5/6 depend on them
           results: state.results,
-          narrative: state.narrative,
+          scored_at: state.scored_at,
           booster_recommendations: state.booster_recommendations,
           twin_fleet: state.twin_fleet,
-          scored_at: state.scored_at,
-          narrative_synthesized_at: state.narrative_synthesized_at,
+          // REMOVED - now in database (migration 033_data_unification_v5.2.sql)
+          // narrative: state.narrative,
+          // narrative_synthesized_at: state.narrative_synthesized_at,
         }),
       }
     ),

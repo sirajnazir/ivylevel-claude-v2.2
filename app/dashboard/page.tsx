@@ -1,7 +1,9 @@
 /**
- * Command Deck Dashboard - v13.0
+ * Command Deck Dashboard - v13.1
  * Tabbed interface with real backend integration
  * Uses hooks to call /api/score and real engines
+ *
+ * v5.2 Data Unification: Uses useProfileIdentity for DB-sourced identity data
  */
 'use client';
 
@@ -35,6 +37,9 @@ import { useGamePlan, usePreparationData } from '@/lib/hooks/useGamePlan';
 import { useInsights } from '@/lib/hooks/useInsights';
 import { useUserData } from '@/lib/hooks/useUserData';
 import { agentV2Api } from '@/lib/api/agentV2Client';
+
+// v5.2: Import profile identity hook for DB-sourced data
+import { useProfileIdentity } from '@/hooks/useProfileIdentity';
 
 const mockGamePlanData = {
   targetProfile: {
@@ -187,12 +192,33 @@ function DashboardContent() {
   const { archetype, label: archetypeLabel, tagline } = useArchetype();
   const { helping: helpingFactors, holdingBack: holdingBackFactors } = useFactors();
 
-  // Get narrative from results store (populated by Frame 6 or agent call)
-  const brandStatement = useResultsStore((s) => s.brand_statement);
-  const narrativeThemes = useResultsStore((s) => s.narrative_themes);
-  const narrativeDna = useResultsStore((s) => s.narrative_dna);
-  const firstPrinciple = useResultsStore((s) => s.first_principle);
+  // =========================================================================
+  // v5.2 DATA UNIFICATION: Get narrative from DB, fallback to store
+  // =========================================================================
+
+  // Get profile_id for DB queries - prefer auth user ID (profiles table is keyed by user ID)
+  const storeProfileId = useSessionStore((s) => s.profile_id);
+  const storeUserId = useSessionStore((s) => s.user_id);
+  // Auth user ID is the most reliable source - matches profiles table primary key
+  const profileId = user?.id || storeProfileId || storeUserId;
+
+  // Primary source: Database via useProfileIdentity
+  const { data: identityFromDB, isLoading: identityLoading } = useProfileIdentity(profileId);
+
+  // Fallback source: Local store (for backwards compatibility during migration)
+  const storeBrandStatement = useResultsStore((s) => s.brand_statement);
+  const storeNarrativeThemes = useResultsStore((s) => s.narrative_themes);
+  const storeNarrativeDna = useResultsStore((s) => s.narrative_dna);
+  const storeFirstPrinciple = useResultsStore((s) => s.first_principle);
   const setNarrative = useResultsStore((s) => s.setNarrative);
+
+  // v5.2: Prefer DB data, fallback to store
+  const brandStatement = identityFromDB?.brandStatement || storeBrandStatement;
+  const narrativeThemes = (identityFromDB?.narrativeThemes?.length ?? 0) > 0
+    ? identityFromDB?.narrativeThemes ?? []
+    : storeNarrativeThemes;
+  const narrativeDna = identityFromDB?.narrativeDna || storeNarrativeDna;
+  const firstPrinciple = identityFromDB?.firstPrinciple || storeFirstPrinciple;
 
   // Game Plan and Insights from real engines
   const {
@@ -227,6 +253,7 @@ function DashboardContent() {
   }, [is_completed, router, mounted]);
 
   // === FETCH REAL DATA ON MOUNT ===
+  // v5.2: Added race condition guard - only synthesize if not loading from DB
   useEffect(() => {
     const initializeDashboard = async () => {
       if (!mounted || !is_completed) return;
@@ -238,17 +265,25 @@ function DashboardContent() {
           await calculateScore();
         }
 
-        // Generate narrative synthesis if not exists
-        if (!brandStatement && studentProfile) {
+        // v5.2: Generate narrative synthesis if not exists
+        // Race condition guard: Don't synthesize while DB is loading
+        const shouldSynthesize =
+          !identityLoading &&                    // DB query complete
+          !brandStatement &&                     // No brand statement from DB or store
+          profileId &&                           // Have valid profile ID
+          studentProfile &&                      // Have student profile
+          is_completed;                          // Assessment is complete
+
+        if (shouldSynthesize) {
           console.log('[Dashboard] Generating narrative synthesis...');
           try {
-            // Get profile_id from session store or use a temp one
-            const profileId = useSessionStore.getState().profile_id || useSessionStore.getState().session_id;
+            // Use profileId which prefers auth user ID (already defined above)
             const narrativeResult = await agentV2Api.synthesizeNarrative({
               profile_id: profileId,
               assessment_contract: studentProfile as unknown as Record<string, unknown>,
             });
             if (narrativeResult.success) {
+              // Still set in store for backwards compatibility
               setNarrative({
                 brand_statement: narrativeResult.brand_statement || 'Your unique story awaits discovery.',
                 narrative_dna: narrativeResult.narrative_dna || '',
@@ -256,6 +291,7 @@ function DashboardContent() {
                 themes: narrativeResult.themes || [],
                 confidence: narrativeResult.confidence || 0.8,
               });
+              console.log('[Dashboard] Narrative synthesized successfully');
             }
           } catch (narrativeErr) {
             console.warn('[Dashboard] Narrative synthesis failed:', narrativeErr);
@@ -283,7 +319,7 @@ function DashboardContent() {
 
     initializeDashboard();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, is_completed, hasResults, gamePlan, insights.length, brandStatement]);
+  }, [mounted, is_completed, hasResults, gamePlan, insights.length, brandStatement, identityLoading]);
 
   const handleLogout = async () => {
     // Sign out from Supabase first

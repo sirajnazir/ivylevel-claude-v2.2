@@ -1,6 +1,6 @@
 # IvyQuest Master Specification
 
-> **Version**: 2.3.0
+> **Version**: 2.4.0
 > **Last Updated**: 2026-01-17
 > **Status**: AUTHORITATIVE
 
@@ -381,6 +381,42 @@ CREATE POLICY "Users can view own profile"
   USING (auth.uid() = user_id);
 ```
 
+### 9.3 Data Unification v5.2
+
+**Problem Solved**: Brand statement mismatch between Dashboard AssessmentTab and Assessment Agent Card.
+
+**Solution**: Single source of truth for identity data from database.
+
+| Data Type | Source | Storage |
+|-----------|--------|---------|
+| **Scoring Data** (ivy_score, results) | API calculation | localStorage (`useResultsStore`) |
+| **Identity Data** (brand_statement, spike, pillars) | Database | `profiles` table |
+
+**Key Components**:
+
+```typescript
+// Hook: useProfileIdentity.ts
+const { data: identity } = useProfileIdentity(profileId);
+const brandStatement = identity?.brandStatement;
+
+// Priority for profileId
+const profileId = user?.id || store.profile_id || store.user_id;
+```
+
+**Database Functions** (migration 033):
+
+| Function | Purpose |
+|----------|---------|
+| `get_profile_identity(p_profile_id)` | Fetch identity data with null-safe defaults |
+| `update_profile_identity(...)` | Update identity columns, preserves existing values |
+
+**Profile Identity Fields**:
+- `narrative_brand_statement` - Synthesized brand statement
+- `narrative_dna` - Narrative DNA
+- `spike` - Student's unique spike
+- `pillars` - Four pillars (IDENTITY, APTITUDE, PASSION, SERVICE)
+- `identity_synthesis` - Complete EC Agent synthesis output
+
 ---
 
 ## 10. Type System
@@ -673,6 +709,15 @@ CREATE TABLE react_sessions (
 ---
 
 ## 16. Change Log
+
+### [2026-01-17] - v2.4.0 - Data Unification v5.2
+
+- **Added**: `useProfileIdentity` hook for database-sourced identity data
+- **Added**: Database functions `get_profile_identity`, `update_profile_identity`
+- **Fixed**: Brand statement mismatch between Dashboard and Agent Cards
+- **Changed**: Identity data now persisted to database instead of localStorage
+- **Changed**: Dashboard uses auth user ID as primary profileId source
+- **Preserved**: Scoring data (ivy_score, results) still uses localStorage for Frames 4/5/6 compatibility
 
 ### [2025-12-18] - v2.1.0 - Initial Specification
 

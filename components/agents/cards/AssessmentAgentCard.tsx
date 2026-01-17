@@ -1,12 +1,18 @@
 /**
  * AssessmentAgentCard Component
- * v13.4 - Added archetype badge from Strategic Intelligence
+ * v13.5 - Data Unification: Uses useProfileIdentity as primary source
+ *
+ * Data flow:
+ * - Primary: useProfileIdentity (reads from DB)
+ * - Fallback: useNarrativeDNA (for regeneration/refetch)
+ * - identity_synthesis from useResultsStore for archetype badge
  */
 'use client';
 
 import { Brain } from 'lucide-react';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { useNarrativeDNA } from '@/hooks/useAgentData';
+import { useProfileIdentity, useInvalidateProfileIdentity } from '@/hooks/useProfileIdentity';
 import { useResultsStore } from '@/lib/store/useResultsStore';
 import { AgentCardBase } from './AgentCardBase';
 import { ArchetypeBadge } from '@/components/ui/ArchetypeBadge';
@@ -18,47 +24,109 @@ interface AssessmentAgentCardProps {
 }
 
 export function AssessmentAgentCard({ profileId, onChat, onViewDetails }: AssessmentAgentCardProps) {
-  const { data, isLoading, isError, refetch } = useNarrativeDNA(profileId);
+  // v5.2: Primary data source - Database via useProfileIdentity
+  const { data: identity, isLoading: identityLoading } = useProfileIdentity(profileId);
+
+  // Fallback/refetch capability via useNarrativeDNA
+  const { data: narrativeData, isLoading: narrativeLoading, refetch, isFetching } = useNarrativeDNA(profileId);
+
+  // Archetype from store (for backwards compatibility)
   const identity_synthesis = useResultsStore((state) => state.identity_synthesis);
 
+  // Cache invalidation helper
+  const invalidateIdentity = useInvalidateProfileIdentity();
+
+  // Combine loading states
+  const isLoading = identityLoading && narrativeLoading;
+
+  // v5.2: Prefer DB data, fallback to API data
+  const brandStatement = identity?.brandStatement || narrativeData?.rationale || '';
+  const narrativeDna = identity?.narrativeDna || narrativeData?.dna || '';
+  const themes = (identity?.narrativeThemes?.length ?? 0) > 0
+    ? identity?.narrativeThemes ?? []
+    : narrativeData?.themes || [];
+  const confidence = identity?.narrativeConfidence || narrativeData?.confidence || 0;
+  const archetypeName = identity?.archetypeName || identity_synthesis?.archetype;
+
+  // Handle regeneration with cache invalidation
+  const handleRegenerate = async () => {
+    await refetch();
+    // Invalidate profile identity cache so it picks up new data
+    invalidateIdentity(profileId);
+  };
+
   const handleClick = () => {
-    if (onViewDetails && data) {
-      onViewDetails(data as unknown as Record<string, unknown>);
+    if (onViewDetails) {
+      // Combine data for detail view
+      const combinedData = {
+        brandStatement,
+        narrativeDna,
+        themes,
+        confidence,
+        archetypeName,
+        identity_synthesis: identity?.identitySynthesis || identity_synthesis,
+        spike: identity?.spike,
+        pillars: identity?.pillars,
+      };
+      onViewDetails(combinedData);
     }
   };
+
+  // Determine if we have any data to show
+  const hasData = brandStatement || narrativeDna;
 
   return (
     <AgentCardBase
       title="Assessment Agent"
       icon={<Brain size={20} style={{ color: BRAND_COLORS.primary }} />}
-      isLoading={isLoading}
-      isError={isError}
-      onRefresh={() => refetch()}
+      isLoading={isLoading || isFetching}
+      isError={!isLoading && !hasData}
+      onRefresh={handleRegenerate}
       onChat={onChat}
       onClick={handleClick}
     >
-      {data && (
+      {hasData && (
         <div className="space-y-3">
+          {/* Brand Statement - NOW FROM DB (same source as AssessmentTab) */}
+          {brandStatement && (
+            <div>
+              <p
+                style={{ color: BRAND_COLORS.textMuted }}
+                className="text-xs uppercase tracking-wide mb-1"
+              >
+                Brand Statement
+              </p>
+              <p
+                style={{ color: BRAND_COLORS.textPrimary }}
+                className="text-sm italic line-clamp-2"
+              >
+                "{brandStatement}"
+              </p>
+            </div>
+          )}
+
           {/* Narrative DNA */}
-          <div>
-            <p
-              style={{ color: BRAND_COLORS.textMuted }}
-              className="text-xs uppercase tracking-wide mb-1"
-            >
-              Narrative DNA
-            </p>
-            <p
-              style={{ color: BRAND_COLORS.textPrimary }}
-              className="text-sm italic line-clamp-2"
-            >
-              "{data.dna || 'Generating your unique narrative...'}"
-            </p>
-          </div>
+          {narrativeDna && !brandStatement && (
+            <div>
+              <p
+                style={{ color: BRAND_COLORS.textMuted }}
+                className="text-xs uppercase tracking-wide mb-1"
+              >
+                Narrative DNA
+              </p>
+              <p
+                style={{ color: BRAND_COLORS.textPrimary }}
+                className="text-sm italic line-clamp-2"
+              >
+                "{narrativeDna}"
+              </p>
+            </div>
+          )}
 
           {/* Themes */}
-          {data.themes && data.themes.length > 0 && (
+          {themes && themes.length > 0 && (
             <div className="flex flex-wrap gap-1">
-              {data.themes.slice(0, 3).map((theme, i) => (
+              {themes.slice(0, 3).map((theme, i) => (
                 <span
                   key={i}
                   className="text-xs px-2 py-0.5 rounded-full"
@@ -74,10 +142,10 @@ export function AssessmentAgentCard({ profileId, onChat, onViewDetails }: Assess
           )}
 
           {/* Archetype Badge (Strategic Intelligence v1.1.0) */}
-          {identity_synthesis?.archetype && (
+          {archetypeName && (
             <div className="mt-2">
               <ArchetypeBadge
-                archetype={identity_synthesis.archetype}
+                archetype={archetypeName}
                 size="sm"
                 showConfidence={false}
               />
@@ -85,30 +153,32 @@ export function AssessmentAgentCard({ profileId, onChat, onViewDetails }: Assess
           )}
 
           {/* Confidence */}
-          <div className="flex items-center justify-between">
-            <span style={{ color: BRAND_COLORS.textMuted }} className="text-sm">
-              Confidence
-            </span>
-            <div className="flex items-center gap-2">
-              <div className="w-20 h-2 rounded-full bg-gray-200">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${(data.confidence || 0) * 100}%`,
-                    backgroundColor:
-                      data.confidence >= 0.8
-                        ? BRAND_COLORS.success
-                        : data.confidence >= 0.6
-                        ? BRAND_COLORS.warning
-                        : BRAND_COLORS.error,
-                  }}
-                />
-              </div>
-              <span style={{ color: BRAND_COLORS.textPrimary }} className="text-sm font-medium">
-                {Math.round((data.confidence || 0) * 100)}%
+          {confidence > 0 && (
+            <div className="flex items-center justify-between">
+              <span style={{ color: BRAND_COLORS.textMuted }} className="text-sm">
+                Confidence
               </span>
+              <div className="flex items-center gap-2">
+                <div className="w-20 h-2 rounded-full bg-gray-200">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${confidence * 100}%`,
+                      backgroundColor:
+                        confidence >= 0.8
+                          ? BRAND_COLORS.success
+                          : confidence >= 0.6
+                          ? BRAND_COLORS.warning
+                          : BRAND_COLORS.error,
+                    }}
+                  />
+                </div>
+                <span style={{ color: BRAND_COLORS.textPrimary }} className="text-sm font-medium">
+                  {Math.round(confidence * 100)}%
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </AgentCardBase>

@@ -2,6 +2,8 @@
  * IvyQuest v10.0 - Narrative Synthesis Agent API Route
  * POST /api/agents/narrative/synthesize
  *
+ * v5.2: Now persists to database for data unification
+ *
  * Proxies to Python agent service for narrative synthesis using Jenny's Formula:
  * IDENTITY + APTITUDE + PASSION + SERVICE = UNIQUE NARRATIVE
  *
@@ -11,11 +13,21 @@
  * - first_principle: The core "why" driving the student
  * - themes: Key recurring themes
  * - confidence: Synthesis confidence (handoff if < 0.7)
+ * - _db_persisted: Whether result was saved to database
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 const AGENT_SERVICE_URL = process.env.AGENT_SERVICE_URL || 'http://localhost:8001';
+
+// Create Supabase client for DB persistence
+const getSupabase = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,7 +68,44 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await response.json();
-    return NextResponse.json(result);
+
+    // =========================================================================
+    // v5.2: PERSIST TO DB (with graceful fallback)
+    // =========================================================================
+    let dbPersisted = false;
+
+    try {
+      const supabase = getSupabase();
+      if (supabase && result.success !== false) {
+        // Use the RPC function to update profile identity
+        const { error } = await supabase.rpc('update_profile_identity', {
+          p_profile_id: profile_id,
+          p_brand_statement: result.brand_statement || null,
+          p_narrative_dna: result.narrative_dna || null,
+          p_narrative_themes: result.themes ? JSON.stringify(result.themes) : null,
+          p_first_principle: result.first_principle || null,
+          p_narrative_confidence: result.confidence || null,
+          p_source: 'narrative_synthesize',
+        });
+
+        if (!error) {
+          dbPersisted = true;
+          console.log('[Narrative Synthesis Agent] Persisted to DB for profile:', profile_id);
+        } else {
+          console.warn('[Narrative Synthesis Agent] DB persistence failed:', error.message);
+        }
+      }
+    } catch (dbError) {
+      // Log but don't fail the request - graceful fallback
+      console.warn('[Narrative Synthesis Agent] DB persistence failed, continuing:', dbError);
+    }
+    // =========================================================================
+
+    // ALWAYS return the result - even if DB failed
+    return NextResponse.json({
+      ...result,
+      _db_persisted: dbPersisted,
+    });
 
   } catch (error) {
     console.error('[Narrative Synthesis Agent] Exception:', error);
