@@ -48,6 +48,9 @@ from workflows import WorkflowRunner
 from tools.database import get_supabase_client
 from evaluation import EvaluationPipeline, GoldenDatasetLoader
 
+# v5.3: Execution Agent API routes
+from api.routes.execution import router as execution_router
+
 # Configure structured logging
 structlog.configure(
     processors=[
@@ -73,6 +76,13 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for startup/shutdown."""
     global workflow_runner
 
+    # Startup: Initialize Redis (v5.3)
+    try:
+        from agents.agents.core.redis_client import init_redis, close_redis
+        await init_redis()
+    except Exception as e:
+        logger.warning("redis_init_skipped", error=str(e))
+
     # Startup: Initialize workflow runner
     if settings.enable_agents:
         try:
@@ -81,6 +91,15 @@ async def lifespan(app: FastAPI):
             workflow_runner.register_all_workflows()
             workflow_runner.start()
             logger.info("workflow_runner_started")
+
+            # v5.3: Register Execution Agent scheduler jobs
+            try:
+                from scheduler.execution_jobs import register_execution_jobs
+                register_execution_jobs(workflow_runner.scheduler)
+                logger.info("execution_scheduler_jobs_registered")
+            except Exception as e:
+                logger.warning("execution_jobs_registration_skipped", error=str(e))
+
         except Exception as e:
             logger.error("workflow_runner_start_error", error=str(e))
 
@@ -90,6 +109,13 @@ async def lifespan(app: FastAPI):
     if workflow_runner:
         workflow_runner.stop()
         logger.info("workflow_runner_stopped")
+
+    # Shutdown: Close Redis (v5.3)
+    try:
+        from agents.agents.core.redis_client import close_redis
+        await close_redis()
+    except Exception as e:
+        logger.warning("redis_close_error", error=str(e))
 
 
 # Initialize FastAPI app
@@ -1921,11 +1947,18 @@ async def get_v13_memory():
         # Lazy init on first request
         try:
             from agents.agents.core import MemoryManager
+            from agents.agents.core.redis_client import get_redis_client
+
+            # Get Redis client (may be None if disabled/unavailable)
+            redis = get_redis_client()
+            redis_async = await redis.connect_async() if redis.enabled else None
+
             _v13_memory_manager = MemoryManager(
-                redis_client=None,  # TODO: Initialize from settings
+                redis_client=redis_async,
                 supabase_client=get_supabase_client(),
                 embedding_model=None,  # TODO: Add embeddings
             )
+            logger.info("v13_memory_init_success", redis_enabled=redis.is_connected)
         except Exception as e:
             logger.error("v13_memory_init_error", error=str(e))
             raise HTTPException(status_code=503, detail="v13 Memory manager not available")
@@ -2126,6 +2159,9 @@ async def get_v13_recent_interactions(
 
 # Register v13 router
 app.include_router(v13_router)
+
+# v5.3: Register Execution Agent router
+app.include_router(execution_router)
 
 
 # =====================================================

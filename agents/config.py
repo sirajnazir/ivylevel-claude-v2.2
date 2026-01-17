@@ -47,6 +47,16 @@ class Settings(BaseSettings):
     hitl_timeout_hours: float = Field(default=1.0, alias="HITL_TIMEOUT_HOURS")
     hitl_notification_email: Optional[str] = Field(default=None, alias="HITL_NOTIFICATION_EMAIL")
 
+    # Redis Configuration (v5.3 - Short-term Memory)
+    redis_enabled: bool = Field(default=False, alias="REDIS_ENABLED")
+    redis_host: str = Field(default="localhost", alias="REDIS_HOST")
+    redis_port: int = Field(default=6379, alias="REDIS_PORT")
+    redis_db: int = Field(default=0, alias="REDIS_DB")
+    redis_password: Optional[str] = Field(default=None, alias="REDIS_PASSWORD")
+    redis_ssl: bool = Field(default=False, alias="REDIS_SSL")
+    redis_session_ttl: int = Field(default=3600, alias="REDIS_SESSION_TTL")  # 1 hour default
+    redis_handoff_ttl: int = Field(default=86400, alias="REDIS_HANDOFF_TTL")  # 24 hours for handoffs
+
     # Blocker Detection
     blocker_threshold_days: int = 5
 

@@ -23,6 +23,7 @@ import { GamePlanTab } from '@/components/tabs/GamePlanTab';
 import { PreparationTab } from '@/components/tabs/PreparationTab';
 import { GrowthTab } from '@/components/tabs/GrowthTab';
 import { MultiAgentsTab } from '@/components/tabs/MultiAgentsTab';
+import { ExecutionTab } from '@/components/tabs/ExecutionTab';
 import { type TabId, COLORS, getTierFromScore } from '@/lib/constants/design';
 
 // Import real hooks for backend integration
@@ -40,6 +41,9 @@ import { agentV2Api } from '@/lib/api/agentV2Client';
 
 // v5.2: Import profile identity hook for DB-sourced data
 import { useProfileIdentity } from '@/hooks/useProfileIdentity';
+
+// v5.3: Import event bus for cross-tab notifications
+import { useEventBus } from '@/lib/events/bus';
 
 const mockGamePlanData = {
   targetProfile: {
@@ -178,6 +182,22 @@ function DashboardContent() {
   const [activeTab, setActiveTab] = useState<TabId>('assessment');
   const [mounted, setMounted] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [blinkingTabs, setBlinkingTabs] = useState<TabId[]>([]);
+
+  // v5.3: Listen for agent events to trigger execution tab notification
+  useEventBus('GAMEPLAN_GENERATED', () => {
+    // When game plan is generated, notify user about execution tab
+    if (activeTab !== 'execution') {
+      setBlinkingTabs((prev) => prev.includes('execution') ? prev : [...prev, 'execution']);
+    }
+  }, [activeTab]);
+
+  useEventBus('EXECUTION_NUDGE', () => {
+    // When execution nudge arrives, blink the execution tab
+    if (activeTab !== 'execution') {
+      setBlinkingTabs((prev) => prev.includes('execution') ? prev : [...prev, 'execution']);
+    }
+  }, [activeTab]);
 
   // === REAL HOOKS - Call /api/score and use real engines ===
   const {
@@ -630,6 +650,8 @@ function DashboardContent() {
         return <GrowthTab events={realGrowthData.events} totalGrowth={realGrowthData.totalGrowth} />;
       case 'multiagents':
         return <MultiAgentsTab />;
+      case 'execution':
+        return <ExecutionTab />;
       default:
         return <AssessmentTab data={assessmentData} />;
     }
@@ -660,11 +682,16 @@ function DashboardContent() {
       {/* Tab Navigation Header */}
       <TabHeader
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          // Clear blinking when user clicks on the tab
+          setBlinkingTabs((prev) => prev.filter((t) => t !== tab));
+        }}
         studentName={studentProfile?.identity?.name || 'Student'}
         onLogout={handleLogout}
         onRetakeAssessment={handleRetakeAssessment}
         onDeleteUserData={handleDeleteUserData}
+        blinkingTabs={blinkingTabs}
       />
 
       {/* Error Banner */}

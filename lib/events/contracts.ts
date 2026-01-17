@@ -19,7 +19,12 @@ export type IvyEventType =
   | 'GAMEPLAN_GENERATED'
   | 'AWARD_MATCHED'
   | 'OPPORTUNITY_ALERT'
-  | 'STATE_VERSIONED';
+  | 'STATE_VERSIONED'
+  // v5.3 Execution Agent events
+  | 'EXECUTION_NUDGE'
+  | 'EXECUTION_CHAT_MESSAGE'
+  | 'WEEKLY_PLAN_UPDATED'
+  | 'EDS_THRESHOLD_EXCEEDED';
 
 // =====================================================
 // Event Payloads
@@ -149,6 +154,57 @@ export interface StateVersionedPayload {
 }
 
 // =====================================================
+// v5.3 Execution Agent Event Payloads
+// =====================================================
+
+export interface ExecutionNudgePayload {
+  profileId: string;
+  nudgeType: 'stall_detected' | 'deadline_approaching' | 'eds_high' | 'weekly_checkin' | 'celebration';
+  title: string;
+  message: string;
+  priority: 'low' | 'medium' | 'high';
+  contextType?: 'project' | 'step' | 'crisis' | 'weekly_plan';
+  contextId?: string;
+  suggestedAction?: string;
+  expiresAt?: string;
+}
+
+export interface ExecutionChatMessagePayload {
+  profileId: string;
+  conversationId: string;
+  threadId?: string;
+  role: 'user' | 'assistant';
+  content: string;
+  contextType?: string;
+  contextId?: string;
+  isProactive: boolean;
+}
+
+export interface WeeklyPlanUpdatedPayload {
+  profileId: string;
+  weeklyPlanId: string;
+  weekStart: string;
+  p0Count: number;
+  p1Count: number;
+  p2Count: number;
+  completedCount: number;
+  completionRate: number;
+}
+
+export interface EdsThresholdExceededPayload {
+  profileId: string;
+  currentEds: number;
+  threshold: number;
+  missedSteps: number;
+  topBlockers: {
+    projectId: string;
+    projectName: string;
+    daysStalled: number;
+  }[];
+  recommendedAction: string;
+}
+
+// =====================================================
 // Union Event Type
 // =====================================================
 
@@ -162,7 +218,12 @@ export type IvyEvent =
   | { type: 'GAMEPLAN_GENERATED'; payload: GamePlanGeneratedPayload; timestamp: string }
   | { type: 'AWARD_MATCHED'; payload: AwardMatchedPayload; timestamp: string }
   | { type: 'OPPORTUNITY_ALERT'; payload: OpportunityAlertPayload; timestamp: string }
-  | { type: 'STATE_VERSIONED'; payload: StateVersionedPayload; timestamp: string };
+  | { type: 'STATE_VERSIONED'; payload: StateVersionedPayload; timestamp: string }
+  // v5.3 Execution Agent events
+  | { type: 'EXECUTION_NUDGE'; payload: ExecutionNudgePayload; timestamp: string }
+  | { type: 'EXECUTION_CHAT_MESSAGE'; payload: ExecutionChatMessagePayload; timestamp: string }
+  | { type: 'WEEKLY_PLAN_UPDATED'; payload: WeeklyPlanUpdatedPayload; timestamp: string }
+  | { type: 'EDS_THRESHOLD_EXCEEDED'; payload: EdsThresholdExceededPayload; timestamp: string };
 
 // =====================================================
 // Event Validation
@@ -246,4 +307,9 @@ export interface EventHandlers {
   AWARD_MATCHED?: EventHandler<'AWARD_MATCHED'>;
   OPPORTUNITY_ALERT?: EventHandler<'OPPORTUNITY_ALERT'>;
   STATE_VERSIONED?: EventHandler<'STATE_VERSIONED'>;
+  // v5.3 Execution Agent events
+  EXECUTION_NUDGE?: EventHandler<'EXECUTION_NUDGE'>;
+  EXECUTION_CHAT_MESSAGE?: EventHandler<'EXECUTION_CHAT_MESSAGE'>;
+  WEEKLY_PLAN_UPDATED?: EventHandler<'WEEKLY_PLAN_UPDATED'>;
+  EDS_THRESHOLD_EXCEEDED?: EventHandler<'EDS_THRESHOLD_EXCEEDED'>;
 }

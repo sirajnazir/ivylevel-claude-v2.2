@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Flame, Search, Bell, LogOut, User, RefreshCw, ChevronDown,
-  BarChart3, Map, Calendar, TrendingUp, Video, Bot, Trash2
+  BarChart3, Map, Calendar, TrendingUp, Video, Bot, Trash2, Zap
 } from 'lucide-react';
 import { COLORS, TABS, type TabId } from '@/lib/constants/design';
 
@@ -19,6 +19,7 @@ const TAB_ICONS: Record<TabId, React.ReactNode> = {
   growth: <TrendingUp size={16} />,
   sessions: <Video size={16} />,
   multiagents: <Bot size={16} />,
+  execution: <Zap size={16} />,
 };
 
 interface TabHeaderProps {
@@ -28,11 +29,16 @@ interface TabHeaderProps {
   onLogout?: () => void;
   onRetakeAssessment?: () => void;
   onDeleteUserData?: () => void;
+  /** Tabs that should show blinking notification indicator */
+  blinkingTabs?: TabId[];
 }
 
-export function TabHeader({ activeTab, onTabChange, studentName = 'Student', onLogout, onRetakeAssessment, onDeleteUserData }: TabHeaderProps) {
+export function TabHeader({ activeTab, onTabChange, studentName = 'Student', onLogout, onRetakeAssessment, onDeleteUserData, blinkingTabs = [] }: TabHeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showMenu, setShowMenu] = useState(false);
+
+  // Check if a tab should blink
+  const shouldBlink = (tabId: TabId) => blinkingTabs.includes(tabId) && activeTab !== tabId;
 
   return (
     <header
@@ -64,7 +70,7 @@ export function TabHeader({ activeTab, onTabChange, studentName = 'Student', onL
               <motion.button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors"
+                className="relative flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors"
                 style={{
                   color: activeTab === tab.id ? COLORS.primary : COLORS.textSecondary,
                   backgroundColor: activeTab === tab.id ? COLORS.primaryLight : 'transparent',
@@ -74,6 +80,22 @@ export function TabHeader({ activeTab, onTabChange, studentName = 'Student', onL
               >
                 {TAB_ICONS[tab.id]}
                 {tab.label}
+                {/* Blinking notification indicator */}
+                {shouldBlink(tab.id) && (
+                  <motion.span
+                    className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
+                    style={{ backgroundColor: COLORS.primary }}
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [1, 0.7, 1],
+                    }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                )}
                 {activeTab === tab.id && (
                   <motion.div
                     layoutId="activeTabIndicator"

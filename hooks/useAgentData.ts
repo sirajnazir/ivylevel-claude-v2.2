@@ -134,9 +134,9 @@ export function useGamePlan(profileId: string | null) {
       try {
         const result = await agentApi.generateGamePlan(profileId);
         if (!result.success) {
-          // Handle abort specially - return undefined to trigger refetch
+          // Handle abort specially - return null to trigger refetch (React Query doesn't allow undefined)
           if (result.error === 'REQUEST_ABORTED') {
-            return undefined;
+            return null;
           }
           console.error('[useGamePlan] API error:', result.error);
           throw new Error(result.error || 'Failed to generate game plan');
@@ -194,9 +194,8 @@ export function useGamePlan(profileId: string | null) {
       } catch (error) {
         // Don't log abort errors - they're expected from React Strict Mode double-renders
         if (error instanceof Error && error.message.includes('abort')) {
-          // Don't throw or return null - just let React Query handle this silently
-          // by returning undefined which will cause a refetch
-          return undefined;
+          // Return null for aborted requests (React Query doesn't allow undefined)
+          return null;
         }
         console.error('[useGamePlan] Error:', error);
         throw error;

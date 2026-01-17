@@ -134,6 +134,7 @@ export const TABS = [
   { id: 'growth', label: 'Growth', enabled: true },
   { id: 'sessions', label: 'Sessions', enabled: false },
   { id: 'multiagents', label: 'Multi-Agents', enabled: true },
+  { id: 'execution', label: 'Execution', enabled: true },
 ] as const;
 
 export type TabId = typeof TABS[number]['id'];

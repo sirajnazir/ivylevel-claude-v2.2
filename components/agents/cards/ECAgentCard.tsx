@@ -9,7 +9,7 @@
  */
 'use client';
 
-import { Activity, Briefcase, Heart, Users, Lightbulb, ChevronRight } from 'lucide-react';
+import { Activity, Briefcase, Heart, Users, Lightbulb, ChevronRight, Sparkles, Target } from 'lucide-react';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { useGamePlan } from '@/hooks/useAgentData';
 import { AgentCardBase } from './AgentCardBase';
@@ -116,7 +116,16 @@ export function ECAgentCard({ profileId, onChat, onViewDetails }: ECAgentCardPro
     }
   };
 
-  const hasData = activities.length > 0;
+  // v5.2: Show identity data even when activities are empty
+  const hasActivities = activities.length > 0;
+  const hasIdentityData = !!(identitySynthesis.spike || identitySynthesis.archetype);
+  const hasAnyData = hasActivities || hasIdentityData || seeds.length > 0;
+
+  // Format archetype for display
+  const formatArchetype = (archetype: string) => {
+    if (!archetype) return '';
+    return archetype.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
 
   return (
     <AgentCardBase
@@ -128,39 +137,82 @@ export function ECAgentCard({ profileId, onChat, onViewDetails }: ECAgentCardPro
       onChat={onChat}
       onClick={handleClick}
     >
-      {hasData ? (
+      {hasAnyData ? (
         <div className="space-y-3">
-          {/* Activity Stats */}
-          <div className="grid grid-cols-2 gap-2">
+          {/* Identity Synthesis Section - Always show if available */}
+          {hasIdentityData && (
             <div
-              className="p-3 rounded-lg text-center"
-              style={{ backgroundColor: BRAND_COLORS.primaryBg }}
+              className="p-3 rounded-lg"
+              style={{
+                backgroundColor: BRAND_COLORS.primaryBg,
+                border: `1px solid ${BRAND_COLORS.primary}30`,
+              }}
             >
+              {/* Spike */}
+              {identitySynthesis.spike && (
+                <div className="mb-2">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Sparkles size={12} style={{ color: BRAND_COLORS.primary }} />
+                    <span className="text-xs font-medium" style={{ color: BRAND_COLORS.primary }}>
+                      Identity Spike
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium line-clamp-2" style={{ color: BRAND_COLORS.textHeading }}>
+                    {identitySynthesis.spike}
+                  </p>
+                </div>
+              )}
+              {/* Archetype */}
+              {identitySynthesis.archetype && (
+                <div className="flex items-center gap-2">
+                  <Target size={12} style={{ color: BRAND_COLORS.textMuted }} />
+                  <span className="text-xs" style={{ color: BRAND_COLORS.textMuted }}>
+                    Archetype:
+                  </span>
+                  <span
+                    className="px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={{ backgroundColor: BRAND_COLORS.secondary, color: 'white' }}
+                  >
+                    {formatArchetype(identitySynthesis.archetype)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Activity Stats - Only if we have activities */}
+          {hasActivities && (
+            <div className="grid grid-cols-2 gap-2">
               <div
-                className="text-2xl font-bold"
-                style={{ color: BRAND_COLORS.primary }}
+                className="p-3 rounded-lg text-center"
+                style={{ backgroundColor: BRAND_COLORS.primaryBg }}
               >
-                {activities.length}
+                <div
+                  className="text-2xl font-bold"
+                  style={{ color: BRAND_COLORS.primary }}
+                >
+                  {activities.length}
+                </div>
+                <div className="text-xs" style={{ color: BRAND_COLORS.primary }}>
+                  Activities
+                </div>
               </div>
-              <div className="text-xs" style={{ color: BRAND_COLORS.primary }}>
-                Activities
+              <div
+                className="p-3 rounded-lg text-center"
+                style={{ backgroundColor: BRAND_COLORS.bgSuccess }}
+              >
+                <div
+                  className="text-2xl font-bold"
+                  style={{ color: BRAND_COLORS.success }}
+                >
+                  {plantedSeeds}
+                </div>
+                <div className="text-xs" style={{ color: BRAND_COLORS.success }}>
+                  Seeds Planted
+                </div>
               </div>
             </div>
-            <div
-              className="p-3 rounded-lg text-center"
-              style={{ backgroundColor: BRAND_COLORS.bgSuccess }}
-            >
-              <div
-                className="text-2xl font-bold"
-                style={{ color: BRAND_COLORS.success }}
-              >
-                {plantedSeeds}
-              </div>
-              <div className="text-xs" style={{ color: BRAND_COLORS.success }}>
-                Seeds Planted
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Activity Categories */}
           {categories.length > 0 && (
@@ -232,18 +284,36 @@ export function ECAgentCard({ profileId, onChat, onViewDetails }: ECAgentCardPro
             </div>
           )}
 
+          {/* Show message when we have identity but no activities */}
+          {!hasActivities && hasIdentityData && (
+            <div
+              className="p-2 rounded-lg text-center"
+              style={{ backgroundColor: BRAND_COLORS.bgSecondary }}
+            >
+              <p className="text-xs" style={{ color: BRAND_COLORS.textMuted }}>
+                Activity generation in progress
+              </p>
+            </div>
+          )}
+
           {/* Summary */}
           <div
             className="text-xs text-center"
             style={{ color: BRAND_COLORS.textMuted }}
           >
-            {categories.length} categories • Click for details
+            {hasActivities
+              ? `${categories.length} categories • Click for details`
+              : 'Click for identity details'}
           </div>
         </div>
       ) : (
         <div className="text-center py-4">
+          <Activity size={32} style={{ color: BRAND_COLORS.textMuted }} className="mx-auto mb-2 opacity-40" />
           <p style={{ color: BRAND_COLORS.textMuted }} className="text-sm">
-            Loading activity recommendations...
+            {isLoading ? 'Analyzing your profile...' : 'No data available yet'}
+          </p>
+          <p className="text-xs mt-1" style={{ color: BRAND_COLORS.textMuted }}>
+            Click to generate
           </p>
         </div>
       )}

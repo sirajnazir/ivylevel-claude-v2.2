@@ -37,6 +37,11 @@ class EventBus {
       'AWARD_MATCHED',
       'OPPORTUNITY_ALERT',
       'STATE_VERSIONED',
+      // v5.3 Execution Agent events
+      'EXECUTION_NUDGE',
+      'EXECUTION_CHAT_MESSAGE',
+      'WEEKLY_PLAN_UPDATED',
+      'EDS_THRESHOLD_EXCEEDED',
     ];
 
     eventTypes.forEach((type) => {
