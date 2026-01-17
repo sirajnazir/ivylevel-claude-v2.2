@@ -47,18 +47,35 @@ interface TenDimensionsAccordionProps {
   defaultExpanded?: DimensionType[];
 }
 
-// Dimension icons mapping
-const DIMENSION_ICONS: Record<DimensionType, React.ReactNode> = {
+// Dimension icons mapping (supports both uppercase and lowercase types)
+const DIMENSION_ICONS: Record<string, React.ReactNode> = {
   GEOGRAPHIC: <MapPin size={18} />,
+  geographic: <MapPin size={18} />,
   IDENTITY_WHY: <User size={18} />,
+  identity_why: <User size={18} />,
   FIELD_GAP: <Search size={18} />,
+  field_gap: <Search size={18} />,
   CATALYST: <Lightbulb size={18} />,
+  catalyst: <Lightbulb size={18} />,
   TARGET_AUDIENCE: <Target size={18} />,
+  target_audience: <Target size={18} />,
   UNIQUE_CONTRIBUTION: <Star size={18} />,
+  unique_contribution: <Star size={18} />,
+  unique: <Star size={18} />,
   REPRESENTATION: <Globe2 size={18} />,
+  representation: <Globe2 size={18} />,
   CULTURAL_DEPTH: <Palette size={18} />,
+  cultural_depth: <Palette size={18} />,
   TEMPORAL: <Clock size={18} />,
+  temporal: <Clock size={18} />,
   PROBLEM_SPECIFICITY: <Crosshair size={18} />,
+  problem_specificity: <Crosshair size={18} />,
+  specificity: <Crosshair size={18} />,
+};
+
+// Helper to get dimension icon with fallback
+const getDimensionIcon = (type: DimensionType): React.ReactNode => {
+  return DIMENSION_ICONS[type] || DIMENSION_ICONS[type.toUpperCase()] || <Star size={18} />;
 };
 
 export function TenDimensionsAccordion({

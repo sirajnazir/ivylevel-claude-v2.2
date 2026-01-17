@@ -70,15 +70,19 @@ export function ECAgentCard({ profileId, onChat, onViewDetails }: ECAgentCardPro
   }>) || [];
 
   // v5.0: Get identity synthesis for spike, archetype, pillars
-  const identitySynthesis = (gamePlan?.game_plan?.identity_synthesis as Record<string, unknown>) || {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const identitySynthesis = (gamePlan?.game_plan?.identity_synthesis as any) || {};
 
   // Categorize activities
-  const categorizedActivities = activities.reduce((acc, act) => {
-    const category = act.category || act.type || 'other';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const categorizedActivities = activities.reduce((acc: Record<string, any[]>, act) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const actAny = act as any;
+    const category = actAny.category || actAny.type || 'other';
     if (!acc[category]) acc[category] = [];
     acc[category].push(act);
     return acc;
-  }, {} as Record<string, typeof activities>);
+  }, {});
 
   const categories = Object.keys(categorizedActivities);
   const plantedSeeds = seeds.filter(s => s.planted).length;
@@ -86,8 +90,10 @@ export function ECAgentCard({ profileId, onChat, onViewDetails }: ECAgentCardPro
   const handleClick = () => {
     if (onViewDetails) {
       // v5.0: Get EC-specific ReAct data from _react_by_agent or identity_synthesis._react
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const gamePlanAny = gamePlan as any;
       const ecReact =
-        (gamePlan as Record<string, unknown>)?._react_by_agent?.ec ||
+        gamePlanAny?._react_by_agent?.ec ||
         gamePlan?.game_plan?.identity_synthesis?._react ||
         gamePlan?.game_plan?._react;
 

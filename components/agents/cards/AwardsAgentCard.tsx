@@ -43,8 +43,10 @@ export function AwardsAgentCard({ profileId, onChat, onViewDetails }: AwardsAgen
   const handleClick = () => {
     if (onViewDetails) {
       // v5.0: Get Awards-specific ReAct data from _react_by_agent or awards._react
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const gamePlanAny = gamePlan as any;
       const awardsReact =
-        (gamePlan as Record<string, unknown>)?._react_by_agent?.awards ||
+        gamePlanAny?._react_by_agent?.awards ||
         gamePlanAwards?._react ||
         gamePlan?.game_plan?._react;
 

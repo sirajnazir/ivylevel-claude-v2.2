@@ -40,8 +40,10 @@ export function OpportunityAgentCard({ profileId, onChat, onViewDetails }: Oppor
   const handleClick = () => {
     if (onViewDetails) {
       // v5.0: Get Programs-specific ReAct data from _react_by_agent or programs._react
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const gamePlanAny = gamePlan as any;
       const programsReact =
-        (gamePlan as Record<string, unknown>)?._react_by_agent?.programs ||
+        gamePlanAny?._react_by_agent?.programs ||
         gamePlanPrograms?._react ||
         gamePlan?.game_plan?._react;
 
