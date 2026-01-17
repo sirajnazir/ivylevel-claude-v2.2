@@ -1,180 +1,189 @@
-# agents/tests/conftest.py
+# tests/conftest.py
 """
-IvyQuest v13.2 - Pytest Configuration
-
-Shared fixtures and configuration for tests.
+Shared fixtures for Critical 15 Pattern tests.
+v4 - CORRECTED to match actual implementation
 """
 
 import pytest
-import sys
-from pathlib import Path
+import asyncio
+from unittest.mock import Mock, AsyncMock
+from datetime import datetime, timedelta
+from uuid import uuid4
 
-# Add agents directory to path
-agents_dir = Path(__file__).parent.parent
-if str(agents_dir) not in sys.path:
-    sys.path.insert(0, str(agents_dir))
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create event loop for async tests."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture
-def sample_profile_data():
-    """Sample profile data for testing."""
+def sample_profile_id():
+    """Generate a sample profile ID."""
+    return str(uuid4())
+
+
+@pytest.fixture
+def sample_session_id():
+    """Generate a sample session ID."""
+    return f"session_{uuid4().hex[:8]}"
+
+
+@pytest.fixture
+def sample_profile():
+    """Sample student profile for testing."""
     return {
-        "id": "test-profile-123",
+        "id": str(uuid4()),
         "name": "Test Student",
-        "archetype": "DoubleDown",
-        "archetype_confidence": 0.85,
-        "cri_score": 75.0,
-        "eds_score": 68.0,
-        "spike_score": 0.82,
-        "narrative_dna": "A passionate robotics engineer...",
-        "brand_statement": "Building the future of automation",
+        "grade": 11,
+        "gpa": 3.8,
+        "archetype": "academic_all_star",
+        "spike": "AI and Machine Learning",
+        "pillars": ["technology", "research", "leadership"],
+        "target_schools": ["MIT", "Stanford", "Carnegie Mellon"],
         "activities": [
-            {"name": "Robotics Club", "domains": ["engineering", "robotics"]},
-            {"name": "Math Team", "domains": ["mathematics"]},
+            {"id": "1", "name": "AI Club", "category": "STEM"},
+            {"id": "2", "name": "Math Team", "category": "Academic"},
         ],
-        "projects": [
-            {"name": "Autonomous Drone", "domains": ["engineering", "robotics"]},
-        ],
-        "awards": [
-            {"name": "Regional Robotics Champion", "level": "regional"},
-        ],
-    }
-
-
-@pytest.fixture
-def sample_assessment_input():
-    """Sample assessment input for testing."""
-    return {
-        "profile_summary": {
-            "name": "Test Student",
-            "grade": 11,
+        "constraints": {
+            "weekly_hours_available": 15,
+            "budget": 2000,
         },
-        "activities": [
-            {
-                "name": "Robotics Club",
-                "domains": ["engineering", "robotics"],
-                "leadership": True,
-                "impact_level": 3,
-            },
-            {
-                "name": "Math Team",
-                "domains": ["mathematics"],
-                "leadership": False,
-                "impact_level": 2,
-            },
-            {
-                "name": "Science Olympiad",
-                "domains": ["science", "engineering"],
-                "leadership": False,
-                "impact_level": 2,
-            },
-        ],
-        "projects": [
-            {
-                "name": "Autonomous Drone",
-                "domains": ["engineering", "robotics"],
-                "role": "lead",
-                "innovative": True,
-            },
-        ],
-        "awards": [
-            {
-                "name": "Regional Robotics Champion",
-                "level": "regional",
-                "domains": ["robotics"],
-            },
+    }
+
+
+@pytest.fixture
+def sample_student_context(sample_profile):
+    """Sample student context dict."""
+    return {
+        "grade": sample_profile["grade"],
+        "gpa": sample_profile["gpa"],
+        "archetype": sample_profile["archetype"],
+        "spike": sample_profile["spike"],
+        "pillars": sample_profile["pillars"],
+        "target_schools": sample_profile["target_schools"],
+        "activities": sample_profile["activities"],
+        "constraints": sample_profile["constraints"],
+    }
+
+
+@pytest.fixture
+def sample_temporal_context():
+    """Sample temporal context."""
+    return {
+        "current_phase": "applications",
+        "deadlines": [
+            {"name": "MIT EA", "days_until": 14},
+            {"name": "Stanford REA", "days_until": 21},
         ],
     }
 
 
 @pytest.fixture
-def mock_redis():
-    """Mock Redis client for testing."""
-    class MockRedis:
-        def __init__(self):
-            self.data = {}
-
-        async def setex(self, key, ttl, value):
-            self.data[key] = value
-
-        async def get(self, key):
-            return self.data.get(key)
-
-        async def delete(self, key):
-            if key in self.data:
-                del self.data[key]
-                return 1
-            return 0
-
-        async def scan(self, cursor, match, count):
-            import fnmatch
-            matches = [k for k in self.data.keys() if fnmatch.fnmatch(k, match)]
-            return 0, matches
-
-        async def ping(self):
-            return True
-
-    return MockRedis()
+def sample_items():
+    """Sample items for prioritization."""
+    return [
+        {
+            "id": "1",
+            "name": "USACO Gold",
+            "type": "award",
+            "deadline": (datetime.utcnow() + timedelta(days=30)).isoformat(),
+            "selectivity": "highly_selective",
+        },
+        {
+            "id": "2",
+            "name": "RSI",
+            "type": "program",
+            "deadline": (datetime.utcnow() + timedelta(days=60)).isoformat(),
+            "selectivity": "highly_selective",
+        },
+        {
+            "id": "3",
+            "name": "Local Science Fair",
+            "type": "award",
+            "deadline": (datetime.utcnow() + timedelta(days=7)).isoformat(),
+            "selectivity": "competitive",
+        },
+    ]
 
 
 @pytest.fixture
 def mock_supabase():
-    """Mock Supabase client for testing."""
-    class MockTable:
-        def __init__(self):
-            self.data = []
-            self._filters = {}
-
-        def select(self, *args, **kwargs):
-            return self
-
-        def insert(self, data):
-            if isinstance(data, dict):
-                data["id"] = f"mock-{len(self.data)}"
-            self.data.append(data)
-            return self
-
-        def eq(self, field, value):
-            self._filters[field] = value
-            return self
-
-        def order(self, *args, **kwargs):
-            return self
-
-        def limit(self, n):
-            return self
-
-        def single(self):
-            return self
-
-        async def execute(self):
-            class Result:
-                def __init__(self, data):
-                    self.data = data
-            return Result(self.data)
-
-    class MockSupabase:
-        def __init__(self):
-            self._tables = {}
-
-        def table(self, name):
-            if name not in self._tables:
-                self._tables[name] = MockTable()
-            return self._tables[name]
-
-        async def rpc(self, name, params):
-            class Result:
-                data = []
-            return Result()
-
-    return MockSupabase()
+    """Mock Supabase client."""
+    mock = Mock()
+    
+    # Chain for table().select().eq().single().execute()
+    mock.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value = Mock(
+        data={}
+    )
+    
+    # Chain for table().select().eq().execute()
+    mock.table.return_value.select.return_value.eq.return_value.execute.return_value = Mock(
+        data=[]
+    )
+    
+    # Chain for table().select().eq().order().limit().execute()
+    mock.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = Mock(
+        data=[]
+    )
+    
+    # Chain for table().select().eq().ilike().limit().execute()
+    mock.table.return_value.select.return_value.eq.return_value.ilike.return_value.limit.return_value.execute.return_value = Mock(
+        data=[]
+    )
+    
+    # Chain for table().insert().execute()
+    mock.table.return_value.insert.return_value.execute.return_value = Mock(
+        data={}
+    )
+    
+    # rpc for similarity search
+    mock.rpc.return_value.execute.return_value = Mock(data=[])
+    
+    return mock
 
 
 @pytest.fixture
-def memory_manager(mock_redis, mock_supabase):
-    """Memory manager with mocks."""
-    from agents.agents.core import MemoryManager
-    return MemoryManager(
-        redis_client=mock_redis,
-        supabase_client=mock_supabase,
+def mock_redis():
+    """Mock Redis client with async support."""
+    mock = AsyncMock()
+    mock.get = AsyncMock(return_value=None)
+    mock.set = AsyncMock(return_value=True)
+    mock.delete = AsyncMock(return_value=True)
+    mock.exists = AsyncMock(return_value=False)
+    return mock
+
+
+@pytest.fixture
+def mock_langfuse():
+    """Mock Langfuse client."""
+    mock = Mock()
+    mock.trace.return_value = Mock()
+    mock.generation.return_value = Mock()
+    mock.score.return_value = Mock()
+    mock.flush.return_value = None
+    return mock
+
+
+@pytest.fixture
+def mock_llm_client():
+    """Mock LLM client."""
+    mock = AsyncMock()
+    mock.chat.completions.create.return_value = Mock(
+        choices=[
+            Mock(message=Mock(content="Test response"))
+        ]
     )
+    return mock
+
+
+@pytest.fixture
+def mock_embedding_model():
+    """Mock embedding model."""
+    mock = AsyncMock()
+    mock.embeddings.create.return_value = Mock(
+        data=[Mock(embedding=[0.0] * 1536)]
+    )
+    return mock
