@@ -3,8 +3,11 @@
  * ===============================
  *
  * Barrel exports for ReAct cycle visualization components.
- * v5.1: Updated to support THINK → REASON → ACT → VALIDATE phases
- * (with backwards compatibility for THINK → ACT → OBSERVE → LEARN)
+ * v5.1.1: Semantically correct THINK → ACT → OBSERVE → LEARN phases
+ *
+ * The OBSERVE + LEARN phases are the heart of self-correction:
+ * - OBSERVE: See results, check quality metrics
+ * - LEARN: Generate hints for next cycle improvement
  */
 
 export { ReActVisualization } from './ReActVisualization';
@@ -13,26 +16,22 @@ export { PhaseAccordion } from './PhaseAccordion';
 
 // Re-export types for convenience
 export type {
-  // v5.1 ReAct types
+  // Core ReAct types
   ReActPhase,
-  ReActCycle,
-  ReasonPhaseData,
-  ValidatePhaseData,
-  QualityScore,
-  QualityWeights,
-  QualityStatus,
-  QualityTier,
-  // Legacy types (backwards compatible)
+  PhaseType,
   ReactMetadata,
   CycleSummary,
   ThinkPhaseData,
   ActPhaseData,
   ObservePhaseData,
   LearnPhaseData,
-  PhaseType,
-  LegacyPhaseType,
   PhaseColorConfig,
   InputDataFlow,
+  // Quality Score types
+  QualityScore,
+  QualityWeights,
+  QualityStatus,
+  QualityTier,
   // EC Engine types
   FourPillarsData,
   FourPillars,
@@ -48,7 +47,7 @@ export type {
   ActivitySource,
   GapType,
   OnlyTheyResult,
-  // v5.1 New types
+  // Identity & Context types
   IdentitySynthesis,
   ReframeData,
   ECContext,

@@ -3,42 +3,43 @@
  * IvyQuest v5.1 Multi-Agent Dashboard
  *
  * Provides complete type definitions for:
- * - ReAct THINK/REASON/ACT/VALIDATE cycle visualization (v5.1 standard)
+ * - ReAct THINK → ACT → OBSERVE → LEARN cycle visualization
  * - EC Generation Engine 4 Pillars + 10 Dimensions
  * - Activity output cards with quality metrics
  * - Multi-agent orchestration view
  * - Quality Score with "Only They" test integration
  *
- * NOTE: v5.1 changes ReAct phases from (think/act/observe/learn)
- *       to (think/reason/act/validate) for better clarity.
+ * SEMANTIC NOTE (v5.1.1):
+ * The ReAct framework uses OBSERVE and LEARN phases for self-correction:
+ * - OBSERVE: See results, check quality metrics
+ * - LEARN: Generate insights and hints for next cycle
+ * This is the heart of the iterative improvement loop.
  */
 
 // ============================================================================
-// REACT CYCLE PHASE TYPES (v5.1 Standard)
+// REACT CYCLE PHASE TYPES
 // ============================================================================
 
 /**
- * v5.1 ReAct Phase Names
- * - think: Analyze inputs, extract information, identify gaps
- * - reason: Apply logic, make decisions, plan actions
- * - act: Execute actions, call tools, generate outputs
- * - validate: Check quality, compare benchmarks (replaces observe+learn)
+ * ReAct Phase Names (Semantically Correct)
+ *
+ * The ReAct framework follows this loop:
+ * THINK → ACT → OBSERVE → LEARN → (back to THINK with hints)
+ *
+ * - think: Analyze inputs, extract information, identify gaps, select tools
+ * - act: Execute agent's process(), call tools, generate outputs
+ * - observe: See results, check quality metrics, identify issues
+ * - learn: Generate insights, create hints for next cycle (SELF-CORRECTION)
  */
-export type ReActPhase = 'think' | 'reason' | 'act' | 'validate';
+export type ReActPhase = 'think' | 'act' | 'observe' | 'learn';
 
 /**
- * Legacy phase type for backwards compatibility
- * @deprecated Use ReActPhase instead
+ * Phase type alias for component props
  */
-export type LegacyPhaseType = 'think' | 'act' | 'observe' | 'learn';
+export type PhaseType = ReActPhase;
 
 /**
- * Phase type that supports both old and new phase names
- */
-export type PhaseType = ReActPhase | LegacyPhaseType;
-
-/**
- * THINK phase data - Agent's reasoning and analysis
+ * THINK phase data - Agent's reasoning and planning
  */
 export interface ThinkPhaseData {
   reasoning: string;
@@ -51,18 +52,6 @@ export interface ThinkPhaseData {
   };
   tools_selected: string[];
   benchmark_targets: Record<string, number>;
-  confidence: number;
-}
-
-/**
- * REASON phase data - Logic application and decision making (v5.1 NEW)
- */
-export interface ReasonPhaseData {
-  reasoning: string;
-  decisions_made: string[];
-  logic_applied: string[];
-  constraints_considered: string[];
-  approach_selected: string;
   confidence: number;
 }
 
@@ -89,29 +78,19 @@ export interface ToolExecution {
 }
 
 /**
- * VALIDATE phase data - Quality validation and scoring (v5.1 replaces observe+learn)
- */
-export interface ValidatePhaseData {
-  quality_score: QualityScore;
-  passed: boolean;
-  failing_dimensions: string[];
-  issues_found: string[];
-  strengths_found: string[];
-  what_worked: string[];
-  what_failed: string[];
-  corrections_to_apply: string[];
-  should_continue: boolean;
-  quality_delta?: number;
-}
-
-/**
- * Legacy OBSERVE phase data - Quality validation and scoring
- * @deprecated Use ValidatePhaseData instead
+ * OBSERVE phase data - Quality validation and scoring
+ *
+ * This is where we SEE the results of the action:
+ * - Quality scores (guardrails, voice, golden, only_they)
+ * - Pass/fail status
+ * - Issues found
+ * - Strengths identified
  */
 export interface ObservePhaseData {
   quality_score: number;
   voice_score: number;
   golden_similarity: number;
+  only_they_score?: number;  // v5.1 - if computed
   combined_score: number;
   passed: boolean;
   failing_dimensions: string[];
@@ -120,8 +99,13 @@ export interface ObservePhaseData {
 }
 
 /**
- * Legacy LEARN phase data - Self-correction and improvement
- * @deprecated Use ValidatePhaseData instead
+ * LEARN phase data - Self-correction and improvement
+ *
+ * This is the HEART of self-correction:
+ * - What worked in this cycle
+ * - What failed and needs improvement
+ * - Specific corrections to apply in next cycle
+ * - Quality delta showing improvement/regression
  */
 export interface LearnPhaseData {
   reasoning: string;
@@ -164,7 +148,7 @@ export interface QualityScore {
   guardrails_score: number;
   voice_score: number;
   golden_similarity: number;
-  only_they_score: number;  // v5.1 NEW
+  only_they_score: number;  // v5.1
   total: number;
   status: QualityStatus;
   weights: QualityWeights;
@@ -181,31 +165,18 @@ export const DEFAULT_QUALITY_WEIGHTS: QualityWeights = {
 } as const;
 
 // ============================================================================
-// REACT CYCLE STRUCTURE (v5.1)
+// REACT CYCLE STRUCTURE
 // ============================================================================
 
 /**
- * v5.1 ReAct Cycle with new phase structure
- */
-export interface ReActCycle {
-  cycle_number: number;
-  phases: {
-    think: ThinkPhaseData;
-    reason: ReasonPhaseData;
-    act: ActPhaseData;
-    validate: ValidatePhaseData;
-  };
-  quality_score: QualityScore;
-  quality_delta: number;
-  passed: boolean;
-  learning: string;
-  hints_for_next: string[];
-  total_duration_ms: number;
-}
-
-/**
- * Legacy cycle summary with all 4 phases (backwards compatibility)
- * @deprecated Use ReActCycle instead
+ * Complete cycle summary with all 4 phases
+ *
+ * The self-correction loop:
+ * 1. THINK - Analyze and plan
+ * 2. ACT - Execute with hints from previous cycle
+ * 3. OBSERVE - See results and quality scores
+ * 4. LEARN - Generate hints for next cycle
+ * 5. (Loop back to THINK if quality < 70)
  */
 export interface CycleSummary {
   cycle: number;
@@ -214,11 +185,8 @@ export interface CycleSummary {
   observe: ObservePhaseData;
   learn: LearnPhaseData;
   duration_ms: number;
-  // Backwards compatibility - quality_score at top level
+  // Quality score at top level for easy access
   quality_score?: number;
-  // v5.1 additions for new phase support
-  reason?: ReasonPhaseData;
-  validate?: ValidatePhaseData;
 }
 
 // ============================================================================
@@ -247,7 +215,6 @@ export interface InputDataFlow {
     archetype?: string;
     constraints?: Record<string, unknown>;
   };
-  // Backwards compatibility - alternative property names
   from_profile?: Record<string, unknown>;
   to_downstream_agents?: Record<string, unknown>;
 }
@@ -267,11 +234,8 @@ export interface ReactMetadata {
   input_data_flow?: InputDataFlow;
   agentic_enabled: boolean;
   version: string;
-  // Optional agent name for display
   agent_name?: string;
-  // v5.1 additions
   final_quality_score?: QualityScore;
-  react_cycles?: ReActCycle[];
 }
 
 // ============================================================================
@@ -289,7 +253,7 @@ export type PillarType = 'IDENTITY' | 'APTITUDE' | 'PASSION' | 'SERVICE';
  */
 export interface PillarData {
   pillar_type: PillarType;
-  type?: PillarType;  // Backwards compatibility
+  type?: PillarType;  // Alias
   label: string;
   elements: string[];
   evidence: string[];
@@ -329,7 +293,7 @@ export type FourPillars = FourPillarsData;
 
 /**
  * The 10 Dimensions of Hyper-Personalization
- * v5.1: Supports both UPPERCASE and lowercase dimension types
+ * Supports both UPPERCASE and lowercase types
  */
 export type DimensionType =
   | 'GEOGRAPHIC' | 'geographic'
@@ -385,7 +349,7 @@ export interface TenDimensionsData {
 export type TenDimensions = TenDimensionsData;
 
 // ============================================================================
-// IDENTITY SYNTHESIS TYPES (v5.1 NEW)
+// IDENTITY SYNTHESIS TYPES
 // ============================================================================
 
 /**
@@ -500,7 +464,7 @@ export interface GeneratedActivity {
   // Quality metrics
   only_they_score: number;
   only_they_passed: boolean;
-  only_they_result?: OnlyTheyResult;  // v5.1 detailed result
+  only_they_result?: OnlyTheyResult;
   specificity_score: number;
   narrative_alignment: number;
 
@@ -531,7 +495,7 @@ export interface GeneratedActivity {
 }
 
 // ============================================================================
-// EC CONTEXT TYPES (v5.1 NEW - for downstream agent flow)
+// EC CONTEXT TYPES (for downstream agent flow)
 // ============================================================================
 
 /**
@@ -591,7 +555,7 @@ export interface ECGenerationResult {
 }
 
 // ============================================================================
-// GAME PLAN RESULT TYPES (v5.1 NEW)
+// GAME PLAN RESULT TYPES
 // ============================================================================
 
 /**
@@ -671,11 +635,10 @@ export interface OrchestrationView {
 
 /**
  * Phase accordion component props
- * v5.1: Supports both old and new phase names
  */
 export interface PhaseAccordionProps {
   phase: PhaseType;
-  data: ThinkPhaseData | ReasonPhaseData | ActPhaseData | ValidatePhaseData | ObservePhaseData | LearnPhaseData;
+  data: ThinkPhaseData | ActPhaseData | ObservePhaseData | LearnPhaseData;
   icon: React.ReactNode;
   title: string;
   color: string;
@@ -733,7 +696,7 @@ export interface ActivityOutputCardProps {
 }
 
 // ============================================================================
-// VISUALIZATION CONSTANTS (v5.1)
+// VISUALIZATION CONSTANTS
 // ============================================================================
 
 /**
@@ -745,39 +708,29 @@ export interface PhaseColorConfig {
 }
 
 /**
- * v5.1 Phase colors - supports both old and new phase names
+ * Phase colors - semantically correct THINK/ACT/OBSERVE/LEARN
  */
-export const PHASE_COLORS: Record<string, PhaseColorConfig> = {
-  // v5.1 New phases
+export const PHASE_COLORS: Record<ReActPhase, PhaseColorConfig> = {
   think: {
-    color: '#3B82F6',      // Blue - analysis
-    bgColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  reason: {
-    color: '#8B5CF6',      // Purple - reasoning (NEW)
-    bgColor: 'rgba(139, 92, 246, 0.1)',
+    color: '#FF4A23',      // Orange (Ivylevel primary) - reasoning
+    bgColor: 'rgba(255, 74, 35, 0.1)',
   },
   act: {
-    color: '#10B981',      // Green - action
-    bgColor: 'rgba(16, 185, 129, 0.1)',
+    color: '#3B82F6',      // Blue - action/execution
+    bgColor: 'rgba(59, 130, 246, 0.1)',
   },
-  validate: {
-    color: '#F59E0B',      // Orange - validation (NEW)
-    bgColor: 'rgba(245, 158, 11, 0.1)',
-  },
-  // Legacy phases (backwards compatibility)
   observe: {
-    color: '#8B5CF6',      // Purple - maps to reason
+    color: '#8B5CF6',      // Purple - observation/quality check
     bgColor: 'rgba(139, 92, 246, 0.1)',
   },
   learn: {
-    color: '#10B981',      // Green - maps to part of validate
+    color: '#10B981',      // Green - learning/self-correction
     bgColor: 'rgba(16, 185, 129, 0.1)',
   },
 } as const;
 
 /**
- * Pillar colors (v5.1 updated)
+ * Pillar colors
  */
 export const PILLAR_COLORS: Record<PillarType, string> = {
   IDENTITY: '#14B8A6',   // Teal
@@ -816,45 +769,31 @@ export const DIMENSION_PRIORITY_COLORS: Record<string, string> = {
 } as const;
 
 /**
- * v5.1 Phase display configuration
+ * Phase display configuration
  */
-export const PHASE_CONFIG: Record<string, { icon: string; label: string; description: string; color: PhaseColorConfig }> = {
-  // New phases
+export const PHASE_CONFIG: Record<ReActPhase, { icon: string; label: string; description: string; color: PhaseColorConfig }> = {
   think: {
     icon: 'Brain',
     label: 'THINK',
-    description: 'Analyze inputs, extract information, identify gaps',
+    description: 'Analyze inputs, identify gaps, select tools',
     color: PHASE_COLORS.think,
-  },
-  reason: {
-    icon: 'Lightbulb',
-    label: 'REASON',
-    description: 'Apply logic, make decisions, plan actions',
-    color: PHASE_COLORS.reason,
   },
   act: {
     icon: 'Zap',
     label: 'ACT',
-    description: 'Execute actions, call tools, generate outputs',
+    description: 'Execute agent process, call tools',
     color: PHASE_COLORS.act,
   },
-  validate: {
-    icon: 'CheckCircle',
-    label: 'VALIDATE',
-    description: 'Check quality, compare benchmarks, learn',
-    color: PHASE_COLORS.validate,
-  },
-  // Legacy phases
   observe: {
     icon: 'Eye',
     label: 'OBSERVE',
-    description: 'Quality validation and scoring',
+    description: 'See results, check quality metrics',
     color: PHASE_COLORS.observe,
   },
   learn: {
     icon: 'BookOpen',
     label: 'LEARN',
-    description: 'Self-correction and improvement',
+    description: 'Generate hints for self-correction',
     color: PHASE_COLORS.learn,
   },
 } as const;
