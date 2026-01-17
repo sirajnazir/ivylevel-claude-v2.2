@@ -1354,7 +1354,173 @@ Thresholds:
 - FAIL: <50
 ```
 
-### 8.4 Version History
+### 8.4 Frontend Component Implementation
+
+#### 8.4.1 ReAct Visualization Components
+
+The ReAct visualization is implemented as a set of React components that display the THINK → ACT → OBSERVE → LEARN cycle phases with expand/collapse functionality similar to Claude AI's thinking accordion.
+
+**Component Directory Structure:**
+```
+/components/agents/react/
+├── index.ts                    # Barrel exports
+├── ReActVisualization.tsx      # Main container component
+├── CycleCard.tsx               # Individual cycle with all 4 phases
+└── PhaseAccordion.tsx          # Expandable phase wrapper
+```
+
+**Component Details:**
+
+| Component | Purpose | Key Features |
+|-----------|---------|--------------|
+| `ReActVisualization` | Main container that renders header, trajectory, and cycles | Improvement trajectory chart, summary stats, cycle list |
+| `CycleCard` | Displays a single ReAct cycle | Cycle header with score/delta, 4 phase accordions |
+| `PhaseAccordion` | Expandable wrapper for each phase | Smooth animation, color-coded by phase |
+
+**Phase-Specific Rendering (inline in CycleCard):**
+
+| Phase | Icon | Color | Content Displayed |
+|-------|------|-------|------------------|
+| THINK | Brain | `#FF4A23` (orange) | Reasoning text, focus areas, tools selected, gap analysis |
+| ACT | Zap | `#3B82F6` (blue) | Action description, tools executed with timing, input/output summary |
+| OBSERVE | Eye | `#8B5CF6` (purple) | Quality/voice/golden scores with gauges, issues/strengths found |
+| LEARN | BookOpen | `#10B981` (green) | Learning reasoning, what worked/failed, corrections for next cycle |
+
+#### 8.4.2 TypeScript Type Definitions
+
+**File:** `/lib/types/react-visualization.ts`
+
+```typescript
+// Core phase data types
+export interface ThinkPhaseData {
+  reasoning: string;
+  planned_actions: string[];
+  focus_areas: string[];
+  gap_analysis: { critical: string[]; medium: string[]; low: string[] };
+  tools_selected: string[];
+  benchmark_targets: Record<string, number>;
+  confidence: number;
+}
+
+export interface ActPhaseData {
+  action: string;
+  tools_executed: ToolExecution[];
+  hints_applied: number;
+  input_summary: Record<string, unknown>;
+  output_summary: Record<string, unknown>;
+  duration_ms: number;
+}
+
+export interface ObservePhaseData {
+  quality_score: number;
+  voice_score: number;
+  golden_similarity: number;
+  combined_score: number;
+  passed: boolean;
+  failing_dimensions: string[];
+  issues_found: string[];
+  strengths_found: string[];
+}
+
+export interface LearnPhaseData {
+  reasoning: string;
+  what_worked: string[];
+  what_failed: string[];
+  quality_delta: number;
+  corrections_to_apply: string[];
+  should_continue: boolean;
+}
+
+// Complete cycle and metadata
+export interface CycleSummary {
+  cycle: number;
+  think: ThinkPhaseData;
+  act: ActPhaseData;
+  observe: ObservePhaseData;
+  learn: LearnPhaseData;
+  duration_ms: number;
+}
+
+export interface ReactMetadata {
+  success: boolean;
+  cycles_executed: number;
+  max_cycles: number;
+  final_confidence: number;
+  passed_quality: boolean;
+  improvement_trajectory: number[];
+  total_duration_ms: number;
+  cycle_summary: CycleSummary[];
+  agentic_enabled: boolean;
+  version: string;
+}
+```
+
+#### 8.4.3 EC Generation Engine Components
+
+**Component Directory Structure:**
+```
+/components/agents/ec-engine/
+├── FourPillarsGrid.tsx         # 4 Pillars visual grid
+├── TenDimensionsAccordion.tsx  # 10 Dimensions expandable list
+└── ActivityOutputCard.tsx      # Generated activity with full context
+```
+
+**Component Details:**
+
+| Component | Purpose | Key Features |
+|-----------|---------|--------------|
+| `FourPillarsGrid` | Displays the 4 Pillars (Identity, Aptitude, Passion, Service) | Color-coded cards, strength indicators, evidence display |
+| `TenDimensionsAccordion` | Shows 10 Dimensions of hyper-personalization | Expandable items, priority indicators, gap recommendations |
+| `ActivityOutputCard` | Shows a generated activity with full EC Engine context | Pillar mapping, dimension evidence, Only-They test result |
+
+#### 8.4.4 Integration Points
+
+**AgentDetailModal Integration:**
+
+The `AgentDetailModal` component (`/components/agents/AgentDetailModal.tsx`) integrates the ReAct visualization:
+
+```typescript
+import { ReActVisualization } from './react';
+
+// Helper function extracts per-agent ReAct data
+function getReactDataForAgent(data, agentType) {
+  // Returns appropriate _react data based on agent type
+  // Handles _react_by_agent structure from orchestrator
+}
+
+// In render:
+{hasReactData && (
+  <ReActVisualization
+    agentName={getAgentDisplayName(agentType)}
+    reactData={reactData}
+  />
+)}
+```
+
+**Data Flow:**
+
+```
+GamePlan API Response
+    │
+    ├── game_plan._react           → Orchestrator's own ReAct cycles
+    │
+    └── _react_by_agent
+        ├── ec._react              → EC Agent ReAct cycles
+        ├── awards._react          → Awards Agent ReAct cycles
+        └── programs._react        → Programs Agent ReAct cycles
+    │
+    ▼
+AgentDetailModal
+    │
+    └── getReactDataForAgent(data, agentType)
+        │
+        └── Returns appropriate ReactMetadata
+            │
+            ▼
+        ReActVisualization Component
+```
+
+### 8.5 Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
@@ -1363,6 +1529,7 @@ Thresholds:
 | v3.0 | 2024-10 | Added ReAct self-correction |
 | v4.0 | 2024-12 | Hybrid architecture with EC Engine |
 | v5.0 | 2025-01 | Agentic ReAct with visualization |
+| v5.1 | 2025-01 | ReAct visualization components, EC Engine UI, TypeScript types |
 
 ---
 
