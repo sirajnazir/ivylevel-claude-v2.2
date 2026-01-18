@@ -26,22 +26,25 @@ import logging
 
 from .thresholds import QualityThresholds, AutonomyLevel
 from .react_types import (
-    ThoughtProcess, ActionResult, Observation, Learning, 
+    ThoughtProcess, ActionResult, Observation, Learning,
     ReActCycle, ReasoningPhase, RunContext
 )
 from .golden_benchmark import GoldenBenchmark
 from .working_memory import WorkingMemoryBuffer
 from .interaction_memory import InteractionSummary
 
+# v8: MiddlewareIntegrationMixin for consistent agent interface
+from agents.mixins import MiddlewareIntegrationMixin
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
 
-class ReActAgent(ABC, Generic[T]):
+class ReActAgent(ABC, Generic[T], MiddlewareIntegrationMixin):
     """
     v13.2 ReAct Agent Base Class
-    
+
     Implements full ReAct framework with:
     - Quality thresholds (70/70/0.6)
     - Golden benchmark comparison
@@ -50,19 +53,25 @@ class ReActAgent(ABC, Generic[T]):
     - Best result tracking across cycles
     - v13.2: Interaction memory persistence
     - v13.2: Profile snapshot creation
-    
+
+    v8: Integrated with MiddlewareStackV8 (40 patterns) for:
+    - J1: Reasoning Traces (ReAct cycle visibility)
+    - J3: Audit Trail (compliance)
+    - E4: Quality Scoring
+    - H3: Retry Logic
+
     Subclasses implement:
     - _think(): Generate reasoning and plan
-    - _action(): Execute the plan  
+    - _action(): Execute the plan
     - _evaluate_quality(): Domain-specific quality scoring
     - _generate_output(): Final output generation
-    
+
     Example subclass:
         class NarrativeSynthesisAgent(ReActAgent[NarrativeInput]):
             async def _think(self, context, input_data, previous_cycles):
                 # Generate reasoning about narrative synthesis
                 ...
-                
+
             async def _action(self, context, input_data, thought):
                 # Execute narrative generation
                 ...
@@ -103,6 +112,17 @@ class ReActAgent(ABC, Generic[T]):
         self.best_result: Optional[Dict[str, Any]] = None
         self.best_score: float = 0.0
 
+        # v8: Initialize middleware integration (40 patterns)
+        # Note: subclasses should call init_middleware with their specific clients
+        try:
+            supabase_client = getattr(memory, 'supabase', None) if memory else None
+            self.init_middleware(
+                supabase_client=supabase_client,
+                llm_client=None,  # Subclasses set their own LLM
+            )
+        except Exception as e:
+            logger.warning(f"Middleware init failed (non-fatal): {e}")
+
     async def run(
         self,
         context: RunContext,
@@ -110,11 +130,16 @@ class ReActAgent(ABC, Generic[T]):
     ) -> Dict[str, Any]:
         """
         Execute full ReAct loop with quality gates.
-        
+
+        v8: Wrapped with MiddlewareStackV8 (40 patterns):
+        - J1: Reasoning traces for ReAct cycle visibility
+        - J3: Audit trail for compliance
+        - E4: Quality scoring
+
         Args:
             context: RunContext with profile_id, session_id, etc.
             input_data: Typed input for this agent
-            
+
         Returns:
             Dict containing:
             - success: Whether agent completed successfully
@@ -125,136 +150,177 @@ class ReActAgent(ABC, Generic[T]):
             - react_trace: Full audit trail of all cycles
             - _metadata: Agent metadata
         """
-        # Reset state for this run
-        self.current_cycles = []
-        self.best_result = None
-        self.best_score = 0.0
-
-        logger.info(
-            f"[{self.agent_id}] Starting ReAct loop for profile {context.profile_id}"
+        # v8: Generate session context
+        session_id = context.session_id or f"react_{self.agent_id}_{context.profile_id}"
+        trace_id = self.start_reasoning_trace(
+            context.profile_id, session_id, f"react_loop_{self.agent_id}"
         )
 
-        # Load golden examples for comparison
-        await self.golden.load_golden_examples(archetype=context.archetype)
+        try:
+            async with self.with_middleware_context(
+                context.profile_id, session_id, f"react_{self.agent_id}"
+            ) as mw_ctx:
+                self.add_thought(trace_id, f"Starting ReAct loop for {self.name}")
 
-        # Get working memory buffer
-        working_buffer = self.memory.get_working_buffer(
-            context.profile_id, self.agent_id
-        )
+                # Reset state for this run
+                self.current_cycles = []
+                self.best_result = None
+                self.best_score = 0.0
 
-        current_context = context
-
-        for cycle_num in range(QualityThresholds.MAX_REACT_CYCLES):
-            cycle_start = datetime.utcnow()
-
-            logger.debug(f"[{self.agent_id}] Starting cycle {cycle_num + 1}")
-
-            # ============ THINK ============
-            thought = await self._think(current_context, input_data, self.current_cycles)
-            logger.debug(
-                f"[{self.agent_id}] Think complete: confidence={thought.confidence:.2f}"
-            )
-
-            # ============ ACTION ============
-            action_result = await self._action(current_context, input_data, thought)
-            logger.debug(
-                f"[{self.agent_id}] Action complete: success={action_result.success}"
-            )
-
-            # ============ OBSERVE ============
-            observation = await self._observe(current_context, action_result)
-
-            # Record evaluation in working memory
-            working_buffer.record_evaluation(
-                cycle=cycle_num + 1,
-                quality=observation.quality_score,
-                voice=observation.voice_score,
-                golden=observation.golden_similarity,
-                issues=observation.issues_found,
-                strengths=observation.strengths,
-            )
-
-            # ============ LEARN ============
-            learning = await self._learn(thought, action_result, observation)
-
-            # Record cycle
-            cycle_duration = (datetime.utcnow() - cycle_start).total_seconds() * 1000
-            cycle = ReActCycle(
-                cycle_number=cycle_num + 1,
-                thought=thought,
-                action=action_result,
-                observation=observation,
-                learning=learning,
-                total_duration_ms=cycle_duration,
-            )
-            self.current_cycles.append(cycle)
-
-            logger.info(
-                f"[{self.agent_id}] Cycle {cycle_num + 1}: "
-                f"quality={observation.quality_score:.1f}, "
-                f"voice={observation.voice_score:.1f}, "
-                f"golden={observation.golden_similarity:.2f}, "
-                f"combined={observation.combined_score:.1f}"
-            )
-
-            # Track best result
-            if observation.combined_score > self.best_score:
-                self.best_score = observation.combined_score
-                self.best_result = action_result.output_data
-
-            # Check if we pass all thresholds
-            if observation.passes_thresholds:
                 logger.info(
-                    f"[{self.agent_id}] All thresholds passed on cycle {cycle_num + 1}"
-                )
-                break
-
-            # If not last cycle, inject learnings for correction
-            if cycle_num < QualityThresholds.MAX_REACT_CYCLES - 1:
-                current_context = self._inject_learnings(
-                    current_context, learning, observation
+                    f"[{self.agent_id}] Starting ReAct loop for profile {context.profile_id}"
                 )
 
-                # Record strategy adjustment
-                if learning.should_try_alternative and learning.alternative_to_try:
-                    working_buffer.record_successful_strategy(
-                        strategy=learning.alternative_to_try,
-                        context=str(input_data)[:100],
-                        quality=observation.combined_score,
+                # Load golden examples for comparison
+                await self.golden.load_golden_examples(archetype=context.archetype)
+
+                # Get working memory buffer
+                working_buffer = self.memory.get_working_buffer(
+                    context.profile_id, self.agent_id
+                )
+
+                current_context = context
+
+                for cycle_num in range(QualityThresholds.MAX_REACT_CYCLES):
+                    cycle_start = datetime.utcnow()
+
+                    logger.debug(f"[{self.agent_id}] Starting cycle {cycle_num + 1}")
+
+                    # v8: Track cycle in middleware trace
+                    self.add_action(trace_id, f"cycle_{cycle_num + 1}", {
+                        "phase": "starting"
+                    })
+
+                    # ============ THINK ============
+                    thought = await self._think(current_context, input_data, self.current_cycles)
+                    logger.debug(
+                        f"[{self.agent_id}] Think complete: confidence={thought.confidence:.2f}"
                     )
 
-        # Persist learnings to long-term memory (v13.2 enhanced)
-        await self._persist_learnings(context.profile_id, context)
+                    # ============ ACTION ============
+                    action_result = await self._action(current_context, input_data, thought)
+                    logger.debug(
+                        f"[{self.agent_id}] Action complete: success={action_result.success}"
+                    )
 
-        # Clear working buffer
-        self.memory.clear_working_buffer(context.profile_id, self.agent_id)
+                    # ============ OBSERVE ============
+                    observation = await self._observe(current_context, action_result)
 
-        # Generate final output
-        output = await self._generate_output(current_context, input_data)
+                    # Record evaluation in working memory
+                    working_buffer.record_evaluation(
+                        cycle=cycle_num + 1,
+                        quality=observation.quality_score,
+                        voice=observation.voice_score,
+                        golden=observation.golden_similarity,
+                        issues=observation.issues_found,
+                        strengths=observation.strengths,
+                    )
 
-        # Apply Jenny voice transformation if needed
-        if self.voice:
-            output = await self.voice.validate_and_transform(output)
+                    # ============ LEARN ============
+                    learning = await self._learn(thought, action_result, observation)
 
-        return {
-            "success": True,
-            "result": self.best_result or output,
-            "quality_score": self.best_score,
-            "cycles_used": len(self.current_cycles),
-            "passes_thresholds": self.best_score >= 70,
-            "react_trace": [c.to_dict() for c in self.current_cycles],
-            "_metadata": {
-                "agent_id": self.agent_id,
-                "agent_name": self.name,
-                "profile_id": context.profile_id,
-                "session_id": context.session_id,
-                "autonomy_level": self.autonomy_level.value,
-                "requires_hitl": AutonomyLevel.requires_hitl(
-                    self.autonomy_level, 
-                    self.best_score / 100.0
-                ),
-            },
-        }
+                    # Record cycle
+                    cycle_duration = (datetime.utcnow() - cycle_start).total_seconds() * 1000
+                    cycle = ReActCycle(
+                        cycle_number=cycle_num + 1,
+                        thought=thought,
+                        action=action_result,
+                        observation=observation,
+                        learning=learning,
+                        total_duration_ms=cycle_duration,
+                    )
+                    self.current_cycles.append(cycle)
+
+                    logger.info(
+                        f"[{self.agent_id}] Cycle {cycle_num + 1}: "
+                        f"quality={observation.quality_score:.1f}, "
+                        f"voice={observation.voice_score:.1f}, "
+                        f"golden={observation.golden_similarity:.2f}, "
+                        f"combined={observation.combined_score:.1f}"
+                    )
+
+                    # Track best result
+                    if observation.combined_score > self.best_score:
+                        self.best_score = observation.combined_score
+                        self.best_result = action_result.output_data
+
+                    # Check if we pass all thresholds
+                    if observation.passes_thresholds:
+                        logger.info(
+                            f"[{self.agent_id}] All thresholds passed on cycle {cycle_num + 1}"
+                        )
+                        break
+
+                    # If not last cycle, inject learnings for correction
+                    if cycle_num < QualityThresholds.MAX_REACT_CYCLES - 1:
+                        current_context = self._inject_learnings(
+                            current_context, learning, observation
+                        )
+
+                        # Record strategy adjustment
+                        if learning.should_try_alternative and learning.alternative_to_try:
+                            working_buffer.record_successful_strategy(
+                                strategy=learning.alternative_to_try,
+                                context=str(input_data)[:100],
+                                quality=observation.combined_score,
+                            )
+
+                # Persist learnings to long-term memory (v13.2 enhanced)
+                await self._persist_learnings(context.profile_id, context)
+
+                # Clear working buffer
+                self.memory.clear_working_buffer(context.profile_id, self.agent_id)
+
+                # Generate final output
+                output = await self._generate_output(current_context, input_data)
+
+                # Apply Jenny voice transformation if needed
+                if self.voice:
+                    output = await self.voice.validate_and_transform(output)
+
+                result = {
+                    "success": True,
+                    "result": self.best_result or output,
+                    "quality_score": self.best_score,
+                    "cycles_used": len(self.current_cycles),
+                    "passes_thresholds": self.best_score >= 70,
+                    "react_trace": [c.to_dict() for c in self.current_cycles],
+                    "_metadata": {
+                        "agent_id": self.agent_id,
+                        "agent_name": self.name,
+                        "profile_id": context.profile_id,
+                        "session_id": context.session_id,
+                        "autonomy_level": self.autonomy_level.value,
+                        "requires_hitl": AutonomyLevel.requires_hitl(
+                            self.autonomy_level,
+                            self.best_score / 100.0
+                        ),
+                    },
+                }
+
+                # v8: Finalize with middleware
+                result = self.middleware_finalize(result, output_type=f"react_{self.agent_id}")
+
+                # v8: Audit trail (J3 - MANDATORY for ReAct decisions)
+                await self.audit_action(
+                    action="react_loop_complete",
+                    resource_type="react_agent",
+                    resource_id=context.profile_id,
+                    details={
+                        "agent_id": self.agent_id,
+                        "cycles_used": len(self.current_cycles),
+                        "final_score": self.best_score,
+                        "passes_thresholds": self.best_score >= 70,
+                    },
+                    success=True,
+                )
+
+                await self.end_reasoning_trace(trace_id, success=True)
+                return result
+
+        except Exception as e:
+            await self.end_reasoning_trace(trace_id, success=False, error=str(e))
+            raise
 
     async def _observe(
         self,
