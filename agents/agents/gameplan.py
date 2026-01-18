@@ -48,6 +48,19 @@ from agents.core.strategic_router import StrategicRouter, StrategicRoute, calcul
 from agents.core.guardrails import validate_gameplan_output
 from config import FEATURE_FLAGS
 
+# v5.4: Critical 15 Patterns - MiddlewareStack integration
+try:
+    from middleware import MiddlewareStack, create_middleware
+    MIDDLEWARE_AVAILABLE = True
+except ImportError:
+    MIDDLEWARE_AVAILABLE = False
+
+# v8: MiddlewareIntegrationMixin for consistent agent interface
+from .mixins import MiddlewareIntegrationMixin
+
+import logging
+mw_logger = logging.getLogger(__name__)
+
 
 # Touchpoint types for activity evaluation (ACP-005)
 TOUCHPOINTS = [
@@ -61,7 +74,7 @@ TOUCHPOINTS = [
 ]
 
 
-class GamePlanAgent:
+class GamePlanAgent(MiddlewareIntegrationMixin):
     """
     Game Plan Agent: Orchestrates multi-agent system for strategic roadmap
 
@@ -76,6 +89,12 @@ class GamePlanAgent:
     - ACP-006: Identity Seed Architecture (6-12 month advance planting)
 
     Autonomy: HIGH (planning), handoff if narrative coherence < 80%
+
+    v8: Integrated with MiddlewareStackV8 (40 patterns) for:
+    - J1: Reasoning Traces (orchestration visibility)
+    - J3: Audit Trail (compliance for planning)
+    - E4: Quality Scoring
+    - H3: Retry Logic
     """
 
     def __init__(self):
@@ -96,6 +115,19 @@ class GamePlanAgent:
 
         # v4.0: Strategic Router for approach selection (deterministic rules)
         self.router = StrategicRouter()
+
+        # v5.4: MiddlewareStack for Critical 15 Patterns (legacy, used in generate_orchestrated)
+        # Note: renamed to _legacy_middleware to avoid conflict with mixin property
+        self._legacy_middleware = create_middleware(self.db) if MIDDLEWARE_AVAILABLE else None
+
+        # v8: Initialize MiddlewareIntegrationMixin for consistent interface
+        try:
+            self.init_middleware(
+                supabase_client=self.db,
+                llm_client=self.llm,
+            )
+        except Exception as e:
+            mw_logger.warning(f"Middleware init failed (non-fatal): {e}")
 
     def _init_sub_agents(self):
         """
@@ -134,6 +166,10 @@ class GamePlanAgent:
         Main processing entry point.
 
         v4.1: Accepts react_hints from ReActWrapper for self-correction.
+        v8: Wrapped with MiddlewareStackV8 (40 patterns):
+        - J1: Reasoning traces for orchestration visibility
+        - J3: Audit trail for compliance
+        - E4: Quality scoring
 
         Args:
             profile_id: Profile to process
@@ -142,15 +178,62 @@ class GamePlanAgent:
                 - react_hints: List[str] - Improvement hints from ReAct cycle
                 - data: Dict - Optional assessment data
         """
-        # v4.1: Extract ReAct hints if present
-        react_hints = kwargs.get("react_hints", [])
-        if react_hints:
-            print(f"[GamePlan] Processing with {len(react_hints)} ReAct hints")
+        # v8: Generate session context
+        session_id = kwargs.get("session_id") or f"gameplan_{profile_id}"
+        trace_id = self.start_reasoning_trace(profile_id, session_id, "gameplan_orchestration")
 
-        # Use orchestrated flow if requested
-        if kwargs.get("use_orchestration", True):
-            return await self.generate_orchestrated(profile_id, react_hints=react_hints)
-        return await self.generate(profile_id, kwargs.get("data"), react_hints=react_hints)
+        try:
+            async with self.with_middleware_context(profile_id, session_id, "gameplan") as ctx:
+                self.add_thought(trace_id, f"Starting GamePlan generation for profile {profile_id}")
+
+                # v4.1: Extract ReAct hints if present
+                react_hints = kwargs.get("react_hints", [])
+                use_orchestration = kwargs.get("use_orchestration", True)
+
+                self.add_action(trace_id, "orchestrate", {
+                    "react_hints_count": len(react_hints),
+                    "use_orchestration": use_orchestration,
+                })
+
+                if react_hints:
+                    print(f"[GamePlan] Processing with {len(react_hints)} ReAct hints")
+
+                # Use orchestrated flow if requested
+                if use_orchestration:
+                    result = await self.generate_orchestrated(profile_id, react_hints=react_hints)
+                else:
+                    result = await self.generate(profile_id, kwargs.get("data"), react_hints=react_hints)
+
+                # v8: Score quality (E4)
+                if result.get("success"):
+                    game_plan = result.get("game_plan", {})
+                    narrative_str = str(game_plan.get("narrative_dna", ""))[:1000]
+                    quality = await self.score_quality(narrative_str, "gameplan_narrative")
+                    if quality:
+                        result["_quality_score"] = quality.overall_score
+
+                # v8: Finalize with mixin pattern (adds metadata)
+                result = self.middleware_finalize(result, output_type="gameplan")
+
+                # v8: Audit trail (J3 - MANDATORY for planning recommendations)
+                await self.audit_action(
+                    action="gameplan_generation",
+                    resource_type="gameplan",
+                    resource_id=profile_id,
+                    details={
+                        "orchestration_used": use_orchestration,
+                        "react_hints_count": len(react_hints),
+                        "validation_passed": result.get("validation_passed", False),
+                    },
+                    success=result.get("success", False),
+                )
+
+                await self.end_reasoning_trace(trace_id, success=True)
+                return result
+
+        except Exception as e:
+            await self.end_reasoning_trace(trace_id, success=False, error=str(e))
+            raise
 
     # =========================================================================
     # v4.0: Strategic Routing
@@ -213,8 +296,28 @@ class GamePlanAgent:
         3. Synthesis → Unified GamePlan with route context
 
         v4.1: Accepts react_hints for self-correction.
+        v5.4: Enhanced middleware integration for Critical 15 Patterns.
         """
         react_hints = react_hints or []
+
+        # v5.4: Initialize middleware context for Critical 15 Patterns
+        middleware_ctx = None
+        middleware_exec = None  # Store the execution context manager
+        if self._legacy_middleware and MIDDLEWARE_AVAILABLE:
+            try:
+                from ..context import TaskType
+                middleware_exec = self._legacy_middleware.wrap_agent(
+                    "gameplan_agent",
+                    profile_id,
+                    task_type=TaskType.GAMEPLAN,
+                )
+                middleware_ctx = await middleware_exec.__aenter__()
+                print(f"[GamePlan] v5.4: Middleware context initialized")
+            except Exception as mw_err:
+                print(f"[GamePlan] Middleware init skipped: {mw_err}")
+                middleware_ctx = None
+                middleware_exec = None
+
         try:
             # ========================================================
             # STEP 0 (v4.0): Determine Strategic Route
@@ -305,6 +408,10 @@ class GamePlanAgent:
                 master_narrative=self.master_narrative,
             )
 
+            # v5.4: Use middleware for intelligent prioritization if available
+            if self._legacy_middleware:
+                unified_plan["_middleware_enabled"] = True
+
             # Version state
             await self._version_state(profile_id, "gameplan_orchestrated", {
                 "ec_activities": ec_result.get("activities_analyzed", 0),
@@ -381,6 +488,14 @@ class GamePlanAgent:
                     "narrative": validation.narrative_score,
                 }
 
+            # v5.4: Finalize with middleware validation if available
+            if self._legacy_middleware and middleware_ctx:
+                try:
+                    result = self._legacy_middleware.finalize(result, output_type="gameplan")
+                    print(f"[GamePlan] v5.4: Middleware finalization complete")
+                except Exception as mw_err:
+                    print(f"[GamePlan] Middleware finalize skipped: {mw_err}")
+
             return result
 
         except Exception as e:
@@ -389,6 +504,14 @@ class GamePlanAgent:
             print(traceback.format_exc())
             # Fall back to legacy generate
             return await self.generate(profile_id, None)
+
+        finally:
+            # v5.4: Clean up middleware context
+            if middleware_exec:
+                try:
+                    await middleware_exec.__aexit__(None, None, None)
+                except Exception:
+                    pass  # Ignore cleanup errors
 
     def _synthesize_gameplan(
         self,
