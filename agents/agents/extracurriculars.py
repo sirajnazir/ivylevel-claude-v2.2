@@ -29,6 +29,12 @@ from config import FEATURE_FLAGS
 # v5.0: EC Generation Engine - Core 4 Pillars + 10 Dimensions (Always On)
 from agents.core.ec_generation_engine import ECGenerationEngine
 
+# v8: Middleware Integration (40 patterns)
+from .mixins import MiddlewareIntegrationMixin
+
+import logging
+mw_logger = logging.getLogger(__name__)
+
 
 # =============================================================================
 # CONSTANTS & TYPES
@@ -130,7 +136,7 @@ class PortfolioAnalysis:
     recommendations: List[str] = field(default_factory=list)
 
 
-class ExtracurricularsAgent:
+class ExtracurricularsAgent(MiddlewareIntegrationMixin):
     """
     Extracurriculars Agent: Analyzes EC portfolio to produce identity synthesis
 
@@ -140,6 +146,13 @@ class ExtracurricularsAgent:
     - TYPE-015: Impact Assessment
 
     Runs FIRST in orchestration pipeline.
+
+    v8: Integrated with MiddlewareStackV8 (40 patterns) for:
+    - J1: Reasoning Traces
+    - J3: Audit Trail
+    - E4: Quality Scoring
+    - E5: Coherence Checking
+    - C1: Session Context
     """
 
     def __init__(self):
@@ -149,12 +162,22 @@ class ExtracurricularsAgent:
         # v5.0: Core EC Generation Engine (4 Pillars + 10 Dimensions) - Always On
         self._ec_engine = ECGenerationEngine()
 
+        # v8: Initialize middleware integration (40 patterns)
+        try:
+            self.init_middleware(
+                supabase_client=self.db,
+                llm_client=self.llm,
+            )
+        except Exception as e:
+            mw_logger.warning(f"Middleware init failed (non-fatal): {e}")
+
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
         """
-        Main processing entry point.
+        Main processing entry point with middleware integration.
 
         v4.1: Accepts react_hints from ReActWrapper for self-correction.
         v4.2: Accepts _react_feedback for intelligent agentic correction.
+        v8: Integrated with MiddlewareStackV8 (40 patterns).
 
         Args:
             profile_id: Profile to analyze
@@ -162,37 +185,107 @@ class ExtracurricularsAgent:
                 - react_hints: List[str] - Improvement hints from ReAct cycle
                 - _react_feedback: Dict - Structured feedback from agentic reasoner
         """
-        # v4.2: Extract structured ReAct feedback
-        react_feedback = kwargs.get("_react_feedback", {})
-        react_hints = kwargs.get("react_hints", [])
+        session_id = kwargs.get("session_id") or f"ec_{profile_id}"
 
-        # Use structured hints if available, otherwise fall back to legacy
-        if react_feedback:
-            hints = react_feedback.get("hints", [])
-            focus_areas = react_feedback.get("focus_areas", [])
-            gap_analysis = react_feedback.get("gap_analysis", {})
-            cycle_num = react_feedback.get("cycle", 1)
-
-            print(f"[EC Agent] Cycle {cycle_num}: Applying {len(hints)} specific hints")
-            if focus_areas:
-                print(f"[EC Agent] Focus areas: {', '.join(focus_areas)}")
-        elif react_hints:
-            hints = react_hints
-            focus_areas = []
-            gap_analysis = {}
-            cycle_num = 1
-            print(f"[EC Agent] Processing with {len(react_hints)} ReAct hints")
-        else:
-            hints = []
-            focus_areas = []
-            gap_analysis = {}
-            cycle_num = 1
-
-        return await self.analyze(
-            profile_id,
-            react_hints=hints,
-            react_feedback=react_feedback,
+        # v8: Start reasoning trace (J1)
+        trace_id = self.start_reasoning_trace(
+            profile_id=profile_id,
+            session_id=session_id,
+            input_message=f"EC analysis for profile {profile_id}",
         )
+
+        try:
+            # v8: Use middleware context (C1 Session, C2 User Context)
+            async with self.with_middleware_context(
+                profile_id=profile_id,
+                session_id=session_id,
+                task_type="extracurriculars",
+            ) as ctx:
+                # v4.2: Extract structured ReAct feedback (EXISTING LOGIC PRESERVED)
+                react_feedback = kwargs.get("_react_feedback", {})
+                react_hints = kwargs.get("react_hints", [])
+
+                # Use structured hints if available, otherwise fall back to legacy
+                if react_feedback:
+                    hints = react_feedback.get("hints", [])
+                    focus_areas = react_feedback.get("focus_areas", [])
+                    gap_analysis = react_feedback.get("gap_analysis", {})
+                    cycle_num = react_feedback.get("cycle", 1)
+
+                    self.add_thought(trace_id, f"Cycle {cycle_num}: Applying {len(hints)} specific hints")
+                    print(f"[EC Agent] Cycle {cycle_num}: Applying {len(hints)} specific hints")
+                    if focus_areas:
+                        print(f"[EC Agent] Focus areas: {', '.join(focus_areas)}")
+                elif react_hints:
+                    hints = react_hints
+                    focus_areas = []
+                    gap_analysis = {}
+                    cycle_num = 1
+                    self.add_thought(trace_id, f"Processing with {len(react_hints)} ReAct hints")
+                    print(f"[EC Agent] Processing with {len(react_hints)} ReAct hints")
+                else:
+                    hints = []
+                    focus_areas = []
+                    gap_analysis = {}
+                    cycle_num = 1
+                    self.add_thought(trace_id, "Fresh analysis (no hints)")
+
+                # Execute the core analysis (EXISTING LOGIC PRESERVED)
+                result = await self.analyze(
+                    profile_id,
+                    react_hints=hints,
+                    react_feedback=react_feedback,
+                )
+
+                self.add_action(trace_id, "analysis_complete")
+
+                # v8: Quality scoring on identity synthesis (E4)
+                if result.get("success") and result.get("identity_synthesis"):
+                    identity_str = str(result.get("identity_synthesis", {}))
+                    quality = await self.score_quality(identity_str[:1000], "identity_synthesis")
+                    if quality:
+                        result["_quality_score"] = quality.overall_score
+
+                # v8: Finalize with middleware validation
+                result = self.middleware_finalize(result, output_type="extracurriculars")
+
+                # v8: Audit trail (J3)
+                await self.audit_action(
+                    action="ec_analysis",
+                    resource_type="profile",
+                    resource_id=profile_id,
+                    details={
+                        "success": result.get("success", True),
+                        "archetype": result.get("identity_synthesis", {}).get("archetype"),
+                    },
+                    session_id=session_id,
+                    success=result.get("success", True),
+                )
+
+                # v8: Complete trace successfully
+                await self.end_reasoning_trace(trace_id, success=True)
+
+                return result
+
+        except Exception as e:
+            # v8: Record error in trace
+            self.add_action(trace_id, "analysis_error", metadata={"error": str(e)})
+
+            # v8: Audit the error (J3)
+            await self.audit_action(
+                action="ec_analysis_error",
+                resource_type="profile",
+                resource_id=profile_id,
+                details={"error": str(e)},
+                session_id=session_id,
+                success=False,
+            )
+
+            # v8: Complete trace with failure
+            await self.end_reasoning_trace(trace_id, success=False, error=str(e))
+
+            # Re-raise to preserve existing error handling
+            raise
 
     async def analyze(
         self,
