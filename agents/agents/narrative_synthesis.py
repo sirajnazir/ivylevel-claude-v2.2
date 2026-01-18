@@ -30,8 +30,14 @@ from langchain_openai import ChatOpenAI
 from tools.database import get_supabase_client
 from config import settings
 
+# v8: Middleware Integration (40 patterns)
+from .mixins import MiddlewareIntegrationMixin
 
-class NarrativeSynthesisAgent:
+import logging
+mw_logger = logging.getLogger(__name__)
+
+
+class NarrativeSynthesisAgent(MiddlewareIntegrationMixin):
     """
     Narrative Synthesis Agent: Transforms four pillar scores into a personalized narrative.
 
@@ -42,6 +48,12 @@ class NarrativeSynthesisAgent:
     - themes: Key recurring themes that tie activities together
 
     Autonomy: HIGH (synthesis), handoff if confidence < 0.7
+
+    v8: Integrated with MiddlewareStackV8 (40 patterns) for:
+    - J1: Reasoning Traces
+    - J3: Audit Trail
+    - E4: Quality Scoring (narrative quality)
+    - H3: Retry Logic
     """
 
     def __init__(self):
@@ -59,9 +71,68 @@ class NarrativeSynthesisAgent:
             print(f"[NarrativeSynthesis] Using OpenAI {settings.agent_primary_model}")
         self.db = get_supabase_client()
 
+        # v8: Initialize middleware integration (40 patterns)
+        try:
+            self.init_middleware(
+                supabase_client=self.db,
+                llm_client=self.llm,
+            )
+        except Exception as e:
+            mw_logger.warning(f"Middleware init failed (non-fatal): {e}")
+
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
-        """Main processing entry point."""
-        return await self.synthesize(profile_id, kwargs.get("assessment_contract"))
+        """
+        Main processing entry point.
+
+        v8: Wrapped with MiddlewareStackV8 (40 patterns):
+        - J1: Reasoning traces for observability
+        - J3: Audit trail for compliance
+        - E4: Quality scoring (narrative quality)
+        """
+        # v8: Generate session context
+        session_id = kwargs.get("session_id") or f"narrative_{profile_id}"
+        trace_id = self.start_reasoning_trace(profile_id, session_id, "narrative_synthesis")
+
+        try:
+            async with self.with_middleware_context(profile_id, session_id, "narrative_synthesis") as ctx:
+                self.add_thought(trace_id, f"Starting narrative synthesis for profile {profile_id}")
+
+                self.add_action(trace_id, "synthesize", {
+                    "has_assessment_contract": bool(kwargs.get("assessment_contract"))
+                })
+
+                # Call the core synthesis logic
+                result = await self.synthesize(profile_id, kwargs.get("assessment_contract"))
+
+                # v8: Score quality (E4) - especially important for narratives
+                if result.get("success") and result.get("narrative_dna"):
+                    narrative_str = str(result.get("narrative_dna", ""))[:1000]
+                    quality = await self.score_quality(narrative_str, "narrative_synthesis")
+                    if quality:
+                        result["_quality_score"] = quality.overall_score
+
+                # v8: Finalize with middleware
+                result = self.middleware_finalize(result, output_type="narrative_synthesis")
+
+                # v8: Audit trail (J3)
+                await self.audit_action(
+                    action="narrative_synthesis",
+                    resource_type="narrative",
+                    resource_id=profile_id,
+                    details={
+                        "confidence": result.get("confidence", 0),
+                        "requires_handoff": result.get("requires_handoff", False),
+                        "themes_count": len(result.get("themes", [])),
+                    },
+                    success=result.get("success", False),
+                )
+
+                await self.end_reasoning_trace(trace_id, success=True)
+                return result
+
+        except Exception as e:
+            await self.end_reasoning_trace(trace_id, success=False, error=str(e))
+            raise
 
     async def synthesize(
         self,
