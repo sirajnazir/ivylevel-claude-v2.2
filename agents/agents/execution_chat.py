@@ -28,13 +28,25 @@ import structlog
 
 from config import settings
 
+# v8: Middleware Integration (40 patterns)
+from .mixins import MiddlewareIntegrationMixin
+
+import logging
+mw_logger = logging.getLogger(__name__)
+
 logger = structlog.get_logger()
 
 
-class ExecutionChatAgent:
+class ExecutionChatAgent(MiddlewareIntegrationMixin):
     """
     Execution Agent with ReAct reasoning and proactive capabilities.
     Provides chat interface with streaming responses.
+
+    v8: Integrated with MiddlewareStackV8 (40 patterns) for:
+    - J1: Reasoning Traces (conversation tracking)
+    - J3: Audit Trail (chat compliance)
+    - E4: Quality Scoring
+    - H3: Retry Logic
     """
 
     AGENT_NAME = "Execution"
@@ -50,6 +62,16 @@ class ExecutionChatAgent:
         self.logger = logger.bind(agent=self.AGENT_NAME)
         self._supabase = None
         self._llm = None
+
+        # v8: Initialize middleware integration (40 patterns)
+        # Note: clients are lazy-loaded, so we init without them
+        try:
+            self.init_middleware(
+                supabase_client=None,  # Will be set on first access
+                llm_client=None,
+            )
+        except Exception as e:
+            mw_logger.warning(f"Middleware init failed (non-fatal): {e}")
 
     @property
     def supabase(self):
@@ -164,19 +186,68 @@ class ExecutionChatAgent:
         message: str,
         context_type: Optional[str] = None,
         context_id: Optional[str] = None,
+        session_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Non-streaming chat for simple requests.
+
+        v8: Wrapped with MiddlewareStackV8 (40 patterns):
+        - J1: Reasoning traces for observability
+        - J3: Audit trail for chat compliance
+        - E4: Quality scoring
         """
-        full_response = ""
+        # v8: Generate session context
+        session_id = session_id or f"execution_chat_{profile_id}"
+        trace_id = self.start_reasoning_trace(profile_id, session_id, "execution_chat")
 
-        async for chunk in self.chat(profile_id, message, context_type, context_id):
-            if chunk.get("type") == "content":
-                full_response += chunk.get("content", "")
-            elif chunk.get("type") == "error":
-                return {"success": False, "error": chunk.get("error")}
+        try:
+            async with self.with_middleware_context(profile_id, session_id, "execution_chat") as ctx:
+                self.add_thought(trace_id, f"Chat request from profile {profile_id}: {message[:100]}...")
 
-        return {"success": True, "response": full_response}
+                self.add_action(trace_id, "chat", {
+                    "context_type": context_type,
+                    "has_context_id": bool(context_id),
+                    "message_length": len(message),
+                })
+
+                full_response = ""
+
+                async for chunk in self.chat(profile_id, message, context_type, context_id):
+                    if chunk.get("type") == "content":
+                        full_response += chunk.get("content", "")
+                    elif chunk.get("type") == "error":
+                        await self.end_reasoning_trace(trace_id, success=False, error=chunk.get("error"))
+                        return {"success": False, "error": chunk.get("error")}
+
+                result = {"success": True, "response": full_response}
+
+                # v8: Score quality (E4)
+                if full_response:
+                    quality = await self.score_quality(full_response[:1000], "chat_response")
+                    if quality:
+                        result["_quality_score"] = quality.overall_score
+
+                # v8: Finalize with middleware
+                result = self.middleware_finalize(result, output_type="execution_chat")
+
+                # v8: Audit trail (J3 - chat compliance)
+                await self.audit_action(
+                    action="execution_chat",
+                    resource_type="chat",
+                    resource_id=profile_id,
+                    details={
+                        "context_type": context_type,
+                        "response_length": len(full_response),
+                    },
+                    success=True,
+                )
+
+                await self.end_reasoning_trace(trace_id, success=True)
+                return result
+
+        except Exception as e:
+            await self.end_reasoning_trace(trace_id, success=False, error=str(e))
+            raise
 
     async def _build_context(
         self,
