@@ -1,10 +1,11 @@
 """
-Middleware Stack - v8.0 Full Integration (40 Patterns)
+Middleware Stack - v9.0 Complete Integration (50 Patterns)
 
 Central integration layer for all agentic patterns:
-- Phase 1: Critical 15 Patterns
-- Phase 2A: Important 10 Patterns
-- Phase 2B: Enhancement 15 Patterns
+- Phase 1: Critical 15 Patterns (v6.0)
+- Phase 2A: Important 10 Patterns (v7.0)
+- Phase 2B: Enhancement 15 Patterns (v8.0)
+- Phase 3: Final 20 Patterns (v9.0)
 
 Usage (4 lines in existing agent):
 
@@ -12,21 +13,19 @@ Usage (4 lines in existing agent):
 from middleware import MiddlewareStack
 
 async def process(self, profile_id: str, **kwargs):
-    middleware = MiddlewareStack(self.supabase, self.redis, self.llm)
+    middleware = MiddlewareStack(self.supabase, self.redis, self.openai)
     async with middleware.wrap_agent("my_agent", profile_id) as ctx:
         # ... existing agent code uses ctx.student, ctx.temporal ...
         result = await self._do_work(ctx)
         return middleware.finalize(result)
 ```
 
-v8.0 adds observability, quality scoring, graceful degradation, and more.
+v9.0 adds: semantic memory, tool orchestration, adaptive learning,
+content moderation, PII detection, cost tracking, and more.
 """
 
-# Import v8 stack with all 40 patterns
-from .stack_v8 import (
-    MiddlewareStackV8 as MiddlewareStack,
-    create_middleware_v8 as create_middleware,
-)
+# Import v9 stack with all 50 patterns
+from .stack_v9 import MiddlewareStackV9 as MiddlewareStack
 
 # Import AgentContext from base stack for backward compatibility
 from .stack import AgentContext
@@ -35,14 +34,15 @@ from .stack import AgentContext
 from .stack import MiddlewareStack as MiddlewareStackBasic
 from .stack_v7 import MiddlewareStackV7
 from .stack_v8 import MiddlewareStackV8
+from .stack_v9 import MiddlewareStackV9
 
 __all__ = [
-    # Default exports (v8)
+    # Default exports (v9)
     "MiddlewareStack",
     "AgentContext",
-    "create_middleware",
     # Explicit version exports
     "MiddlewareStackBasic",
     "MiddlewareStackV7",
     "MiddlewareStackV8",
+    "MiddlewareStackV9",
 ]
