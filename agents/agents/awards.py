@@ -19,6 +19,12 @@ from tools.database import get_supabase_client, get_profile_with_assessment
 from agents.core.guardrails import validate_awards_output
 from config import FEATURE_FLAGS
 
+# v8: Middleware Integration (40 patterns)
+from .mixins import MiddlewareIntegrationMixin
+
+import logging
+mw_logger = logging.getLogger(__name__)
+
 
 # Path to enriched awards data
 ENRICHED_AWARDS_PATH = os.path.join(
@@ -36,7 +42,7 @@ PORTFOLIO_STRATEGY = {
 MIN_ARCHETYPE_FIT = 0.3
 
 
-class AwardsAgent:
+class AwardsAgent(MiddlewareIntegrationMixin):
     """
     Awards Agent: Matches students to awards with Strategic Intelligence
 
@@ -52,6 +58,12 @@ class AwardsAgent:
 
     Accepts: identity_synthesis from EC Agent
     Autonomy: FULL (deterministic matching)
+
+    v8: Integrated with MiddlewareStackV8 (40 patterns) for:
+    - J1: Reasoning Traces
+    - J3: Audit Trail (COMPLIANCE REQUIRED for award recommendations)
+    - E4: Quality Scoring
+    - H3: Retry Logic
     """
 
     def __init__(self):
@@ -59,6 +71,15 @@ class AwardsAgent:
         self.llm = ChatOpenAI(model="gpt-4o", temperature=0.3)
         self.db = get_supabase_client()
         self._enriched_awards_cache = None
+
+        # v8: Initialize middleware integration (40 patterns)
+        try:
+            self.init_middleware(
+                supabase_client=self.db,
+                llm_client=self.llm,
+            )
+        except Exception as e:
+            mw_logger.warning(f"Middleware init failed (non-fatal): {e}")
 
     def _load_enriched_awards(self) -> List[Dict]:
         """Load enriched awards from JSON file with caching"""
@@ -78,16 +99,92 @@ class AwardsAgent:
 
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
         """
-        Main processing entry point.
+        Main processing entry point with middleware integration.
 
         Args:
             profile_id: Student profile ID
             identity_synthesis: (optional) Output from EC Agent with spike, archetype, pillars
             route_config: (optional) Strategic routing config from GamePlan
+
+        v8: Integrated with MiddlewareStackV8 (40 patterns).
         """
+        session_id = kwargs.get("session_id") or f"awards_{profile_id}"
         identity_synthesis = kwargs.get("identity_synthesis")
         route_config = kwargs.get("route_config", {})
-        return await self.match(profile_id, identity_synthesis=identity_synthesis, route_config=route_config)
+
+        # v8: Start reasoning trace (J1)
+        trace_id = self.start_reasoning_trace(
+            profile_id=profile_id,
+            session_id=session_id,
+            input_message=f"Awards matching for profile {profile_id}",
+        )
+
+        try:
+            # v8: Use middleware context (C1 Session, C2 User Context)
+            async with self.with_middleware_context(
+                profile_id=profile_id,
+                session_id=session_id,
+                task_type="awards",
+            ) as ctx:
+                self.add_thought(trace_id, f"Starting awards matching with identity_synthesis={identity_synthesis is not None}")
+
+                # Execute the core matching (EXISTING LOGIC PRESERVED)
+                result = await self.match(
+                    profile_id,
+                    identity_synthesis=identity_synthesis,
+                    route_config=route_config,
+                )
+
+                self.add_action(trace_id, "matching_complete")
+
+                # v8: Quality scoring on portfolio (E4)
+                if result.get("success") and result.get("portfolio"):
+                    portfolio_str = str(result.get("portfolio", {}))[:1000]
+                    quality = await self.score_quality(portfolio_str, "awards_portfolio")
+                    if quality:
+                        result["_quality_score"] = quality.overall_score
+
+                # v8: Finalize with middleware validation
+                result = self.middleware_finalize(result, output_type="awards")
+
+                # v8: MANDATORY Audit trail (J3) - compliance requirement
+                await self.audit_action(
+                    action="award_recommendation",
+                    resource_type="awards",
+                    resource_id=profile_id,
+                    details={
+                        "success": result.get("success", True),
+                        "total_matches": result.get("total_matches", 0),
+                        "archetype": identity_synthesis.get("archetype") if identity_synthesis else None,
+                    },
+                    session_id=session_id,
+                    success=result.get("success", True),
+                )
+
+                # v8: Complete trace successfully
+                await self.end_reasoning_trace(trace_id, success=True)
+
+                return result
+
+        except Exception as e:
+            # v8: Record error in trace
+            self.add_action(trace_id, "matching_error", metadata={"error": str(e)})
+
+            # v8: Audit the error (J3) - compliance requirement
+            await self.audit_action(
+                action="award_recommendation_error",
+                resource_type="awards",
+                resource_id=profile_id,
+                details={"error": str(e)},
+                session_id=session_id,
+                success=False,
+            )
+
+            # v8: Complete trace with failure
+            await self.end_reasoning_trace(trace_id, success=False, error=str(e))
+
+            # Re-raise to preserve existing error handling
+            raise
 
     async def match(
         self,
