@@ -19,6 +19,12 @@ from tools.database import get_supabase_client, get_profile_with_assessment
 from agents.core.guardrails import validate_programs_output
 from config import FEATURE_FLAGS
 
+# v8: Middleware Integration (40 patterns)
+from .mixins import MiddlewareIntegrationMixin
+
+import logging
+mw_logger = logging.getLogger(__name__)
+
 
 # Path to enriched programs data
 ENRICHED_PROGRAMS_PATH = os.path.join(
@@ -29,7 +35,7 @@ ENRICHED_PROGRAMS_PATH = os.path.join(
 MIN_ARCHETYPE_FIT = 0.3
 
 
-class ProgramsAgent:
+class ProgramsAgent(MiddlewareIntegrationMixin):
     """
     Programs Agent: Matches students to summer programs with Strategic Intelligence
 
@@ -47,6 +53,12 @@ class ProgramsAgent:
 
     Accepts: identity_synthesis from EC Agent
     Autonomy: FULL (deterministic matching)
+
+    v8: Integrated with MiddlewareStackV8 (40 patterns) for:
+    - J1: Reasoning Traces
+    - J3: Audit Trail
+    - E4: Quality Scoring
+    - H3: Retry Logic
     """
 
     def __init__(self):
@@ -55,6 +67,15 @@ class ProgramsAgent:
         self.db = get_supabase_client()
         self.advance_alert_months = 6
         self._enriched_programs_cache = None
+
+        # v8: Initialize middleware integration (40 patterns)
+        try:
+            self.init_middleware(
+                supabase_client=self.db,
+                llm_client=self.llm,
+            )
+        except Exception as e:
+            mw_logger.warning(f"Middleware init failed (non-fatal): {e}")
 
     def _load_enriched_programs(self) -> List[Dict]:
         """Load enriched programs from JSON file with caching"""
@@ -80,10 +101,63 @@ class ProgramsAgent:
             profile_id: Student profile ID
             identity_synthesis: (optional) Output from EC Agent
             route_config: (optional) Strategic routing config from GamePlan
+
+        v8: Wrapped with MiddlewareStackV8 (40 patterns):
+        - J1: Reasoning traces for observability
+        - J3: Audit trail for compliance
+        - E4: Quality scoring
         """
-        identity_synthesis = kwargs.get("identity_synthesis")
-        route_config = kwargs.get("route_config", {})
-        return await self.match(profile_id, identity_synthesis=identity_synthesis, route_config=route_config)
+        # v8: Generate session context
+        session_id = kwargs.get("session_id") or f"programs_{profile_id}"
+        trace_id = self.start_reasoning_trace(profile_id, session_id, "programs_match")
+
+        try:
+            async with self.with_middleware_context(profile_id, session_id, "programs") as ctx:
+                self.add_thought(trace_id, f"Starting programs matching for profile {profile_id}")
+
+                identity_synthesis = kwargs.get("identity_synthesis")
+                route_config = kwargs.get("route_config", {})
+
+                self.add_action(trace_id, "match", {
+                    "has_identity_synthesis": bool(identity_synthesis),
+                    "has_route_config": bool(route_config)
+                })
+
+                # Call the core matching logic
+                result = await self.match(
+                    profile_id,
+                    identity_synthesis=identity_synthesis,
+                    route_config=route_config
+                )
+
+                # v8: Score quality (E4)
+                if result.get("success"):
+                    programs_str = str(result.get("top_recommendations", []))[:1000]
+                    quality = await self.score_quality(programs_str, "programs_recommendations")
+                    if quality:
+                        result["_quality_score"] = quality.overall_score
+
+                # v8: Finalize with middleware
+                result = self.middleware_finalize(result, output_type="programs")
+
+                # v8: MANDATORY audit trail (J3 - compliance requirement)
+                await self.audit_action(
+                    action="programs_recommendation",
+                    resource_type="programs",
+                    resource_id=profile_id,
+                    details={
+                        "total_matches": result.get("total_matches", 0),
+                        "archetype_used": result.get("archetype_used"),
+                    },
+                    success=result.get("success", False),
+                )
+
+                await self.end_reasoning_trace(trace_id, success=True)
+                return result
+
+        except Exception as e:
+            await self.end_reasoning_trace(trace_id, success=False, error=str(e))
+            raise
 
     async def match(
         self,
