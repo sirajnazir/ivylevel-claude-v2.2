@@ -13,8 +13,14 @@ from langchain_openai import ChatOpenAI
 from tools.database import get_supabase_client, get_profile_with_assessment
 from tools.cri import compute_cri, get_chetty_baseline
 
+# v8: Middleware Integration (40 patterns)
+from .mixins import MiddlewareIntegrationMixin
 
-class AssessmentAgent:
+import logging
+mw_logger = logging.getLogger(__name__)
+
+
+class AssessmentAgent(MiddlewareIntegrationMixin):
     """
     Assessment Agent: Diagnoses student state and generates strategic intelligence
 
@@ -23,6 +29,12 @@ class AssessmentAgent:
     - ACP-002: Identity Synthesis Framework
 
     Autonomy: HIGH (synthesis), handoff if confidence < 0.7
+
+    v8: Integrated with MiddlewareStackV8 (40 patterns) for:
+    - J1: Reasoning Traces
+    - J3: Audit Trail (MANDATORY for assessment data)
+    - E4: Quality Scoring
+    - H3: Retry Logic
     """
 
     def __init__(self):
@@ -30,9 +42,67 @@ class AssessmentAgent:
         self.llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
         self.db = get_supabase_client()
 
+        # v8: Initialize middleware integration (40 patterns)
+        try:
+            self.init_middleware(
+                supabase_client=self.db,
+                llm_client=self.llm,
+            )
+        except Exception as e:
+            mw_logger.warning(f"Middleware init failed (non-fatal): {e}")
+
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
-        """Main processing entry point."""
-        return await self.enhance(profile_id, kwargs.get("data"))
+        """
+        Main processing entry point.
+
+        v8: Wrapped with MiddlewareStackV8 (40 patterns):
+        - J1: Reasoning traces for observability
+        - J3: Audit trail for compliance (MANDATORY for assessment data)
+        - E4: Quality scoring
+        """
+        # v8: Generate session context
+        session_id = kwargs.get("session_id") or f"assessment_{profile_id}"
+        trace_id = self.start_reasoning_trace(profile_id, session_id, "assessment_enhance")
+
+        try:
+            async with self.with_middleware_context(profile_id, session_id, "assessment") as ctx:
+                self.add_thought(trace_id, f"Starting assessment enhancement for profile {profile_id}")
+
+                self.add_action(trace_id, "enhance", {
+                    "has_data": bool(kwargs.get("data"))
+                })
+
+                # Call the core enhancement logic
+                result = await self.enhance(profile_id, kwargs.get("data"))
+
+                # v8: Score quality (E4)
+                if result.get("success"):
+                    narrative_str = str(result.get("narrative_dna", {}))[:1000]
+                    quality = await self.score_quality(narrative_str, "assessment_narrative")
+                    if quality:
+                        result["_quality_score"] = quality.overall_score
+
+                # v8: Finalize with middleware
+                result = self.middleware_finalize(result, output_type="assessment")
+
+                # v8: MANDATORY audit trail (J3 - assessment data is sensitive)
+                await self.audit_action(
+                    action="assessment_enhancement",
+                    resource_type="assessment",
+                    resource_id=profile_id,
+                    details={
+                        "archetype": result.get("archetype", {}).get("id") if isinstance(result.get("archetype"), dict) else None,
+                        "requires_handoff": result.get("requires_handoff", False),
+                    },
+                    success=result.get("success", False),
+                )
+
+                await self.end_reasoning_trace(trace_id, success=True)
+                return result
+
+        except Exception as e:
+            await self.end_reasoning_trace(trace_id, success=False, error=str(e))
+            raise
 
     async def enhance(self, profile_id: str, data: Optional[Dict] = None) -> Dict:
         """
