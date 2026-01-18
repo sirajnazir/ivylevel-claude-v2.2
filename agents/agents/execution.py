@@ -38,12 +38,15 @@ from tools.database import (
 from tools.cri import compute_eds
 from graphs.crisis_alchemy import CrisisAlchemyGraph
 
+# v8: Middleware Integration (40 patterns)
+from .mixins import MiddlewareIntegrationMixin
+
 import structlog
 
 logger = structlog.get_logger()
 
 
-class ExecutionAgent(BaseAgent):
+class ExecutionAgent(BaseAgent, MiddlewareIntegrationMixin):
     """
     Execution Agent: Bridges strategy-execution gap.
 
@@ -53,6 +56,12 @@ class ExecutionAgent(BaseAgent):
     3. Blocker Detection - Monitor for >5 days inactivity
     4. EDS Tracking - Compute Execution Debt Score weekly
     5. Talk-First-Write-Second - Voice-to-text essay support
+
+    v8: Integrated with MiddlewareStackV8 (40 patterns) for:
+    - J1: Reasoning Traces
+    - J3: Audit Trail
+    - E4: Quality Scoring
+    - H3: Retry Logic
     """
 
     def __init__(self):
@@ -63,9 +72,18 @@ class ExecutionAgent(BaseAgent):
         self.crisis_graph = CrisisAlchemyGraph()
         self.blocker_threshold_days = settings.blocker_threshold_days
 
+        # v8: Initialize middleware integration (40 patterns)
+        try:
+            self.init_middleware(
+                supabase_client=supabase,
+                llm_client=getattr(self, 'llm', None),
+            )
+        except Exception as e:
+            logger.warning(f"Middleware init failed (non-fatal): {e}")
+
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
         """
-        Main processing entry point.
+        Main processing entry point with middleware integration.
 
         Args:
             profile_id: Profile UUID
@@ -75,23 +93,83 @@ class ExecutionAgent(BaseAgent):
             Processing results
         """
         action = kwargs.get("action", "check_status")
+        session_id = kwargs.get("session_id") or f"execution_{profile_id}_{action}"
 
-        if action == "scaffold_project":
-            return await self.scaffold_project(profile_id, kwargs.get("project_data", {}))
-        elif action == "handle_crisis":
-            return await self.handle_crisis(
-                profile_id,
-                kwargs.get("crisis_type", "blocker"),
-                kwargs.get("description", ""),
-                kwargs.get("urgency", 3)
+        # v8: Start reasoning trace (J1)
+        trace_id = self.start_reasoning_trace(
+            profile_id=profile_id,
+            session_id=session_id,
+            input_message=f"action={action}",
+        )
+
+        try:
+            # v8: Use middleware context (C1 Session, C2 User Context)
+            async with self.with_middleware_context(
+                profile_id=profile_id,
+                session_id=session_id,
+                task_type="execution",
+            ) as ctx:
+                self.add_thought(trace_id, f"Processing action: {action}")
+
+                # Execute the requested action (EXISTING LOGIC PRESERVED)
+                if action == "scaffold_project":
+                    result = await self.scaffold_project(profile_id, kwargs.get("project_data", {}))
+                elif action == "handle_crisis":
+                    result = await self.handle_crisis(
+                        profile_id,
+                        kwargs.get("crisis_type", "blocker"),
+                        kwargs.get("description", ""),
+                        kwargs.get("urgency", 3)
+                    )
+                elif action == "detect_blockers":
+                    result = await self.detect_blockers(profile_id)
+                elif action == "compute_eds":
+                    eds = await self.compute_eds(profile_id)
+                    result = {"success": True, "eds": eds}
+                    # v8: Record EDS metric (J4)
+                    self.record_metric("execution_debt_score", eds, tags={"profile_id": profile_id})
+                else:
+                    result = await self.check_status(profile_id)
+
+                self.add_action(trace_id, f"completed_{action}")
+
+                # v8: Finalize with middleware validation
+                result = self.middleware_finalize(result, output_type="execution")
+
+                # v8: Audit trail (J3)
+                await self.audit_action(
+                    action=action,
+                    resource_type="execution",
+                    resource_id=profile_id,
+                    details={"success": result.get("success", True)},
+                    session_id=session_id,
+                    success=result.get("success", True),
+                )
+
+                # v8: Complete trace successfully
+                await self.end_reasoning_trace(trace_id, success=True)
+
+                return result
+
+        except Exception as e:
+            # v8: Record error in trace
+            self.add_action(trace_id, f"error_{action}", metadata={"error": str(e)})
+
+            # v8: Audit the error (J3)
+            await self.audit_action(
+                action=f"{action}_error",
+                resource_type="execution",
+                resource_id=profile_id,
+                details={"error": str(e)},
+                session_id=session_id,
+                success=False,
             )
-        elif action == "detect_blockers":
-            return await self.detect_blockers(profile_id)
-        elif action == "compute_eds":
-            eds = await self.compute_eds(profile_id)
-            return {"success": True, "eds": eds}
-        else:
-            return await self.check_status(profile_id)
+
+            # v8: Complete trace with failure
+            await self.end_reasoning_trace(trace_id, success=False, error=str(e))
+
+            # Re-raise to preserve existing error handling
+            raise
 
     # =========================================
     # Project Scaffolding (ACP-004)
