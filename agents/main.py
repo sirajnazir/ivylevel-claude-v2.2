@@ -117,6 +117,16 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 logger.warning("letta_jobs_registration_skipped", error=str(e))
 
+            # v10.0: Register Proactive Autonomy scheduler jobs
+            # ADDITIVE: Opportunity matching, deadline alerts, stall detection, inactivity checks
+            # All jobs respect PROACTIVE_ENABLED flag (default: false)
+            try:
+                from proactive import register_proactive_jobs
+                register_proactive_jobs(workflow_runner.scheduler, db)
+                logger.info("proactive_scheduler_jobs_registered")
+            except Exception as e:
+                logger.warning("proactive_jobs_registration_skipped", error=str(e))
+
         except Exception as e:
             logger.error("workflow_runner_start_error", error=str(e))
 
