@@ -385,6 +385,9 @@ CREATE INDEX IF NOT EXISTS idx_technique_effectiveness_rate ON technique_effecti
 -- ============================================================
 
 -- Get pending nudges for a profile (sorted by priority)
+-- Drop any existing versions to avoid ambiguity
+DROP FUNCTION IF EXISTS get_pending_nudges(UUID, INT);
+
 CREATE OR REPLACE FUNCTION get_pending_nudges(
     p_profile_id UUID,
     p_limit INT DEFAULT 10
@@ -418,6 +421,9 @@ AS $$
 $$;
 
 -- Update coaching asset effectiveness after an outcome
+-- Drop any existing versions to avoid ambiguity
+DROP FUNCTION IF EXISTS update_asset_effectiveness(UUID, TEXT, TEXT, BOOLEAN);
+
 CREATE OR REPLACE FUNCTION update_asset_effectiveness(
     p_asset_id UUID,
     p_archetype TEXT,
