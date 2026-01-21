@@ -29,6 +29,34 @@ CREATE TABLE IF NOT EXISTS nudge_queue (
     expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '7 days')
 );
 
+-- Add missing columns if table exists but is incomplete
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'nudge_queue' AND column_name = 'metadata') THEN
+        ALTER TABLE nudge_queue ADD COLUMN metadata JSONB DEFAULT '{}';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'nudge_queue' AND column_name = 'project_id') THEN
+        ALTER TABLE nudge_queue ADD COLUMN project_id UUID;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'nudge_queue' AND column_name = 'priority') THEN
+        ALTER TABLE nudge_queue ADD COLUMN priority TEXT DEFAULT 'medium';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'nudge_queue' AND column_name = 'delivered_at') THEN
+        ALTER TABLE nudge_queue ADD COLUMN delivered_at TIMESTAMPTZ;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'nudge_queue' AND column_name = 'dismissed_at') THEN
+        ALTER TABLE nudge_queue ADD COLUMN dismissed_at TIMESTAMPTZ;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'nudge_queue' AND column_name = 'expires_at') THEN
+        ALTER TABLE nudge_queue ADD COLUMN expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '7 days');
+    END IF;
+END $$;
+
 -- Note: CHECK constraints intentionally omitted to allow flexibility with existing data
 -- Application-level validation is preferred for these fields
 
@@ -59,6 +87,30 @@ CREATE TABLE IF NOT EXISTS proactive_notifications (
     viewed_at TIMESTAMPTZ,
     acted_at TIMESTAMPTZ
 );
+
+-- Add missing columns if table exists but is incomplete
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'proactive_notifications' AND column_name = 'related_data') THEN
+        ALTER TABLE proactive_notifications ADD COLUMN related_data JSONB DEFAULT '{}';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'proactive_notifications' AND column_name = 'urgency') THEN
+        ALTER TABLE proactive_notifications ADD COLUMN urgency TEXT DEFAULT 'normal';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'proactive_notifications' AND column_name = 'related_asset_id') THEN
+        ALTER TABLE proactive_notifications ADD COLUMN related_asset_id UUID;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'proactive_notifications' AND column_name = 'viewed_at') THEN
+        ALTER TABLE proactive_notifications ADD COLUMN viewed_at TIMESTAMPTZ;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'proactive_notifications' AND column_name = 'acted_at') THEN
+        ALTER TABLE proactive_notifications ADD COLUMN acted_at TIMESTAMPTZ;
+    END IF;
+END $$;
 
 -- Note: CHECK constraints intentionally omitted to allow flexibility with existing data
 
@@ -279,8 +331,8 @@ CREATE TRIGGER trigger_coaching_assets_updated_at
 
 CREATE TABLE IF NOT EXISTS technique_effectiveness (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    asset_id UUID NOT NULL REFERENCES coaching_assets(id) ON DELETE CASCADE,
-    archetype TEXT NOT NULL,
+    asset_id UUID REFERENCES coaching_assets(id) ON DELETE CASCADE,
+    archetype TEXT DEFAULT '',
     situation_type TEXT,
     times_used INT DEFAULT 0,
     success_count INT DEFAULT 0,
@@ -291,6 +343,26 @@ CREATE TABLE IF NOT EXISTS technique_effectiveness (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add missing columns if table exists but is incomplete
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'technique_effectiveness' AND column_name = 'effectiveness_rate') THEN
+        ALTER TABLE technique_effectiveness ADD COLUMN effectiveness_rate FLOAT DEFAULT 0.0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'technique_effectiveness' AND column_name = 'confidence') THEN
+        ALTER TABLE technique_effectiveness ADD COLUMN confidence FLOAT DEFAULT 0.0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'technique_effectiveness' AND column_name = 'learnings') THEN
+        ALTER TABLE technique_effectiveness ADD COLUMN learnings JSONB DEFAULT '[]';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'technique_effectiveness' AND column_name = 'last_used_at') THEN
+        ALTER TABLE technique_effectiveness ADD COLUMN last_used_at TIMESTAMPTZ;
+    END IF;
+END $$;
 
 -- Add unique constraint if it doesn't exist (needed for ON CONFLICT upsert)
 DO $$
