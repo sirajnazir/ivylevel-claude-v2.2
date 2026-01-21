@@ -17,21 +17,37 @@
 CREATE TABLE IF NOT EXISTS nudge_queue (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    nudge_type TEXT NOT NULL CHECK (nudge_type IN (
-        'deadline_reminder', 'stall_check', 'check_in',
-        'opportunity_match', 'eds_threshold', 'celebration',
-        'weekly_summary', 'goal_progress'
-    )),
-    project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
-    priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'critical')),
+    nudge_type TEXT NOT NULL,
+    project_id UUID,
+    priority TEXT DEFAULT 'medium',
     message_draft TEXT NOT NULL,
     metadata JSONB DEFAULT '{}',
-    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'delivered', 'dismissed', 'expired')),
+    status TEXT DEFAULT 'pending',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     delivered_at TIMESTAMPTZ,
     dismissed_at TIMESTAMPTZ,
     expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '7 days')
 );
+
+-- Add constraints if they don't exist (idempotent)
+DO $$
+BEGIN
+    -- Add CHECK constraints
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'nudge_queue_nudge_type_check') THEN
+        ALTER TABLE nudge_queue ADD CONSTRAINT nudge_queue_nudge_type_check
+            CHECK (nudge_type IN ('deadline_reminder', 'stall_check', 'check_in', 'opportunity_match', 'eds_threshold', 'celebration', 'weekly_summary', 'goal_progress'));
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'nudge_queue_priority_check') THEN
+        ALTER TABLE nudge_queue ADD CONSTRAINT nudge_queue_priority_check
+            CHECK (priority IN ('low', 'medium', 'high', 'critical'));
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'nudge_queue_status_check') THEN
+        ALTER TABLE nudge_queue ADD CONSTRAINT nudge_queue_status_check
+            CHECK (status IN ('pending', 'delivered', 'dismissed', 'expired'));
+    END IF;
+END $$;
 
 -- Indexes for nudge_queue
 CREATE INDEX IF NOT EXISTS idx_nudge_queue_profile ON nudge_queue(profile_id);
@@ -49,20 +65,36 @@ CREATE TABLE IF NOT EXISTS proactive_notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     agent_name TEXT NOT NULL DEFAULT 'autonomous_monitor',
-    notification_type TEXT NOT NULL CHECK (notification_type IN (
-        'proactive', 'deadline_alert', 'opportunity_match',
-        'celebration', 'check_in', 'goal_reminder', 'insight'
-    )),
+    notification_type TEXT NOT NULL,
     title TEXT NOT NULL,
     message TEXT NOT NULL,
-    urgency TEXT DEFAULT 'normal' CHECK (urgency IN ('low', 'normal', 'high', 'critical')),
+    urgency TEXT DEFAULT 'normal',
     related_asset_id UUID,
     related_data JSONB DEFAULT '{}',
-    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'viewed', 'acted', 'dismissed')),
+    status TEXT DEFAULT 'pending',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     viewed_at TIMESTAMPTZ,
     acted_at TIMESTAMPTZ
 );
+
+-- Add constraints if they don't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'proactive_notifications_type_check') THEN
+        ALTER TABLE proactive_notifications ADD CONSTRAINT proactive_notifications_type_check
+            CHECK (notification_type IN ('proactive', 'deadline_alert', 'opportunity_match', 'celebration', 'check_in', 'goal_reminder', 'insight'));
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'proactive_notifications_urgency_check') THEN
+        ALTER TABLE proactive_notifications ADD CONSTRAINT proactive_notifications_urgency_check
+            CHECK (urgency IN ('low', 'normal', 'high', 'critical'));
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'proactive_notifications_status_check') THEN
+        ALTER TABLE proactive_notifications ADD CONSTRAINT proactive_notifications_status_check
+            CHECK (status IN ('pending', 'viewed', 'acted', 'dismissed'));
+    END IF;
+END $$;
 
 -- Indexes for proactive_notifications
 CREATE INDEX IF NOT EXISTS idx_proactive_notifications_profile ON proactive_notifications(profile_id);
@@ -78,24 +110,46 @@ CREATE INDEX IF NOT EXISTS idx_proactive_notifications_created ON proactive_noti
 CREATE TABLE IF NOT EXISTS student_outcomes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    outcome_type TEXT NOT NULL CHECK (outcome_type IN (
-        'award_win', 'award_loss', 'program_accepted', 'program_rejected',
-        'goal_completed', 'goal_abandoned', 'project_completed',
-        'skill_mastered', 'milestone_achieved', 'custom'
-    )),
+    outcome_type TEXT NOT NULL,
     outcome_data JSONB NOT NULL DEFAULT '{}',
-    -- Linkage to what contributed to this outcome
-    related_asset_ids TEXT[] DEFAULT '{}',  -- coaching assets that helped
+    related_asset_ids TEXT[] DEFAULT '{}',
     related_goal_id UUID,
-    related_project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
-    -- For learning what works
+    related_project_id UUID,
     contributing_factors JSONB DEFAULT '{}',
     student_reflection TEXT,
     agent_analysis TEXT,
-    -- Timestamps
     outcome_date DATE DEFAULT CURRENT_DATE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add missing columns if table exists but is incomplete
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'student_outcomes' AND column_name = 'outcome_date') THEN
+        ALTER TABLE student_outcomes ADD COLUMN outcome_date DATE DEFAULT CURRENT_DATE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'student_outcomes' AND column_name = 'outcome_data') THEN
+        ALTER TABLE student_outcomes ADD COLUMN outcome_data JSONB NOT NULL DEFAULT '{}';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'student_outcomes' AND column_name = 'related_asset_ids') THEN
+        ALTER TABLE student_outcomes ADD COLUMN related_asset_ids TEXT[] DEFAULT '{}';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'student_outcomes' AND column_name = 'contributing_factors') THEN
+        ALTER TABLE student_outcomes ADD COLUMN contributing_factors JSONB DEFAULT '{}';
+    END IF;
+END $$;
+
+-- Add constraints if they don't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'student_outcomes_type_check') THEN
+        ALTER TABLE student_outcomes ADD CONSTRAINT student_outcomes_type_check
+            CHECK (outcome_type IN ('award_win', 'award_loss', 'program_accepted', 'program_rejected', 'goal_completed', 'goal_abandoned', 'project_completed', 'skill_mastered', 'milestone_achieved', 'custom'));
+    END IF;
+END $$;
 
 -- Indexes for student_outcomes
 CREATE INDEX IF NOT EXISTS idx_student_outcomes_profile ON student_outcomes(profile_id);
@@ -111,22 +165,16 @@ CREATE TABLE IF NOT EXISTS autonomous_reasoning_cycles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     agent_name TEXT NOT NULL DEFAULT 'autonomous_monitor',
-    trigger_event TEXT NOT NULL, -- 'scheduled', 'activity', 'request', 'deadline', etc.
-    -- State at cycle start
+    trigger_event TEXT NOT NULL,
     monitoring_state JSONB DEFAULT '{}',
-    -- Reasoning outputs
     predictions JSONB DEFAULT '[]',
     decisions JSONB DEFAULT '{}',
-    -- Actions taken
     actions_taken JSONB DEFAULT '{}',
     notification_sent BOOLEAN DEFAULT FALSE,
-    -- Learning feedback
     learnings JSONB DEFAULT '{}',
-    -- Timing
     cycle_start TIMESTAMPTZ,
     cycle_end TIMESTAMPTZ,
     duration_ms INT,
-    -- Errors if any
     errors JSONB DEFAULT '[]',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -144,27 +192,34 @@ CREATE INDEX IF NOT EXISTS idx_reasoning_cycles_created ON autonomous_reasoning_
 CREATE TABLE IF NOT EXISTS coaching_assets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL UNIQUE,
-    category TEXT NOT NULL CHECK (category IN (
-        'technique', 'response_pattern', 'reframe', 'question',
-        'celebration', 'nudge', 'crisis_response', 'story'
-    )),
+    category TEXT NOT NULL,
     description TEXT,
     content TEXT NOT NULL,
-    -- Applicability
     applicable_archetypes TEXT[] DEFAULT '{}',
     applicable_situations TEXT[] DEFAULT '{}',
     tags TEXT[] DEFAULT '{}',
-    -- Effectiveness tracking
     times_used INT DEFAULT 0,
     success_count INT DEFAULT 0,
-    effectiveness_score FLOAT DEFAULT 0.5 CHECK (effectiveness_score >= 0 AND effectiveness_score <= 1),
-    -- Source
-    source TEXT DEFAULT 'jenny', -- 'jenny', 'generated', 'human'
-    -- Active/disabled
+    effectiveness_score FLOAT DEFAULT 0.5,
+    source TEXT DEFAULT 'jenny',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add constraints if they don't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'coaching_assets_category_check') THEN
+        ALTER TABLE coaching_assets ADD CONSTRAINT coaching_assets_category_check
+            CHECK (category IN ('technique', 'response_pattern', 'reframe', 'question', 'celebration', 'nudge', 'crisis_response', 'story'));
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'coaching_assets_effectiveness_check') THEN
+        ALTER TABLE coaching_assets ADD CONSTRAINT coaching_assets_effectiveness_check
+            CHECK (effectiveness_score >= 0 AND effectiveness_score <= 1);
+    END IF;
+END $$;
 
 -- Indexes for coaching_assets
 CREATE INDEX IF NOT EXISTS idx_coaching_assets_category ON coaching_assets(category);
@@ -196,22 +251,24 @@ CREATE TABLE IF NOT EXISTS technique_effectiveness (
     asset_id UUID NOT NULL REFERENCES coaching_assets(id) ON DELETE CASCADE,
     archetype TEXT NOT NULL,
     situation_type TEXT,
-    -- Tracking
     times_used INT DEFAULT 0,
     success_count INT DEFAULT 0,
-    effectiveness_rate FLOAT GENERATED ALWAYS AS (
-        CASE WHEN times_used > 0 THEN success_count::FLOAT / times_used ELSE 0 END
-    ) STORED,
-    -- Statistical confidence
-    confidence FLOAT DEFAULT 0.0, -- increases with more data points
-    -- Learning
+    effectiveness_rate FLOAT DEFAULT 0.0,
+    confidence FLOAT DEFAULT 0.0,
     learnings JSONB DEFAULT '[]',
     last_used_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    -- Unique per asset/archetype/situation
-    UNIQUE (asset_id, archetype, situation_type)
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add unique constraint if it doesn't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'technique_effectiveness_asset_archetype_situation_key') THEN
+        ALTER TABLE technique_effectiveness ADD CONSTRAINT technique_effectiveness_asset_archetype_situation_key
+            UNIQUE (asset_id, archetype, situation_type);
+    END IF;
+END $$;
 
 -- Indexes for technique_effectiveness
 CREATE INDEX IF NOT EXISTS idx_technique_effectiveness_asset ON technique_effectiveness(asset_id);
@@ -239,19 +296,19 @@ RETURNS TABLE (
 LANGUAGE sql
 STABLE
 AS $$
-    SELECT id, nudge_type, project_id, priority, message_draft, metadata, created_at
-    FROM nudge_queue
-    WHERE profile_id = p_profile_id
-      AND status = 'pending'
-      AND (expires_at IS NULL OR expires_at > NOW())
+    SELECT nq.id, nq.nudge_type, nq.project_id, nq.priority, nq.message_draft, nq.metadata, nq.created_at
+    FROM nudge_queue nq
+    WHERE nq.profile_id = p_profile_id
+      AND nq.status = 'pending'
+      AND (nq.expires_at IS NULL OR nq.expires_at > NOW())
     ORDER BY
-        CASE priority
+        CASE nq.priority
             WHEN 'critical' THEN 1
             WHEN 'high' THEN 2
             WHEN 'medium' THEN 3
             WHEN 'low' THEN 4
         END,
-        created_at
+        nq.created_at
     LIMIT p_limit;
 $$;
 
@@ -265,10 +322,14 @@ CREATE OR REPLACE FUNCTION update_asset_effectiveness(
 RETURNS VOID
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    v_new_times_used INT;
+    v_new_success_count INT;
 BEGIN
     -- Upsert technique effectiveness record
     INSERT INTO technique_effectiveness (
-        asset_id, archetype, situation_type, times_used, success_count, last_used_at, updated_at
+        asset_id, archetype, situation_type, times_used, success_count,
+        effectiveness_rate, last_used_at, updated_at
     )
     VALUES (
         p_asset_id,
@@ -276,6 +337,7 @@ BEGIN
         p_situation_type,
         1,
         CASE WHEN p_was_successful THEN 1 ELSE 0 END,
+        CASE WHEN p_was_successful THEN 1.0 ELSE 0.0 END,
         NOW(),
         NOW()
     )
@@ -283,7 +345,8 @@ BEGIN
     DO UPDATE SET
         times_used = technique_effectiveness.times_used + 1,
         success_count = technique_effectiveness.success_count + CASE WHEN p_was_successful THEN 1 ELSE 0 END,
-        confidence = LEAST(1.0, (technique_effectiveness.times_used + 1) / 20.0), -- 20 uses = full confidence
+        effectiveness_rate = (technique_effectiveness.success_count + CASE WHEN p_was_successful THEN 1 ELSE 0 END)::FLOAT / (technique_effectiveness.times_used + 1),
+        confidence = LEAST(1.0, (technique_effectiveness.times_used + 1) / 20.0),
         last_used_at = NOW(),
         updated_at = NOW();
 
@@ -292,7 +355,7 @@ BEGIN
     SET
         times_used = times_used + 1,
         success_count = success_count + CASE WHEN p_was_successful THEN 1 ELSE 0 END,
-        effectiveness_score = (success_count + CASE WHEN p_was_successful THEN 1 ELSE 0 END)::FLOAT / (times_used + 1),
+        effectiveness_score = (success_count + CASE WHEN p_was_successful THEN 1 ELSE 0 END)::FLOAT / GREATEST(times_used + 1, 1),
         updated_at = NOW()
     WHERE id = p_asset_id;
 END;
@@ -310,28 +373,21 @@ ALTER TABLE autonomous_reasoning_cycles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE coaching_assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE technique_effectiveness ENABLE ROW LEVEL SECURITY;
 
--- Policies (permissive for MVP, tighten for production)
-CREATE POLICY "nudge_queue_all_access" ON nudge_queue FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "proactive_notifications_all_access" ON proactive_notifications FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "student_outcomes_all_access" ON student_outcomes FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "reasoning_cycles_all_access" ON autonomous_reasoning_cycles FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "coaching_assets_all_access" ON coaching_assets FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "technique_effectiveness_all_access" ON technique_effectiveness FOR ALL USING (true) WITH CHECK (true);
+-- Drop existing policies if they exist and recreate
+DROP POLICY IF EXISTS nudge_queue_all_access ON nudge_queue;
+DROP POLICY IF EXISTS proactive_notifications_all_access ON proactive_notifications;
+DROP POLICY IF EXISTS student_outcomes_all_access ON student_outcomes;
+DROP POLICY IF EXISTS reasoning_cycles_all_access ON autonomous_reasoning_cycles;
+DROP POLICY IF EXISTS coaching_assets_all_access ON coaching_assets;
+DROP POLICY IF EXISTS technique_effectiveness_all_access ON technique_effectiveness;
 
--- Grant permissions
-GRANT SELECT, INSERT, UPDATE, DELETE ON nudge_queue TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON proactive_notifications TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON student_outcomes TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON autonomous_reasoning_cycles TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON coaching_assets TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON technique_effectiveness TO authenticated;
-
-GRANT ALL ON nudge_queue TO service_role;
-GRANT ALL ON proactive_notifications TO service_role;
-GRANT ALL ON student_outcomes TO service_role;
-GRANT ALL ON autonomous_reasoning_cycles TO service_role;
-GRANT ALL ON coaching_assets TO service_role;
-GRANT ALL ON technique_effectiveness TO service_role;
+-- Create policies (permissive for MVP)
+CREATE POLICY nudge_queue_all_access ON nudge_queue FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY proactive_notifications_all_access ON proactive_notifications FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY student_outcomes_all_access ON student_outcomes FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY reasoning_cycles_all_access ON autonomous_reasoning_cycles FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY coaching_assets_all_access ON coaching_assets FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY technique_effectiveness_all_access ON technique_effectiveness FOR ALL USING (true) WITH CHECK (true);
 
 -- ============================================================
 -- COMMENTS
@@ -353,7 +409,7 @@ COMMENT ON FUNCTION update_asset_effectiveness IS 'Update coaching asset effecti
 
 DO $$
 BEGIN
-    RAISE NOTICE 'v10.0 Proactive Autonomy tables created successfully:';
+    RAISE NOTICE 'v10.0 Proactive Autonomy tables created/updated successfully:';
     RAISE NOTICE '  - nudge_queue';
     RAISE NOTICE '  - proactive_notifications';
     RAISE NOTICE '  - student_outcomes';
