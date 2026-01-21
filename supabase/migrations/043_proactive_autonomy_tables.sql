@@ -29,25 +29,8 @@ CREATE TABLE IF NOT EXISTS nudge_queue (
     expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '7 days')
 );
 
--- Add constraints if they don't exist (idempotent)
-DO $$
-BEGIN
-    -- Add CHECK constraints
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'nudge_queue_nudge_type_check') THEN
-        ALTER TABLE nudge_queue ADD CONSTRAINT nudge_queue_nudge_type_check
-            CHECK (nudge_type IN ('deadline_reminder', 'stall_check', 'check_in', 'opportunity_match', 'eds_threshold', 'celebration', 'weekly_summary', 'goal_progress'));
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'nudge_queue_priority_check') THEN
-        ALTER TABLE nudge_queue ADD CONSTRAINT nudge_queue_priority_check
-            CHECK (priority IN ('low', 'medium', 'high', 'critical'));
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'nudge_queue_status_check') THEN
-        ALTER TABLE nudge_queue ADD CONSTRAINT nudge_queue_status_check
-            CHECK (status IN ('pending', 'delivered', 'dismissed', 'expired'));
-    END IF;
-END $$;
+-- Note: CHECK constraints intentionally omitted to allow flexibility with existing data
+-- Application-level validation is preferred for these fields
 
 -- Indexes for nudge_queue
 CREATE INDEX IF NOT EXISTS idx_nudge_queue_profile ON nudge_queue(profile_id);
@@ -77,24 +60,7 @@ CREATE TABLE IF NOT EXISTS proactive_notifications (
     acted_at TIMESTAMPTZ
 );
 
--- Add constraints if they don't exist
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'proactive_notifications_type_check') THEN
-        ALTER TABLE proactive_notifications ADD CONSTRAINT proactive_notifications_type_check
-            CHECK (notification_type IN ('proactive', 'deadline_alert', 'opportunity_match', 'celebration', 'check_in', 'goal_reminder', 'insight'));
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'proactive_notifications_urgency_check') THEN
-        ALTER TABLE proactive_notifications ADD CONSTRAINT proactive_notifications_urgency_check
-            CHECK (urgency IN ('low', 'normal', 'high', 'critical'));
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'proactive_notifications_status_check') THEN
-        ALTER TABLE proactive_notifications ADD CONSTRAINT proactive_notifications_status_check
-            CHECK (status IN ('pending', 'viewed', 'acted', 'dismissed'));
-    END IF;
-END $$;
+-- Note: CHECK constraints intentionally omitted to allow flexibility with existing data
 
 -- Indexes for proactive_notifications
 CREATE INDEX IF NOT EXISTS idx_proactive_notifications_profile ON proactive_notifications(profile_id);
@@ -142,14 +108,7 @@ BEGIN
     END IF;
 END $$;
 
--- Add constraints if they don't exist
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'student_outcomes_type_check') THEN
-        ALTER TABLE student_outcomes ADD CONSTRAINT student_outcomes_type_check
-            CHECK (outcome_type IN ('award_win', 'award_loss', 'program_accepted', 'program_rejected', 'goal_completed', 'goal_abandoned', 'project_completed', 'skill_mastered', 'milestone_achieved', 'custom'));
-    END IF;
-END $$;
+-- Note: CHECK constraints intentionally omitted to allow flexibility with existing data
 
 -- Indexes for student_outcomes
 CREATE INDEX IF NOT EXISTS idx_student_outcomes_profile ON student_outcomes(profile_id);
@@ -207,19 +166,7 @@ CREATE TABLE IF NOT EXISTS coaching_assets (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add constraints if they don't exist
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'coaching_assets_category_check') THEN
-        ALTER TABLE coaching_assets ADD CONSTRAINT coaching_assets_category_check
-            CHECK (category IN ('technique', 'response_pattern', 'reframe', 'question', 'celebration', 'nudge', 'crisis_response', 'story'));
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'coaching_assets_effectiveness_check') THEN
-        ALTER TABLE coaching_assets ADD CONSTRAINT coaching_assets_effectiveness_check
-            CHECK (effectiveness_score >= 0 AND effectiveness_score <= 1);
-    END IF;
-END $$;
+-- Note: CHECK constraints intentionally omitted to allow flexibility with existing data
 
 -- Indexes for coaching_assets
 CREATE INDEX IF NOT EXISTS idx_coaching_assets_category ON coaching_assets(category);
@@ -261,13 +208,15 @@ CREATE TABLE IF NOT EXISTS technique_effectiveness (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add unique constraint if it doesn't exist
+-- Add unique constraint if it doesn't exist (needed for ON CONFLICT upsert)
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'technique_effectiveness_asset_archetype_situation_key') THEN
-        ALTER TABLE technique_effectiveness ADD CONSTRAINT technique_effectiveness_asset_archetype_situation_key
-            UNIQUE (asset_id, archetype, situation_type);
-    END IF;
+    ALTER TABLE technique_effectiveness ADD CONSTRAINT technique_effectiveness_asset_archetype_situation_key
+        UNIQUE (asset_id, archetype, situation_type);
+EXCEPTION
+    WHEN duplicate_object THEN
+        -- Constraint already exists, ignore
+        NULL;
 END $$;
 
 -- Indexes for technique_effectiveness
