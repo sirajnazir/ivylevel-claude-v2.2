@@ -241,11 +241,12 @@ export function AgentDetailModal({
 // ASSESSMENT DETAIL VIEW
 // ============================================================
 function AssessmentDetail({ data }: { data: Record<string, unknown> }) {
-  const dna = data.dna as string || data.narrative_dna as string || '';
-  const themes = (data.themes as string[]) || [];
-  const confidence = (data.confidence as number) || 0;
+  // v5.2: Support both camelCase (from AssessmentAgentCard) and snake_case field names
+  const dna = data.narrativeDna as string || data.dna as string || data.narrative_dna as string || '';
+  const themes = (data.themes as string[]) || (data.narrativeThemes as string[]) || [];
+  const confidence = (data.confidence as number) || (data.narrativeConfidence as number) || 0;
   const identityMarkers = (data.identity_markers as string[]) || [];
-  const brandStatement = data.brand_statement as string || data.rationale as string || '';
+  const brandStatement = data.brandStatement as string || data.brand_statement as string || data.rationale as string || '';
 
   return (
     <div className="space-y-6">

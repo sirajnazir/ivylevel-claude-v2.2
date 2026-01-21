@@ -100,6 +100,23 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 logger.warning("execution_jobs_registration_skipped", error=str(e))
 
+            # v9.1: Register EC Agent nudge scheduler jobs (projects sync + deadline checks)
+            try:
+                from services.execution_scheduler import register_ec_scheduler_jobs
+                register_ec_scheduler_jobs(workflow_runner.scheduler, db)
+                logger.info("ec_nudge_scheduler_jobs_registered")
+            except Exception as e:
+                logger.warning("ec_nudge_jobs_registration_skipped", error=str(e))
+
+            # v13.1: Register Letta multi-agent scheduler jobs
+            # ADDITIVE: Background jobs for deadline checks, opportunity matching, memory sync
+            try:
+                from letta.scheduler_jobs import register_letta_jobs
+                register_letta_jobs(workflow_runner.scheduler)
+                logger.info("letta_scheduler_jobs_registered")
+            except Exception as e:
+                logger.warning("letta_jobs_registration_skipped", error=str(e))
+
         except Exception as e:
             logger.error("workflow_runner_start_error", error=str(e))
 
@@ -2162,6 +2179,24 @@ app.include_router(v13_router)
 
 # v5.3: Register Execution Agent router
 app.include_router(execution_router)
+
+# v10.0: Register Autonomous Intelligence Layer router
+# ADDITIVE: New endpoints for autonomous coaching (Phase 3 Intelligence)
+try:
+    from routers.intelligence import intelligence_router
+    app.include_router(intelligence_router)
+    logger.info("Autonomous Intelligence router registered at /intelligence")
+except ImportError as e:
+    logger.warning(f"Intelligence router not available: {e}")
+
+# v13.1: Register Letta multi-agent router
+# ADDITIVE: Endpoints for Letta orchestrator and specialist agents
+try:
+    from letta.router import letta_router
+    app.include_router(letta_router)
+    logger.info("Letta multi-agent router registered at /api/letta")
+except ImportError as e:
+    logger.warning(f"Letta router not available: {e}")
 
 
 # =====================================================

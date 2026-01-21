@@ -181,3 +181,56 @@ Claude Code MUST NOT proceed with implementation until:
 3. No MAGIC NUMBERS or hardcoded values exist
 4. Proper DEFAULTS and VALIDATION are in place
 5. The fix is FUTURE-PROOF and extensible
+
+## Documentation & Spec Naming Convention
+
+### Spec File Naming (MANDATORY)
+
+All specification documents MUST follow this naming convention:
+
+```
+SPEC_<DESCRIPTION>_<DATE>_<TIME>_v<VERSION>_<SEQ>.md
+```
+
+**Format breakdown:**
+- `SPEC_` - Prefix indicating this is a specification document
+- `<DESCRIPTION>` - Brief snake_case description (e.g., `AGENT_ARCHITECTURE`, `UI_FLOW`)
+- `<DATE>` - Date in YYYYMMDD format
+- `<TIME>` - Time in HHMM format (24-hour)
+- `v<VERSION>` - Version number (e.g., v1, v2)
+- `<SEQ>` - Incremental sequence number for same-day specs (001, 002, etc.)
+
+**Examples:**
+```
+SPEC_AGENT_ARCHITECTURE_20260120_1830_v1_001.md
+SPEC_LETTA_INTEGRATION_20260120_1900_v1_002.md
+SPEC_UI_UX_FLOW_20260121_0900_v2_001.md
+```
+
+**Why this matters:**
+- Many docs are generated daily - this prevents losing track of latest versions
+- Enables chronological sorting in file explorers
+- Clear versioning for iterative refinements
+- Sequence numbers handle multiple specs on same day
+
+### Spec File Location
+
+All specs should be stored in:
+```
+/agents/specs/           # For backend/agent specs
+/docs/specs/             # For frontend/UI specs (if exists)
+```
+
+### Spec Document Structure
+
+Every spec MUST include:
+1. **Header** - Title, version, date, author
+2. **Status** - Draft/Review/Approved/Implemented
+3. **Summary** - 2-3 sentence overview
+4. **Current State** - What exists today
+5. **Proposed Changes** - What will change (if applicable)
+6. **Technical Details** - Architecture, DB schema, API endpoints
+7. **UI/UX Flow** - User journey with screenshots/diagrams
+8. **Dependencies** - What this depends on
+9. **Risks & Mitigations** - What could break
+10. **Testing Plan** - How to verify

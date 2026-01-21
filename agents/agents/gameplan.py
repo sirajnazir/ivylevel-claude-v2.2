@@ -58,6 +58,17 @@ except ImportError:
 # v8: MiddlewareIntegrationMixin for consistent agent interface
 from .mixins import MiddlewareIntegrationMixin
 
+# v11: Coaching Asset Integration (139 techniques)
+try:
+    from intelligence.registry import AssetRegistry, AssetSelector
+    from intelligence.primitives import AssetDomain
+    COACHING_ASSETS_AVAILABLE = True
+except ImportError:
+    COACHING_ASSETS_AVAILABLE = False
+    AssetRegistry = None
+    AssetSelector = None
+    AssetDomain = None
+
 import logging
 mw_logger = logging.getLogger(__name__)
 
@@ -128,6 +139,77 @@ class GamePlanAgent(MiddlewareIntegrationMixin):
             )
         except Exception as e:
             mw_logger.warning(f"Middleware init failed (non-fatal): {e}")
+
+        # v11: Initialize coaching asset selector (strategy techniques)
+        self.asset_selector = None
+        self.asset_registry = None
+        if COACHING_ASSETS_AVAILABLE:
+            try:
+                self.asset_registry = AssetRegistry(self.db)
+                self.asset_selector = AssetSelector(self.asset_registry)
+                mw_logger.info("[GamePlan] Coaching assets enabled (strategy techniques)")
+            except Exception as e:
+                mw_logger.warning(f"Coaching asset init failed (non-fatal): {e}")
+
+    async def _select_strategy_technique(
+        self,
+        planning_type: str = "roadmap_synthesis",
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Select the best coaching technique for game plan strategy.
+
+        Uses strategy techniques from the 139-technique library.
+
+        Returns:
+            Selected technique with content or None if unavailable
+        """
+        if not self.asset_selector:
+            return None
+
+        try:
+            context = {
+                "event_type": f"gameplan_{planning_type}",
+                "keywords": ["strategy", "planning", "roadmap", "narrative"],
+                "tags": ["strategy", "planning"],
+            }
+
+            class MinimalProfile:
+                def __init__(self):
+                    self.pressure_response = "balanced"
+                    self.risk_tolerance = "medium"
+                    self.motivation_style = "intrinsic"
+                    self.feedback_reception = "direct"
+                    self.celebration_preference = "private"
+                    self.task_approach = "sequential"
+                    self.failure_recovery = "moderate"
+                    self.overwhelm_threshold = 0.7
+                    self.communication_style = "direct"
+
+                def get_coaching_adaptations(self):
+                    return {}
+
+            result = await self.asset_selector.select(
+                context=context,
+                student_profile=MinimalProfile(),
+                domain=AssetDomain.STRATEGY,
+            )
+
+            if result.success and result.asset:
+                technique = result.asset
+                return {
+                    "id": str(technique.id),
+                    "name": technique.name,
+                    "content": technique.content,
+                    "description": technique.description,
+                    "score": result.score,
+                    "reasoning": result.reasoning,
+                }
+
+            return None
+
+        except Exception as e:
+            mw_logger.warning(f"Strategy technique selection failed (non-fatal): {e}")
+            return None
 
     def _init_sub_agents(self):
         """
@@ -411,6 +493,16 @@ class GamePlanAgent(MiddlewareIntegrationMixin):
             # v5.4: Use middleware for intelligent prioritization if available
             if self._legacy_middleware:
                 unified_plan["_middleware_enabled"] = True
+
+            # Sync game plan items to projects table for EC Agent tracking
+            try:
+                from services.gameplan_sync import sync_gameplan_to_projects
+                synced_projects = await sync_gameplan_to_projects(
+                    self.db, profile_id, unified_plan
+                )
+                print(f"[GamePlan] Orchestrated: Synced {len(synced_projects)} projects for EC Agent")
+            except Exception as sync_err:
+                print(f"[GamePlan] Project sync warning (non-fatal): {sync_err}")
 
             # Version state
             await self._version_state(profile_id, "gameplan_orchestrated", {
@@ -917,6 +1009,16 @@ class GamePlanAgent(MiddlewareIntegrationMixin):
 
             # Store in database
             await self._save_game_plan(profile_id, game_plan)
+
+            # Sync game plan items to projects table for EC Agent tracking
+            try:
+                from services.gameplan_sync import sync_gameplan_to_projects
+                synced_projects = await sync_gameplan_to_projects(
+                    self.db, profile_id, game_plan
+                )
+                print(f"[GamePlan] Synced {len(synced_projects)} projects for EC Agent")
+            except Exception as sync_err:
+                print(f"[GamePlan] Project sync warning (non-fatal): {sync_err}")
 
             # Update profile with identity seeds (optional, may not exist in schema)
             try:
@@ -1563,6 +1665,19 @@ Return as JSON array:
             "completion_percentage": 0,
             "created_at": datetime.now().isoformat()
         }).execute()
+
+        # Trigger EC Agent onboarding - creates projects and welcome message
+        try:
+            from services.ec_onboarding import trigger_ec_onboarding
+            await trigger_ec_onboarding(
+                supabase_client=self.db,
+                profile_id=profile_id,
+                plan_data=game_plan
+            )
+            logger.info(f"EC onboarding triggered for profile {profile_id}")
+        except Exception as e:
+            # Non-critical - log but don't fail game plan generation
+            logger.warning(f"EC onboarding trigger failed (non-critical): {e}")
 
     async def _get_profile(self, profile_id: str) -> Optional[Dict]:
         """Get profile with assessment data using centralized function."""

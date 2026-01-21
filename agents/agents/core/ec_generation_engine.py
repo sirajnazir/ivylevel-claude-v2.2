@@ -377,6 +377,11 @@ class ECGenerationEngine:
             for a in activities[:10]  # Limit to 10 activities
         ]) or "No activities listed"
 
+        # Get additional profile signals for richer pillar extraction
+        passion_signals = profile.get("passion_signals", {})
+        service_data = profile.get("service", {})
+        hidden_capabilities = profile.get("hidden_capabilities", {})
+
         return f'''You are Jenny Duan, expert college admissions coach known for
 hyper-personalized coaching. Analyze this student profile and extract the 4 Pillars
 with EXTREME SPECIFICITY.
@@ -392,6 +397,7 @@ Background: {profile.get("background", "")}
 Grade: {profile.get("grade", "")}
 Location: {profile.get("location", "")}
 School: {profile.get("school", "")}
+School Type: {profile.get("school_type", "")}
 Family Context: {profile.get("family_context", "")}
 Constraints: {profile.get("constraints", [])}
 
@@ -401,6 +407,25 @@ Activities:
 Interests: {profile.get("interests", [])}
 Passion Statement: {profile.get("passion", "")}
 Academic Info: {profile.get("academics", {})}
+
+Passion Signals:
+- Leadership Level: {passion_signals.get("leadership_level", "unknown")}
+- EC Commitment Years: {passion_signals.get("ec_commitment_years", "unknown")}
+- EC Hours/Week: {passion_signals.get("ec_hours_weekly", "unknown")}
+- Project Impact: {passion_signals.get("project_impact", "unknown")}
+- Project Description: {passion_signals.get("project_description", "")}
+- Research Level: {passion_signals.get("research_level", "unknown")}
+- EC Awards: {passion_signals.get("ec_awards", [])}
+
+Service/Community Signals:
+- Service Leadership: {service_data.get("service_leadership", "unknown")}
+- Service Hours: {service_data.get("service_hours", "unknown")}
+- Community Impact: {service_data.get("community_impact", "unknown")}
+
+Hidden Capabilities:
+- Technical Projects: {hidden_capabilities.get("hidden_technical_projects", [])}
+- Hobby Passions: {hidden_capabilities.get("hobby_passions", [])}
+- Unconventional Interests: {hidden_capabilities.get("unconventional_interests", [])}
 
 EXTRACT THE 4 PILLARS:
 
@@ -484,29 +509,33 @@ Return ONLY valid JSON in this exact format:
     def _fallback_extract_pillars(self, profile: Dict[str, Any]) -> FourPillars:
         """Fallback extraction when LLM is not available."""
         activities = profile.get("activities", [])
+        passion_signals = profile.get("passion_signals", {})
+        service_data = profile.get("service", {})
+        hidden_caps = profile.get("hidden_capabilities", {})
+        demographics = profile.get("demographics", {})
 
         return FourPillars(
             identity={
                 "demographics": f"Grade {profile.get('grade', 'unknown')}, {profile.get('location', 'unknown location')}",
                 "cultural_religious": profile.get("background", ""),
                 "personality": "",
-                "circumstances": profile.get("school", ""),
+                "circumstances": f"{profile.get('school', '')} ({profile.get('school_type', '')})",
                 "specific_experiences": [],
             },
             aptitude={
                 "academic_strengths": str(profile.get("academics", {})),
-                "technical_skills": [],
+                "technical_skills": hidden_caps.get("hidden_technical_projects", []),
                 "demonstrated_abilities": [a.get("title", a.get("name", "")) for a in activities[:3]],
                 "certifications": [],
             },
             passion={
                 "stated_interests": profile.get("interests", []),
-                "hobbies": [],
+                "hobbies": hidden_caps.get("hobby_passions", []),
                 "media_consumption": "",
-                "energy_indicators": profile.get("passion", ""),
+                "energy_indicators": profile.get("passion", "") or passion_signals.get("project_description", ""),
             },
             service={
-                "current_volunteering": "",
+                "current_volunteering": f"Service leadership: {service_data.get('service_leadership', 'unknown')}, Hours: {service_data.get('service_hours', 'unknown')}",
                 "causes": [],
                 "target_populations": [],
                 "values": [],

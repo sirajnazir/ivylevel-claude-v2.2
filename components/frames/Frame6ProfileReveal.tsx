@@ -16,8 +16,9 @@
 import { useCallback, useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useStudentStore } from '@/lib/store/useStudentStore';
-import { useSessionStore } from '@/lib/store/useSessionStore';
+import { useSessionStore, useProfileId } from '@/lib/store/useSessionStore';
 import { useResultsStore } from '@/lib/store/useResultsStore';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { getProfileTier } from '@/lib/utils/skipLogic';
 import CircularProgress from '@/components/rings/CircularProgress';
@@ -239,6 +240,11 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
   const [isScoring, setIsScoring] = useState(false);
   const [isSynthesizingNarrative, setIsSynthesizingNarrative] = useState(false);
 
+  // v5.2: Use auth user ID for profile_id to match MultiAgentTab
+  const { user } = useAuth();
+  const storeProfileId = useProfileId();
+  const effectiveProfileId = user?.id || storeProfileId || profile.session_id || 'local';
+
   // Debug logging
   useEffect(() => {
     console.log('Frame6ProfileReveal: Profile data:', {
@@ -312,11 +318,14 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
           },
         };
 
+        // v5.2: Use effectiveProfileId (auth user ID > store profile_id > session_id)
+        // This ensures narrative is saved with the same ID used by MultiAgentTab
+        console.log('Frame6ProfileReveal: Using profile_id:', effectiveProfileId);
         const response = await fetch('/api/agents/narrative/synthesize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            profile_id: profile.identity?.student_id || profile.session_id || 'local',
+            profile_id: effectiveProfileId,
             assessment_contract: assessmentContract,
           }),
         });
@@ -346,7 +355,7 @@ export function Frame6ProfileReveal({ onComplete }: Frame6ProfileRevealProps) {
     };
 
     runNarrativeSynthesis();
-  }, [profile, existingResults, existingNarrative, isSynthesizingNarrative, setNarrative]);
+  }, [profile, existingResults, existingNarrative, isSynthesizingNarrative, setNarrative, effectiveProfileId]);
 
   // Calculate category scores - USE API RESULTS when available, fallback to local
   const categoryScores = useMemo(

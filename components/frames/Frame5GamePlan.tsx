@@ -540,9 +540,35 @@ export function Frame5GamePlan({ onComplete }: Frame5GamePlanProps) {
         userId: user.id,
         planData,
         targetTier: gamePlan.tier,
-      }).then((result) => {
-        if (result.success) {
-          console.log('[Frame5GamePlan] Game plan saved successfully');
+      }).then(async (result) => {
+        if (result.success && result.data?.id) {
+          console.log('[Frame5GamePlan] Game plan saved successfully:', result.data.id);
+
+          // Trigger EC onboarding on the backend to create projects and nudges
+          try {
+            const onboardingResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_AGENT_SERVICE_URL || 'http://localhost:8001'}/api/execution/onboarding/trigger`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  profile_id: user.id,
+                  game_plan_id: result.data.id,
+                }),
+              }
+            );
+            const onboardingResult = await onboardingResponse.json();
+            if (onboardingResult.success) {
+              console.log('[Frame5GamePlan] EC onboarding triggered:', {
+                projects: onboardingResult.projects_created,
+                welcomeNudge: onboardingResult.welcome_nudge_created,
+              });
+            } else {
+              console.warn('[Frame5GamePlan] EC onboarding had issues:', onboardingResult.errors);
+            }
+          } catch (onboardingErr) {
+            console.warn('[Frame5GamePlan] EC onboarding request failed:', onboardingErr);
+          }
         } else {
           console.error('[Frame5GamePlan] Failed to save game plan:', result.error);
         }

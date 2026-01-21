@@ -282,90 +282,82 @@ export async function hasCompletedAssessment(userId: string): Promise<boolean> {
 /**
  * Delete all user data from Supabase
  * Useful for testing - allows re-running the assessment flow
- * Does NOT delete the user profile (needed for auth)
+ * Deletes ALL related data including profile, projects, conversations, etc.
  */
 export async function deleteUserData(userId: string): Promise<{
   success: boolean;
   error?: string;
-  deletedCounts?: {
-    assessments: number;
-    gamePlans: number;
-    weeklyVitals: number;
-    studentItems: number;
-    timelineEvents: number;
-  };
+  deletedCounts?: Record<string, number>;
 }> {
   try {
     const supabase = getSupabaseClient();
-    const deletedCounts = {
-      assessments: 0,
-      gamePlans: 0,
-      weeklyVitals: 0,
-      studentItems: 0,
-      timelineEvents: 0,
-    };
+    const deletedCounts: Record<string, number> = {};
 
     console.log('[AssessmentService] Deleting all data for user:', userId);
 
-    // Delete assessments
-    const { count: assessmentCount, error: assessmentError } = await supabase
-      .from('assessments')
-      .delete({ count: 'exact' })
-      .eq('user_id', userId);
+    // First, get the profile_id (which may be the same as userId or different)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .single();
 
-    if (assessmentError) {
-      console.error('[AssessmentService] Delete assessments error:', assessmentError);
-    } else {
-      deletedCounts.assessments = assessmentCount ?? 0;
+    const profileId = profile?.id || userId;
+    console.log('[AssessmentService] Profile ID:', profileId);
+
+    // Helper function to delete from a table
+    const deleteFromTable = async (
+      tableName: string,
+      idColumn: string,
+      idValue: string
+    ): Promise<number> => {
+      try {
+        const { count, error } = await supabase
+          .from(tableName)
+          .delete({ count: 'exact' })
+          .eq(idColumn, idValue);
+
+        if (error) {
+          // Table might not exist or column mismatch - that's OK
+          console.warn(`[AssessmentService] Delete ${tableName} warning:`, error.message);
+          return 0;
+        }
+        return count ?? 0;
+      } catch {
+        return 0;
+      }
+    };
+
+    // Delete from tables that use user_id
+    const userIdTables = [
+      'assessments',
+      'weekly_vitals',
+      'student_items',
+      'timeline_events',
+    ];
+
+    for (const table of userIdTables) {
+      deletedCounts[table] = await deleteFromTable(table, 'user_id', userId);
     }
 
-    // Delete game plans
-    const { count: gamePlanCount, error: gamePlanError } = await supabase
-      .from('game_plans')
-      .delete({ count: 'exact' })
-      .eq('user_id', userId);
+    // Delete from tables that use profile_id (child tables first to avoid FK violations)
+    const profileIdTables = [
+      'nudge_queue',
+      'conversations',
+      'projects',
+      'weekly_plans',
+      'agent_memories',
+      'crises',
+      'game_plans',
+      'notifications',
+    ];
 
-    if (gamePlanError) {
-      console.error('[AssessmentService] Delete game plans error:', gamePlanError);
-    } else {
-      deletedCounts.gamePlans = gamePlanCount ?? 0;
+    for (const table of profileIdTables) {
+      deletedCounts[table] = await deleteFromTable(table, 'profile_id', profileId);
     }
 
-    // Delete weekly vitals
-    const { count: vitalsCount, error: vitalsError } = await supabase
-      .from('weekly_vitals')
-      .delete({ count: 'exact' })
-      .eq('user_id', userId);
-
-    if (vitalsError) {
-      console.error('[AssessmentService] Delete weekly vitals error:', vitalsError);
-    } else {
-      deletedCounts.weeklyVitals = vitalsCount ?? 0;
-    }
-
-    // Delete student items
-    const { count: itemsCount, error: itemsError } = await supabase
-      .from('student_items')
-      .delete({ count: 'exact' })
-      .eq('user_id', userId);
-
-    if (itemsError) {
-      console.error('[AssessmentService] Delete student items error:', itemsError);
-    } else {
-      deletedCounts.studentItems = itemsCount ?? 0;
-    }
-
-    // Delete timeline events
-    const { count: eventsCount, error: eventsError } = await supabase
-      .from('timeline_events')
-      .delete({ count: 'exact' })
-      .eq('user_id', userId);
-
-    if (eventsError) {
-      console.error('[AssessmentService] Delete timeline events error:', eventsError);
-    } else {
-      deletedCounts.timelineEvents = eventsCount ?? 0;
-    }
+    // Finally delete the profile itself
+    deletedCounts['profiles'] = await deleteFromTable('profiles', 'id', profileId);
 
     console.log('[AssessmentService] Deleted counts:', deletedCounts);
     return { success: true, deletedCounts };

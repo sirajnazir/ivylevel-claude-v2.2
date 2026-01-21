@@ -14,6 +14,195 @@ from config import settings
 logger = structlog.get_logger()
 
 
+# =====================================================
+# Profile Data Transformation for Agent Compatibility
+# =====================================================
+
+def transform_profile_for_agents(profile: Dict) -> Dict:
+    """
+    Transform nested profile_data structure to flat fields for EC Engine compatibility.
+
+    The frontend assessment stores data in a nested structure:
+        profile_data.identity.grade
+        profile_data.aptitude.gpa_weighted
+        profile_data.passion.leadership_level
+        profile_data.community.service_leadership
+        profile_data.demographics.ethnicity
+        profile_data.high_school.hs_name
+
+    But the EC Generation Engine (4 Pillars + 10 Dimensions) expects flat fields:
+        profile.grade
+        profile.academics
+        profile.demographics
+        profile.location
+        profile.school
+        profile.passion
+        profile.interests
+        profile.service
+
+    This transformation ADDS flat fields without removing profile_data,
+    ensuring backward compatibility with both old agents and new features.
+
+    Args:
+        profile: Profile dict with nested profile_data
+
+    Returns:
+        Profile dict with BOTH nested profile_data AND flat fields
+    """
+    print(f"[TRANSFORM] Starting transformation for profile {profile.get('id', 'unknown')}")
+    if not profile:
+        print("[TRANSFORM] Profile is None, returning")
+        return profile
+
+    profile_data = profile.get("profile_data", {})
+    if not profile_data:
+        print("[TRANSFORM] No profile_data found, returning unchanged")
+        return profile
+
+    print(f"[TRANSFORM] profile_data keys: {list(profile_data.keys())}")
+
+    # Extract nested sections
+    identity = profile_data.get("identity", {})
+    aptitude = profile_data.get("aptitude", {})
+    passion = profile_data.get("passion", {})
+    community = profile_data.get("community", {})
+    demographics = profile_data.get("demographics", {})
+    high_school = profile_data.get("high_school", {})
+    assessment_intel = profile_data.get("assessment_intelligence", {})
+
+    print(f"[TRANSFORM] identity: {identity}")
+    print(f"[TRANSFORM] passion keys: {list(passion.keys()) if passion else 'empty'}")
+    print(f"[TRANSFORM] demographics: {demographics}")
+
+    # =========================================================
+    # ADD flat fields for EC Engine (without removing profile_data)
+    # =========================================================
+
+    # Grade (for IDENTITY pillar - demographic context)
+    if identity.get("grade") and "grade" not in profile:
+        profile["grade"] = identity["grade"]
+
+    # Name
+    if identity.get("name") and "name" not in profile:
+        profile["name"] = identity["name"]
+
+    # Demographics (for IDENTITY pillar - cultural/background context)
+    if demographics and "demographics" not in profile:
+        profile["demographics"] = demographics
+
+    # Location (for geographic context in 10 Dimensions)
+    if high_school.get("region") and "location" not in profile:
+        profile["location"] = high_school["region"]
+
+    # School (for IDENTITY pillar - circumstances)
+    if high_school.get("hs_name") and "school" not in profile:
+        profile["school"] = high_school["hs_name"]
+
+    # School type (public/private/charter)
+    if high_school.get("hs_type") and "school_type" not in profile:
+        profile["school_type"] = high_school["hs_type"]
+
+    # Academics (for APTITUDE pillar)
+    if aptitude and "academics" not in profile:
+        profile["academics"] = {
+            "gpa": aptitude.get("gpa_weighted") or aptitude.get("gpa_unweighted"),
+            "gpa_weighted": aptitude.get("gpa_weighted"),
+            "gpa_unweighted": aptitude.get("gpa_unweighted"),
+            "sat_total": aptitude.get("sat_total"),
+            "act_total": aptitude.get("act_total"),
+            "ap_count": aptitude.get("ap_count"),
+            "ap_avg_score": aptitude.get("ap_avg_score"),
+            "academic_awards": aptitude.get("academic_awards", []),
+            "test_optional": aptitude.get("test_optional", False),
+        }
+
+    # Passion statement (for PASSION pillar - brag_text is the free-form passion input)
+    if passion.get("brag_text") and "passion" not in profile:
+        profile["passion"] = passion["brag_text"]
+
+    # Interests (for PASSION pillar - spike_category indicates primary interest area)
+    if passion.get("spike_category") and "interests" not in profile:
+        profile["interests"] = [passion["spike_category"]]
+
+    # Passion signals (additional passion data for pillar extraction)
+    if passion and "passion_signals" not in profile:
+        profile["passion_signals"] = {
+            "leadership_level": passion.get("leadership_level"),
+            "ec_commitment_years": passion.get("ec_commitment_years"),
+            "ec_hours_weekly": passion.get("ec_hours_weekly"),
+            "project_impact": passion.get("project_impact"),
+            "project_description": passion.get("project_description"),
+            "research_level": passion.get("research_level"),
+            "ec_awards": passion.get("ec_awards", []),
+        }
+
+    # Service/Community (for SERVICE pillar)
+    if community and "service" not in profile:
+        profile["service"] = {
+            "service_leadership": community.get("service_leadership"),
+            "service_hours": community.get("service_hours"),
+            "community_impact": community.get("community_impact"),
+        }
+
+    # Family context (for IDENTITY pillar - circumstances)
+    if assessment_intel.get("family_context") and "family_context" not in profile:
+        profile["family_context"] = assessment_intel["family_context"]
+
+    # Time management (useful for execution planning)
+    if assessment_intel.get("time_management") and "time_management" not in profile:
+        profile["time_management"] = assessment_intel["time_management"]
+
+    # Psychometrics (useful for coaching style adaptation)
+    if assessment_intel.get("psychometrics") and "psychometrics" not in profile:
+        profile["psychometrics"] = assessment_intel["psychometrics"]
+
+    # Hidden capabilities (for discovering untapped potential)
+    if assessment_intel.get("hidden_capabilities") and "hidden_capabilities" not in profile:
+        profile["hidden_capabilities"] = assessment_intel["hidden_capabilities"]
+
+    # Activities - empty by default, EC Engine will GENERATE these
+    # This is intentional: new students don't have activities, EC Engine creates them
+    if "activities" not in profile:
+        profile["activities"] = []
+
+    # Background summary (for IDENTITY pillar - narrative context)
+    if "background" not in profile:
+        background_parts = []
+        if demographics.get("ethnicity") and demographics["ethnicity"] != "PREFER_NOT_SAY":
+            background_parts.append(demographics["ethnicity"])
+        if demographics.get("first_gen"):
+            background_parts.append("first-generation college student")
+        if high_school.get("hs_type"):
+            background_parts.append(f"{high_school['hs_type']} school")
+        if high_school.get("region"):
+            background_parts.append(high_school["region"])
+        profile["background"] = ", ".join(background_parts) if background_parts else ""
+
+    # Constraints (financial, time, etc. - useful for realistic planning)
+    if "constraints" not in profile:
+        constraints = []
+        if demographics.get("income_band") and demographics["income_band"] in ["LOW", "LOWER_MIDDLE"]:
+            constraints.append("financial_constraints")
+        if assessment_intel.get("time_management", {}).get("burnout_risk") == "HIGH":
+            constraints.append("time_pressure")
+        profile["constraints"] = constraints
+
+    print(f"[TRANSFORM] RESULT: grade={profile.get('grade')}, location={profile.get('location')}, school={profile.get('school')}")
+    print(f"[TRANSFORM] RESULT: has_academics={bool(profile.get('academics'))}, has_passion={bool(profile.get('passion'))}, has_service={bool(profile.get('service'))}")
+    print(f"[TRANSFORM] RESULT: interests={profile.get('interests')}, background={profile.get('background')}")
+
+    logger.debug(
+        "transform_profile_for_agents: added flat fields",
+        profile_id=profile.get("id"),
+        has_grade=bool(profile.get("grade")),
+        has_academics=bool(profile.get("academics")),
+        has_passion=bool(profile.get("passion")),
+        has_service=bool(profile.get("service")),
+    )
+
+    return profile
+
+
 @lru_cache()
 def get_supabase_client() -> Client:
     """Get cached Supabase client using service role key."""
@@ -91,6 +280,10 @@ async def get_profile_with_assessment(profile_id: str) -> Optional[Dict]:
             # No assessment - set empty profile_data
             profile["profile_data"] = {}
             logger.warning("get_profile_with_assessment: no assessment found", profile_id=profile_id)
+
+        # Transform profile_data to flat fields for EC Engine compatibility
+        # This ADDS flat fields without removing profile_data (backward compatible)
+        profile = transform_profile_for_agents(profile)
 
         return profile
 

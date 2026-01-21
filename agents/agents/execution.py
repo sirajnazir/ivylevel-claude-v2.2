@@ -41,6 +41,17 @@ from graphs.crisis_alchemy import CrisisAlchemyGraph
 # v8: Middleware Integration (40 patterns)
 from .mixins import MiddlewareIntegrationMixin
 
+# v11: Coaching Asset Integration (139 techniques)
+try:
+    from intelligence.registry import AssetRegistry, AssetSelector
+    from intelligence.primitives import AssetDomain
+    COACHING_ASSETS_AVAILABLE = True
+except ImportError:
+    COACHING_ASSETS_AVAILABLE = False
+    AssetRegistry = None
+    AssetSelector = None
+    AssetDomain = None
+
 import structlog
 
 logger = structlog.get_logger()
@@ -80,6 +91,103 @@ class ExecutionAgent(BaseAgent, MiddlewareIntegrationMixin):
             )
         except Exception as e:
             logger.warning(f"Middleware init failed (non-fatal): {e}")
+
+        # v11: Initialize coaching asset selector (E1-E22 execution techniques)
+        self.asset_selector = None
+        self.asset_registry = None
+        if COACHING_ASSETS_AVAILABLE:
+            try:
+                self.asset_registry = AssetRegistry(supabase)
+                self.asset_selector = AssetSelector(self.asset_registry)
+                logger.info("[Execution] Coaching assets enabled (E1-E22 execution techniques)")
+            except Exception as e:
+                logger.warning(f"Coaching asset init failed (non-fatal): {e}")
+
+    async def _select_execution_technique(
+        self,
+        task_type: str = "project_scaffolding",
+        crisis_context: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Select the best coaching technique for execution tasks.
+
+        Uses E1-E22 execution techniques from the 139-technique library:
+        - E1: The Synchronous Send (procrastination intervention)
+        - E2: The 3x Time Buffer (realistic estimation)
+        - E3: The Microstep Scaffold (20+ step breakdown)
+        - E4: The Crisis Alchemy Protocol
+        - E5: The Celebration Calibration
+        - etc.
+
+        Returns:
+            Selected technique with content or None if unavailable
+        """
+        if not self.asset_selector:
+            return None
+
+        try:
+            # Build context for technique selection
+            context = {
+                "event_type": f"execution_{task_type}",
+                "keywords": ["execution", "task", "project", "deadline"],
+                "tags": ["execution", "efficiency"],
+            }
+
+            # Add crisis-specific keywords if handling a crisis
+            if crisis_context:
+                context["keywords"].extend(["crisis", "blocker", "recovery"])
+                if crisis_context.get("crisis_type") == "deadline_missed":
+                    context["keywords"].append("deadline")
+                elif crisis_context.get("crisis_type") == "overwhelm":
+                    context["keywords"].append("overwhelm")
+
+            # Add task-specific keywords
+            if task_type == "project_scaffolding":
+                context["keywords"].extend(["scaffold", "breakdown", "microsteps"])
+            elif task_type == "blocker_detection":
+                context["keywords"].extend(["blocker", "stalled", "inactivity"])
+
+            # Create minimal student profile for selection
+            class MinimalProfile:
+                def __init__(self):
+                    self.pressure_response = "balanced"
+                    self.risk_tolerance = "medium"
+                    self.motivation_style = "extrinsic"  # Execution often needs external motivation
+                    self.feedback_reception = "direct"
+                    self.celebration_preference = "private"
+                    self.task_approach = "deadline_driven"
+                    self.failure_recovery = "moderate"
+                    self.overwhelm_threshold = 0.6
+                    self.communication_style = "direct"
+
+                def get_coaching_adaptations(self):
+                    return {}
+
+            # Select technique focused on execution domain
+            result = await self.asset_selector.select(
+                context=context,
+                student_profile=MinimalProfile(),
+                domain=AssetDomain.EXECUTION,
+            )
+
+            if result.success and result.asset:
+                technique = result.asset
+                return {
+                    "id": str(technique.id),
+                    "name": technique.name,
+                    "content": technique.content,
+                    "description": technique.description,
+                    "trigger_conditions": technique.trigger_conditions,
+                    "expected_outcome": technique.expected_outcome,
+                    "score": result.score,
+                    "reasoning": result.reasoning,
+                }
+
+            return None
+
+        except Exception as e:
+            logger.warning(f"Execution technique selection failed (non-fatal): {e}")
+            return None
 
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
         """
@@ -186,6 +294,8 @@ class ExecutionAgent(BaseAgent, MiddlewareIntegrationMixin):
         ACP-004: Assign 1.4x tasks → expect 73% completion.
         This is BETTER than assigning fewer tasks.
 
+        v11: Now enhanced with E1-E22 execution techniques.
+
         Args:
             profile_id: Profile UUID
             project_data: Project definition with name, type, description
@@ -194,6 +304,11 @@ class ExecutionAgent(BaseAgent, MiddlewareIntegrationMixin):
             Created project with microsteps
         """
         self._log_start("scaffold_project", profile_id=profile_id)
+
+        # v11: Select relevant execution technique (E3: Microstep Scaffold, etc.)
+        selected_technique = await self._select_execution_technique("project_scaffolding")
+        if selected_technique:
+            logger.info(f"[Execution] Using technique: {selected_technique['name']} (score: {selected_technique['score']:.2f})")
 
         profile = await self._get_profile(profile_id)
         if not profile:
@@ -411,6 +526,8 @@ class ExecutionAgent(BaseAgent, MiddlewareIntegrationMixin):
         3. Reframe (30s) - Find the opportunity angle
         4. Create (2min) - Design new activity/pivot
 
+        v11: Now enhanced with H1-H10 emotional and E4 crisis techniques.
+
         Autonomy: LOW - Requires HITL approval within 1 hour.
 
         Args:
@@ -423,6 +540,12 @@ class ExecutionAgent(BaseAgent, MiddlewareIntegrationMixin):
             Crisis record with proposed response
         """
         self._log_start("handle_crisis", profile_id=profile_id, crisis_type=crisis_type)
+
+        # v11: Select relevant crisis/emotional technique
+        crisis_context = {"crisis_type": crisis_type, "urgency": urgency}
+        selected_technique = await self._select_execution_technique("crisis_handling", crisis_context)
+        if selected_technique:
+            logger.info(f"[Execution] Crisis technique: {selected_technique['name']} (score: {selected_technique['score']:.2f})")
 
         # Create crisis record
         crisis_data = {

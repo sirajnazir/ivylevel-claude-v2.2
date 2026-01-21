@@ -66,6 +66,13 @@ export const profileIdentityKeys = {
 // ============================================================================
 
 function transformDbRow(row: Record<string, unknown>): ProfileIdentity {
+  // Debug: Log raw row data
+  console.log('[useProfileIdentity] transformDbRow received:', {
+    brand_statement: row.brand_statement,
+    narrative_dna: typeof row.narrative_dna === 'string' ? row.narrative_dna?.substring(0, 50) + '...' : row.narrative_dna,
+    keys: Object.keys(row),
+  });
+
   // Parse narrative_themes if it's a string
   let themes: string[] = [];
   if (row.narrative_themes) {

@@ -22,6 +22,17 @@ from config import FEATURE_FLAGS
 # v8: Middleware Integration (40 patterns)
 from .mixins import MiddlewareIntegrationMixin
 
+# v11: Coaching Asset Integration (139 techniques)
+try:
+    from intelligence.registry import AssetRegistry, AssetSelector
+    from intelligence.primitives import AssetDomain
+    COACHING_ASSETS_AVAILABLE = True
+except ImportError:
+    COACHING_ASSETS_AVAILABLE = False
+    AssetRegistry = None
+    AssetSelector = None
+    AssetDomain = None
+
 import logging
 mw_logger = logging.getLogger(__name__)
 
@@ -80,6 +91,81 @@ class AwardsAgent(MiddlewareIntegrationMixin):
             )
         except Exception as e:
             mw_logger.warning(f"Middleware init failed (non-fatal): {e}")
+
+        # v11: Initialize coaching asset selector (D1-D20 relationship/recommendation techniques)
+        self.asset_selector = None
+        self.asset_registry = None
+        if COACHING_ASSETS_AVAILABLE:
+            try:
+                self.asset_registry = AssetRegistry(self.db)
+                self.asset_selector = AssetSelector(self.asset_registry)
+                mw_logger.info("[Awards] Coaching assets enabled (D1-D20 recommendation techniques)")
+            except Exception as e:
+                mw_logger.warning(f"Coaching asset init failed (non-fatal): {e}")
+
+    async def _select_awards_technique(
+        self,
+        matching_type: str = "portfolio_curation",
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Select the best coaching technique for award matching.
+
+        Uses D1-D20 relationship/recommendation techniques:
+        - D1: The Recommender Mapping Protocol
+        - D2: The Relationship Depth Audit
+        - D3: The Strategic Ask Framework
+        - etc.
+
+        Returns:
+            Selected technique with content or None if unavailable
+        """
+        if not self.asset_selector:
+            return None
+
+        try:
+            context = {
+                "event_type": f"awards_{matching_type}",
+                "keywords": ["awards", "recommendations", "portfolio", "matching"],
+                "tags": ["awards", "recommendations", "relationships"],
+            }
+
+            class MinimalProfile:
+                def __init__(self):
+                    self.pressure_response = "balanced"
+                    self.risk_tolerance = "medium"
+                    self.motivation_style = "extrinsic"
+                    self.feedback_reception = "direct"
+                    self.celebration_preference = "shared"
+                    self.task_approach = "sequential"
+                    self.failure_recovery = "moderate"
+                    self.overwhelm_threshold = 0.7
+                    self.communication_style = "direct"
+
+                def get_coaching_adaptations(self):
+                    return {}
+
+            result = await self.asset_selector.select(
+                context=context,
+                student_profile=MinimalProfile(),
+                domain=AssetDomain.STRATEGY,  # Awards use strategy domain
+            )
+
+            if result.success and result.asset:
+                technique = result.asset
+                return {
+                    "id": str(technique.id),
+                    "name": technique.name,
+                    "content": technique.content,
+                    "description": technique.description,
+                    "score": result.score,
+                    "reasoning": result.reasoning,
+                }
+
+            return None
+
+        except Exception as e:
+            mw_logger.warning(f"Awards technique selection failed (non-fatal): {e}")
+            return None
 
     def _load_enriched_awards(self) -> List[Dict]:
         """Load enriched awards from JSON file with caching"""

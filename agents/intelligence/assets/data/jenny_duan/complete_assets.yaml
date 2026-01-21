@@ -1,0 +1,3368 @@
+# Jenny Duan Complete Coaching Asset Library
+# ============================================
+# 139 Silver Bullet Techniques from 93 Weeks of Coaching Intelligence
+# Source: KB Chip Catalog + EQ-Enriched Reasoning Cores
+#
+# Version: 1.1
+# Last Updated: 2026-01-18
+# Total Techniques: 139
+
+metadata:
+  coach_name: "Jenny Duan"
+  coach_id: "jenny_duan"
+  version: "1.1"
+  source: "93 weeks coaching intelligence extraction"
+  total_techniques: 139
+  categories:
+    - {id: "A", name: "Diagnostic & Assessment", count: 12}
+    - {id: "B", name: "Strategic Positioning", count: 18}
+    - {id: "C", name: "Essay Techniques", count: 25}
+    - {id: "D", name: "Relationship Techniques", count: 20}
+    - {id: "E", name: "Productivity & Execution", count: 22}
+    - {id: "F", name: "Test Preparation", count: 8}
+    - {id: "G", name: "Creative & Innovation", count: 10}
+    - {id: "H", name: "Emotional Calibration", count: 10}
+    - {id: "I", name: "Content Optimization", count: 10}
+  phases:
+    - {id: "P1", name: "Foundation", weeks: "1-12"}
+    - {id: "P2", name: "Building", weeks: "13-52"}
+    - {id: "P3", name: "Junior Summer", weeks: "53-60"}
+    - {id: "P4", name: "Senior Fall", weeks: "61-85"}
+    - {id: "P5", name: "Application Sprint", weeks: "86-93"}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CATEGORY A: DIAGNOSTIC & ASSESSMENT (12 Techniques)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+techniques:
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A1: The 168-Hour Audit
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "A1"
+    name: "The 168-Hour Audit"
+    asset_type: "technique"
+    domain: "time_management"
+    secondary_domains: ["assessment", "execution"]
+    category: "A"
+    tags: ["time", "audit", "prioritization", "overwhelm", "abundance-mindset"]
+
+    content:
+      summary: "Map exactly where 168 weekly hours go to reveal hidden time abundance"
+      description: |
+        When students claim they have no time, have them track every hour for a week.
+        Start with 168 hours total, systematically subtract fixed commitments
+        (sleep 56h, school 40h, homework 14h, basics 14h), reveal hidden hours for excellence.
+      psychology: |
+        Creates abundance mindset ("49 hours available!") vs scarcity ("I have no time").
+        Visual evidence overcomes perception bias - students always find 10+ hours.
+        Transforms overwhelmed student to architected life in 55 minutes.
+      steps:
+        - "Give student a 168-hour spreadsheet (24h × 7 days)"
+        - "Have them log every activity for one week"
+        - "Review together: sleep, school, activities, 'lost time'"
+        - "Calculate: 168 - 56 (sleep) - 40 (school) - 14 (homework) - 14 (basics) = 44-49 hours"
+        - "Identify 10+ recoverable hours in 'lost time'"
+        - "Reallocate to strategic priorities"
+      example_usage: "Student: 'I have no time' → Deploy 168-Hour Audit"
+      outcome: "Transform overwhelmed student to architected life in 55 minutes"
+
+    trigger:
+      keywords: ["no time", "too busy", "overwhelmed", "schedule packed", "can't fit"]
+      phrases:
+        - "I don't have time"
+        - "my schedule is full"
+        - "I'm too busy"
+        - "there's no room"
+      situations: ["student claims time scarcity", "overwhelm expressed", "resistance to new activities"]
+      student_states: ["overwhelmed", "resistant", "defeated"]
+      events: ["new_activity_proposed", "task_overload"]
+      lifecycle_stages: ["P1_FOUNDATION", "P2_BUILDING"]
+
+    applicability:
+      archetypes: ["The Overachiever", "The Scattered Genius", "The Builder", "The Procrastinator"]
+      grade_levels: [9, 10, 11, 12]
+      psychobehavioral_fit:
+        task_approach: ["sequential", "parallel"]
+        overwhelm_threshold: ["low", "medium"]
+      contraindications: ["genuine crisis", "medical issues", "family emergency"]
+
+    effectiveness:
+      quality_score: 0.95
+      confidence_score: 0.92
+      success_rate_benchmark: 0.90
+
+    phase_deployment:
+      primary_phases: ["P1_FOUNDATION"]
+      secondary_phases: ["P2_BUILDING"]
+      phase_ratio: "Diagnostic 60% : Strategic 30% : Tactical 10%"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A2: The Complete Inventory Demand
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "A2"
+    name: "The Complete Inventory Demand"
+    asset_type: "technique"
+    domain: "assessment"
+    secondary_domains: ["strategy"]
+    category: "A"
+    tags: ["inventory", "audit", "activities", "comprehensive", "blind-spots"]
+
+    content:
+      summary: "Comprehensive audit of ALL student activities to eliminate strategic blind spots"
+      description: |
+        When hidden activities are discovered, demand a complete list of EVERYTHING
+        the student is involved in. This eliminates strategic blind spots and enables
+        full portfolio optimization.
+      psychology: |
+        Students often forget or undervalue activities. A complete inventory reveals
+        hidden strengths and enables strategic recombination.
+      steps:
+        - "Trigger: Discovery of an activity you didn't know about"
+        - "Immediate request: 'Send me a list of EVERYTHING you're involved in'"
+        - "Include: clubs, volunteer work, hobbies, jobs, family responsibilities"
+        - "Review for hidden gems and strategic gaps"
+        - "Optimize portfolio based on complete picture"
+      example_usage: "Discovered student teaches Sunday school → 'Send me everything else I don't know about'"
+      outcome: "Full portfolio visibility for optimization"
+
+    trigger:
+      keywords: ["also doing", "forgot to mention", "by the way", "oh and"]
+      phrases:
+        - "I also do"
+        - "I forgot to tell you"
+        - "there's this other thing"
+      situations: ["hidden activity discovered", "incomplete picture suspected"]
+      student_states: ["forthcoming", "opening up"]
+      lifecycle_stages: ["P1_FOUNDATION", "P2_BUILDING"]
+
+    applicability:
+      archetypes: ["all"]
+      contraindications: []
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A3: The 21 Facts Identity Excavation
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "A3"
+    name: "The 21 Facts Identity Excavation"
+    asset_type: "technique"
+    domain: "assessment"
+    secondary_domains: ["essays", "identity"]
+    category: "A"
+    tags: ["identity", "brainstorming", "essays", "authenticity", "volume"]
+
+    content:
+      summary: "Generate 21 unknown facts about student to bypass perfectionism and reveal patterns"
+      description: |
+        When student can't think of essay topics, ask for 21 things strangers wouldn't
+        know about them. Volume defeats perfectionism, and random details reveal
+        narrative patterns.
+      psychology: |
+        Volume bypasses overthinking. Asking for 21 (not 5 or 10) forces beyond obvious
+        answers into surprising territory. Random details often reveal core identity threads.
+      steps:
+        - "Ask: 'What's 21 things strangers wouldn't know about you?'"
+        - "Encourage ANY detail - favorite food, quirks, memories, habits"
+        - "Don't filter or judge during generation"
+        - "After 21, look for patterns and connections"
+        - "Identify 3-5 potential essay seeds"
+      example_usage: |
+        Student stuck on essays → 21 Facts reveals: "I'm nostalgic", "Great grandmother's earrings",
+        "I listen to retro music" → Pattern: Connection to heritage and past
+      outcome: "20-30 minutes generates month of essay material"
+
+    trigger:
+      keywords: ["don't know what to write", "no ideas", "can't think of", "blank", "stuck"]
+      phrases:
+        - "I don't know what to write about"
+        - "I can't think of anything interesting"
+        - "my life is boring"
+      situations: ["essay brainstorming", "identity unclear", "writer's block"]
+      student_states: ["stuck", "blank", "frustrated"]
+      lifecycle_stages: ["P3_JUNIOR", "P4_SUMMER"]
+
+    applicability:
+      archetypes: ["all"]
+      psychobehavioral_fit:
+        task_approach: ["sequential"]
+      contraindications: ["student already has clear essay direction"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A4: The Stranger Test
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "A4"
+    name: "The Stranger Test"
+    asset_type: "technique"
+    domain: "essays"
+    secondary_domains: ["assessment"]
+    category: "A"
+    tags: ["authenticity", "essays", "identity", "unique"]
+
+    content:
+      summary: "Filter essay content through 'would a stranger know this?' to ensure uniqueness"
+      description: |
+        The 21 facts framed as things strangers wouldn't know bypasses performative
+        self-presentation and reveals authentic quirks vs curated image.
+      psychology: |
+        Students default to what they think sounds impressive. Filtering through
+        "stranger wouldn't know" surfaces genuinely unique content.
+      steps:
+        - "For each potential essay topic, ask: 'Would a stranger know this about you?'"
+        - "If yes → too generic, dig deeper"
+        - "If no → potential unique content"
+        - "Combine multiple 'stranger wouldn't know' facts for essay direction"
+      example_usage: "'I like computers' = stranger could guess. 'I name my houseplants after philosophers' = unique"
+      outcome: "Unique essay seeds emerge from authentic details"
+
+    trigger:
+      keywords: ["generic", "everyone does that", "sounds boring"]
+      phrases:
+        - "isn't that what everyone writes about"
+        - "that's not interesting"
+      situations: ["essay feels generic", "common topic proposed"]
+      lifecycle_stages: ["P3_JUNIOR", "P4_SUMMER"]
+
+    applicability:
+      archetypes: ["all"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A5: The Competitive Audit
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "A5"
+    name: "The Competitive Audit"
+    asset_type: "technique"
+    domain: "assessment"
+    secondary_domains: ["strategy", "motivation"]
+    category: "A"
+    tags: ["competition", "urgency", "benchmarking", "gaps"]
+
+    content:
+      summary: "Create urgency through explicit comparison with successful applicants"
+      description: |
+        Explicit comparison (13-14 APs vs your 8) creates specific gaps. Concrete
+        numbers more motivating than vague "you need more."
+      psychology: |
+        Abstract advice ("work harder") doesn't motivate. Specific gaps ("they have
+        5 more APs") create actionable urgency without despair.
+      steps:
+        - "Research successful admits to target schools"
+        - "Create specific comparison: APs, awards, activities"
+        - "Present gap: 'They typically have X, you have Y'"
+        - "Immediately follow with: 'Here's how we close that gap'"
+      example_usage: "'Typical Stanford admit has 13-14 APs. You have 8. Let's strategize.'"
+      outcome: "Clear measurable targets with action plan"
+
+    trigger:
+      keywords: ["am I competitive", "do I have a chance", "what do I need"]
+      phrases:
+        - "is my profile good enough"
+        - "what are my chances"
+      situations: ["student needs urgency", "complacency detected", "reality check needed"]
+      student_states: ["complacent", "unrealistic", "unmotivated"]
+      lifecycle_stages: ["P1_FOUNDATION", "P2_BUILDING"]
+
+    applicability:
+      archetypes: ["The Coaster", "The Overconfident"]
+      contraindications: ["already anxious student", "low self-esteem"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A6: The Naviance Revelation
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "A6"
+    name: "The Naviance Revelation"
+    asset_type: "technique"
+    domain: "strategy"
+    secondary_domains: ["assessment"]
+    category: "A"
+    tags: ["data", "positioning", "school-specific", "naviance"]
+
+    content:
+      summary: "Use school's own data to show exact positioning needed"
+      description: |
+        Naviance and similar tools show historical admit data from student's specific
+        school. This creates undeniable, personalized targets.
+      psychology: |
+        School's own data = undeniable authority. Students can't argue with their
+        school's historical outcomes.
+      steps:
+        - "Access student's school Naviance/similar tool"
+        - "Pull historical admit data for target schools"
+        - "Show exact GPA/test score ranges that got admitted"
+        - "Position student within that data"
+        - "Create specific targets based on school's history"
+      example_usage: "'From your school, the 3 students who got into Northwestern had 4.4+ GPA and 1500+ SAT'"
+      outcome: "Concrete measurable goals from trusted source"
+
+    trigger:
+      keywords: ["naviance", "school data", "who got in", "from my school"]
+      phrases:
+        - "has anyone from my school gotten in"
+        - "what do I need for my school"
+      situations: ["school list building", "target setting"]
+      lifecycle_stages: ["P2_BUILDING", "P3_JUNIOR"]
+
+    applicability:
+      archetypes: ["all"]
+      contraindications: ["school doesn't use Naviance"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A7: The Hour Calculation Revelation
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "A7"
+    name: "The Hour Calculation Revelation"
+    asset_type: "technique"
+    domain: "content_optimization"
+    secondary_domains: ["assessment"]
+    category: "A"
+    tags: ["quantification", "activities", "credibility", "impact"]
+
+    content:
+      summary: "Transform vague activities into impressive hour totals"
+      description: |
+        Hours/week × Weeks/year = Total annual hours. Quantification creates credibility
+        and transforms generic descriptions into impressive commitments.
+      psychology: |
+        "I spend time on coding" is forgettable. "400 hours annually leading nonprofit"
+        is impressive. Numbers create credibility.
+      steps:
+        - "Identify activity with vague description"
+        - "Calculate: Hours per week × Weeks per year"
+        - "Example: 8 hours/week × 50 weeks = 400 hours"
+        - "Use in activity descriptions and essays"
+      example_usage: "'I do robotics' → '400+ hours annually designing and building competition robots'"
+      outcome: "Generic 'I spend time' → '400 hours annually leading nonprofit'"
+
+    trigger:
+      keywords: ["how much time", "how do I describe", "sounds vague"]
+      situations: ["activity description writing", "impact unclear"]
+      lifecycle_stages: ["P4_SUMMER", "P5_SENIOR"]
+
+    applicability:
+      archetypes: ["all"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A8: The Step Breakdown Verification
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "A8"
+    name: "The Step Breakdown Verification"
+    asset_type: "technique"
+    domain: "execution"
+    secondary_domains: ["assessment"]
+    category: "A"
+    tags: ["planning", "obstacles", "verification", "blockers"]
+
+    content:
+      summary: "Reveal hidden blockers by asking granular implementation questions"
+      description: |
+        When student says they'll do something, ask granular questions to reveal
+        hidden blockers before they cause failure.
+      psychology: |
+        Enthusiasm masks lack of preparation. Granular questions surface obstacles
+        early when they're easy to address.
+      steps:
+        - "Student commits to action"
+        - "Ask granular questions: 'Do you have the camera? Editing software? Account?'"
+        - "For each 'no', create immediate action item"
+        - "Don't proceed until blockers resolved"
+      example_usage: "'I'll start a YouTube channel' → 'Camera? Editing tools? Account? Channel name?'"
+      outcome: "Proactive obstacle removal before failure"
+
+    trigger:
+      keywords: ["I'll do it", "I'm going to", "I'll start"]
+      phrases:
+        - "I'll take care of it"
+        - "I'm going to do that"
+      situations: ["commitment made", "new initiative proposed"]
+      lifecycle_stages: ["all"]
+
+    applicability:
+      archetypes: ["The Procrastinator", "The Scattered Genius"]
+      contraindications: ["student already proven reliable"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A9: The Profile Discovery
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "A9"
+    name: "The Profile Discovery"
+    asset_type: "technique"
+    domain: "awards"
+    secondary_domains: ["assessment"]
+    category: "A"
+    tags: ["awards", "discovery", "proactive", "platforms"]
+
+    content:
+      summary: "Proactively check platforms for unannounced achievements"
+      description: |
+        Check award platforms for student's results before official announcements.
+        NCWIT showed Bay Area winner before email notification.
+      psychology: |
+        Proactive recognition over passive waiting. Demonstrates coach investment
+        and often discovers wins before student knows.
+      steps:
+        - "Maintain list of platforms for each award student applied to"
+        - "Check regularly during announcement periods"
+        - "Look for: winner lists, regional results, honorable mentions"
+        - "Alert student immediately upon discovery"
+      example_usage: "Checked NCWIT portal → Found Huda as Bay Area winner before email arrived"
+      outcome: "Hidden achievements surface; coach demonstrates investment"
+
+    trigger:
+      keywords: ["waiting to hear", "results should be", "haven't heard"]
+      situations: ["award announcement period", "waiting for results"]
+      lifecycle_stages: ["P2_BUILDING", "P3_JUNIOR"]
+
+    applicability:
+      archetypes: ["all"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A10: The National Org Reality Check
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "A10"
+    name: "The National Org Reality Check"
+    asset_type: "technique"
+    domain: "strategy"
+    secondary_domains: ["assessment"]
+    category: "A"
+    tags: ["research", "opportunities", "age-appropriate", "positioning"]
+
+    content:
+      summary: "Research organization composition before applying to prevent embarrassment"
+      description: |
+        Before applying to advisory boards or leadership positions, research actual
+        composition. Discover if members are C-suite executives and pivot to
+        youth-specific alternatives.
+      psychology: |
+        Prevents embarrassing applications and wasted time. Redirects to
+        age-appropriate opportunities with higher success probability.
+      steps:
+        - "Student wants to join advisory board/committee"
+        - "Research actual board composition on LinkedIn"
+        - "If all C-suite/senior professionals, pivot"
+        - "Find youth-specific alternatives"
+      example_usage: "Student wants AI ethics advisory board → Research shows all PhD researchers → Pivot to youth AI ethics council"
+      outcome: "Age-appropriate opportunities identified; embarrassment prevented"
+
+    trigger:
+      keywords: ["advisory board", "board member", "join committee"]
+      situations: ["prestigious opportunity proposed", "leadership application"]
+      lifecycle_stages: ["P2_BUILDING"]
+
+    applicability:
+      archetypes: ["The Ambitious", "The Overreacher"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A11: The Recommendation Quality Audit
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "A11"
+    name: "The Recommendation Quality Audit"
+    asset_type: "technique"
+    domain: "strategy"
+    secondary_domains: ["assessment", "relationships"]
+    category: "A"
+    tags: ["recommendations", "planning", "realistic", "backup"]
+
+    content:
+      summary: "Honest assessment of recommendation quality to enable backup planning"
+      description: |
+        Realistically evaluate expected recommendation quality. "Mid but sufficient"
+        is better than false confidence. Enables backup planning.
+      psychology: |
+        Realistic evaluation protects from disappointment and enables strategic
+        backup options.
+      steps:
+        - "List all potential recommenders"
+        - "Rate honestly: Strong / Good / Mid / Weak"
+        - "For 'Mid' or lower, identify backup options"
+        - "Consider alternative recommenders (VP, principal, etc.)"
+      example_usage: "'Your AP Bio teacher recommendation will probably be mid but sufficient. Let's make sure your CS teacher letter is stellar.'"
+      outcome: "Backup options planned; expectations managed"
+
+    trigger:
+      keywords: ["recommendation", "letter", "who should ask"]
+      situations: ["recommendation planning", "letter request timing"]
+      lifecycle_stages: ["P3_JUNIOR", "P4_SUMMER"]
+
+    applicability:
+      archetypes: ["all"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A12: The Backwards Time Audit
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "A12"
+    name: "The Backwards Time Audit"
+    asset_type: "technique"
+    domain: "time_management"
+    secondary_domains: ["assessment"]
+    category: "A"
+    tags: ["time", "audit", "abundance", "planning"]
+
+    content:
+      summary: "Start with 168 total hours and subtract down to reveal abundance"
+      description: |
+        Same technique as 168-Hour Audit but frames as "backwards" - start with
+        total and reveal what's left.
+      psychology: |
+        Starting from abundance (168) rather than scarcity (0) shifts mindset.
+      steps:
+        - "Start: 'You have 168 hours every week'"
+        - "Subtract: Sleep (56), School (40), Homework (14), Basics (14)"
+        - "Reveal: '49 hours for excellence'"
+        - "Plan allocation of those 49 hours"
+      example_usage: "Use when 'I have no time' framing doesn't resonate"
+      outcome: "49 hours for excellence revealed"
+
+    trigger:
+      keywords: ["no time", "busy"]
+      situations: ["time scarcity claim", "scheduling discussion"]
+      lifecycle_stages: ["P1_FOUNDATION"]
+
+    applicability:
+      archetypes: ["all"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CATEGORY B: STRATEGIC POSITIONING (18 Techniques)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # B1: The Priority Question Framework
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "B1"
+    name: "The Priority Question Framework"
+    asset_type: "framework"
+    domain: "strategy"
+    secondary_domains: ["decision_making"]
+    category: "B"
+    tags: ["priorities", "decisions", "tradeoffs", "clarity"]
+
+    content:
+      summary: "Force explicit choice between dream school and maximizing chances"
+      description: |
+        At major decision points, ask: "What's your priority? Dream school or maximizing
+        chances?" Forces explicit choice, prevents emotional decision-making.
+      psychology: |
+        Students often want both without acknowledging tradeoffs. Forcing explicit
+        choice enables strategic decision-making.
+      steps:
+        - "Identify decision with inherent tradeoff"
+        - "Ask: 'What's your priority? [Option A] or [Option B]?'"
+        - "Don't allow 'both' - force prioritization"
+        - "Execute strategy aligned with stated priority"
+      example_usage: "'What's your priority? Dream school Stanford (4% chance) or maximizing chances with Northwestern ED (24%)?'"
+      outcome: "Data-driven decision: Northwestern ED over Stanford REA"
+
+    trigger:
+      keywords: ["should I apply", "which school", "ED or REA"]
+      phrases:
+        - "I can't decide"
+        - "what should I do"
+      situations: ["ED/EA decision", "major strategic choice"]
+      lifecycle_stages: ["P3_JUNIOR"]
+
+    applicability:
+      archetypes: ["all"]
+      contraindications: ["clear preference already stated"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # B2: The Acceptance Rate Arbitrage
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "B2"
+    name: "The Acceptance Rate Arbitrage"
+    asset_type: "technique"
+    domain: "strategy"
+    secondary_domains: ["research"]
+    category: "B"
+    tags: ["ED", "RD", "acceptance-rates", "data-driven"]
+
+    content:
+      summary: "Compare ED vs RD rates to find 3-4x admission advantages"
+      description: |
+        Live research comparing ED vs RD rates. Northwestern ED 24% vs RD 7% = 3.4x
+        advantage. Information asymmetry creates opportunity.
+      psychology: |
+        Most families don't know ED advantages. Showing specific multipliers
+        (3.4x) makes abstract concept concrete and actionable.
+      steps:
+        - "Research target school's ED vs RD rates"
+        - "Calculate multiplier: ED rate ÷ RD rate"
+        - "Present: 'ED gives you a 3.4x better chance'"
+        - "Compare across schools to find best arbitrage"
+      example_usage: "'Northwestern ED is 24% vs RD 7%. That's 3.4x better odds. Let's look at the data.'"
+      outcome: "Data-driven school selection with quantified advantages"
+
+    trigger:
+      keywords: ["ED", "early decision", "early action", "when to apply"]
+      situations: ["application timing decision", "school list finalization"]
+      lifecycle_stages: ["P3_JUNIOR"]
+
+    applicability:
+      archetypes: ["all"]
+      contraindications: ["financial aid dependency requires RD comparison"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # B3: The One Application Multiple Schools Strategy
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "B3"
+    name: "The One Application Multiple Schools Strategy"
+    asset_type: "technique"
+    domain: "execution"
+    secondary_domains: ["strategy"]
+    category: "B"
+    tags: ["efficiency", "UC", "applications", "overwhelm"]
+
+    content:
+      summary: "Reframe application count by bundling (UC = 1 application for 7 schools)"
+      description: |
+        "Count UC as one application" - 7 schools on single application. Reduces
+        perceived burden (11 apps really 5 unique ones).
+      psychology: |
+        Overwhelm comes from perceived quantity. Reframing reduces psychological
+        burden while maintaining comprehensive coverage.
+      steps:
+        - "Count total schools on list"
+        - "Group by application system: UC (7), Common App, Coalition"
+        - "Reframe: '11 schools = really just 5 unique applications'"
+        - "Create realistic timeline based on actual unique work"
+      example_usage: "'You're not applying to 15 schools. You're doing 1 UC app, 1 Common App, and 3 supplements.'"
+      outcome: "Comprehensive coverage without psychological overload"
+
+    trigger:
+      keywords: ["too many applications", "how will I finish", "overwhelmed"]
+      phrases:
+        - "that's so many schools"
+        - "I can't do that many"
+      situations: ["application overwhelm", "school list discussion"]
+      lifecycle_stages: ["P3_JUNIOR", "P4_SUMMER"]
+
+    applicability:
+      archetypes: ["The Overwhelmed", "The Procrastinator"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # B4: The Underutilized Recommender Strategy
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "B4"
+    name: "The Underutilized Recommender Strategy"
+    asset_type: "strategy"
+    domain: "relationships"
+    secondary_domains: ["strategy"]
+    category: "B"
+    tags: ["recommendations", "differentiation", "principal", "VP"]
+
+    content:
+      summary: "Target rarely-asked recommenders (principal/VP) for special attention"
+      description: |
+        Target principal/VP instead of typical teachers. Rarely asked = special
+        attention. Differentiates from typical applications.
+      psychology: |
+        Typical teachers write dozens of letters. Principals write few. Scarcity
+        creates attention and effort.
+      steps:
+        - "Identify underutilized potential recommenders: Principal, VP, counselor head"
+        - "Build relationship early (see Principal Relationship Protocol)"
+        - "Request recommendation with specific context"
+        - "Provide comprehensive fact sheet"
+      example_usage: "'Everyone asks their English teacher. What if we got the principal? She rarely gets asked and would write something unique.'"
+      outcome: "Multidimensional recommendation picture"
+
+    trigger:
+      keywords: ["who should I ask", "recommendation", "letters"]
+      situations: ["recommendation planning", "differentiation needed"]
+      lifecycle_stages: ["P2_BUILDING", "P3_JUNIOR"]
+
+    applicability:
+      archetypes: ["The Invisible", "needs differentiation"]
+      contraindications: ["no relationship with principal", "principal doesn't know student"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # B5: The Recommender-Program Matching
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "B5"
+    name: "The Recommender-Program Matching"
+    asset_type: "strategy"
+    domain: "relationships"
+    secondary_domains: ["strategy"]
+    category: "B"
+    tags: ["recommendations", "alignment", "credibility"]
+
+    content:
+      summary: "Align teacher expertise with program focus for authentic endorsements"
+      description: |
+        Match teacher expertise to program focus. CS teacher → CS programs.
+        Creates natural fit and enhances credibility.
+      psychology: |
+        A CS teacher's endorsement for CS program carries more weight than
+        an English teacher's. Match creates authentic credibility.
+      steps:
+        - "List target programs by field"
+        - "Match each program to teacher with relevant expertise"
+        - "Request specific recommendations for matched programs"
+        - "Brief teachers on specific program focus"
+      example_usage: "'For MIT EECS, let's use your CS teacher. For Stanford humanities, your English teacher.'"
+      outcome: "Authentic endorsements with field credibility"
+
+    trigger:
+      keywords: ["which teacher for which school", "recommendation matching"]
+      situations: ["multiple programs in different fields"]
+      lifecycle_stages: ["P3_JUNIOR", "P4_SUMMER"]
+
+    applicability:
+      archetypes: ["all"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # B6: The Vice Principal Pivot
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "B6"
+    name: "The Vice Principal Pivot"
+    asset_type: "technique"
+    domain: "relationships"
+    secondary_domains: ["strategy"]
+    category: "B"
+    tags: ["recommendations", "backup", "VP", "flexibility"]
+
+    content:
+      summary: "Find VP as alternative authority figure when principal relationship complex"
+      description: |
+        When principal relationship is complicated, pivot to VP as alternative
+        authority figure. Strategic flexibility in recommendations.
+      psychology: |
+        Not every relationship can be cultivated. Having backup authority figures
+        preserves the strategy when primary option unavailable.
+      steps:
+        - "Identify if principal relationship is viable"
+        - "If not, research VP: interests, responsibilities, accessibility"
+        - "Begin VP relationship cultivation"
+        - "Position VP as recommendation source"
+      example_usage: "'The principal seems hard to reach. What about the VP who runs the awards program?'"
+      outcome: "Backup nomination source secured"
+
+    trigger:
+      keywords: ["principal won't", "can't reach principal"]
+      situations: ["principal relationship blocked", "need alternative authority"]
+      lifecycle_stages: ["P2_BUILDING"]
+
+    applicability:
+      archetypes: ["all"]
+      contraindications: ["good principal relationship exists"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # B7: The Guaranteed Win Strategy
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "B7"
+    name: "The Guaranteed Win Strategy"
+    asset_type: "strategy"
+    domain: "awards"
+    secondary_domains: ["strategy"]
+    category: "B"
+    tags: ["awards", "guaranteed", "nomination", "quick-wins"]
+
+    content:
+      summary: "Find awards where nomination equals winning (Reagan Leadership Award)"
+      description: |
+        Identify awards where being nominated = winning. Low barrier entry,
+        high prestige. Guaranteed recognition builds momentum.
+      psychology: |
+        Early wins create confidence momentum. Guaranteed wins remove luck
+        factor and build award-winning identity.
+      steps:
+        - "Research awards where nomination = selection"
+        - "Examples: Reagan Leadership Award, some local awards"
+        - "Identify nomination pathway (teacher, principal, self)"
+        - "Execute nomination with compelling materials"
+      example_usage: "'The Reagan Leadership Award - if you're nominated, you win. Let's get your principal to nominate you.'"
+      outcome: "Guaranteed recognition with minimal risk"
+
+    trigger:
+      keywords: ["need awards", "no awards yet", "quick win"]
+      phrases:
+        - "I don't have any awards"
+        - "what awards should I apply for"
+      situations: ["award accumulation needed", "confidence building"]
+      lifecycle_stages: ["P1_FOUNDATION", "P2_BUILDING"]
+
+    applicability:
+      archetypes: ["The Invisible", "needs confidence boost"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # B8: The Stanford Precedent
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "B8"
+    name: "The Stanford Precedent"
+    asset_type: "technique"
+    domain: "motivation"
+    secondary_domains: ["strategy"]
+    category: "B"
+    tags: ["precedent", "possibility", "hope", "evidence"]
+
+    content:
+      summary: "Find previous success from same school/background to prove pathway possible"
+      description: |
+        When goal seems impossible, find previous success from same school or
+        similar background. Proves pathway possible with concrete evidence.
+      psychology: |
+        Abstract possibility doesn't motivate. Specific precedent ("someone from
+        your school did it in 2021") creates hope through concrete evidence.
+      steps:
+        - "Identify student's 'impossible' goal"
+        - "Research: Has anyone from their school/background achieved it?"
+        - "Find specific example with details"
+        - "Present: 'In 2021, a student from your school got into Stanford with a similar profile'"
+      example_usage: "'Someone from your high school got into Stanford in 2021. It's been done. Let's figure out how.'"
+      outcome: "Hope through concrete evidence"
+
+    trigger:
+      keywords: ["impossible", "no one from my school", "never happen"]
+      phrases:
+        - "I can't get into"
+        - "no one like me gets in"
+      situations: ["hopelessness expressed", "goal seems unreachable"]
+      student_states: ["hopeless", "defeated"]
+      lifecycle_stages: ["all"]
+
+    applicability:
+      archetypes: ["all"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # B9: The Geographic Expansion
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "B9"
+    name: "The Geographic Expansion"
+    asset_type: "technique"
+    domain: "strategy"
+    secondary_domains: ["opportunities"]
+    category: "B"
+    tags: ["geography", "opportunities", "expansion", "radius"]
+
+    content:
+      summary: "Systematically broaden geographic radius to expand opportunity pool"
+      description: |
+        When local resources are limited, systematically broaden radius.
+        Mountain House → Dublin → East Bay → Bay Area → California.
+      psychology: |
+        Students often limit themselves to immediate geography. Systematic
+        expansion reveals opportunities they didn't know existed.
+      steps:
+        - "List current geographic scope for opportunities"
+        - "Identify next larger radius (city → county → region → state)"
+        - "Research opportunities at each expanded level"
+        - "Prioritize by fit and accessibility"
+      example_usage: "'No CS clubs in Mountain House? Let's look at Dublin, then Tri-Valley, then East Bay.'"
+      outcome: "More options discovered through systematic expansion"
+
+    trigger:
+      keywords: ["nothing in my area", "no opportunities here", "small town"]
+      situations: ["limited local resources", "opportunity scarcity"]
+      lifecycle_stages: ["P1_FOUNDATION", "P2_BUILDING"]
+
+    applicability:
+      archetypes: ["The Rural", "The Underresourced"]
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # B10: The Semester Split Strategy
+  # ─────────────────────────────────────────────────────────────────────────────
+  - id: "B10"
+    name: "The Semester Split Strategy"
+    asset_type: "strategy"
+    domain: "execution"
+    secondary_domains: ["time_management"]
+    category: "B"
+    tags: ["burnout", "pacing", "senior-year", "sustainability"]
+
+    content:
+      summary: "Front-load effort in first semester (RD schools see these) + second semester flexibility"
+      description: |
+        First semester excellence (RD schools see these grades) + Second semester
+        flexibility. Front-loads effort when it matters most.
+      psychology: |
+        Students can't maintain peak performance for 9 months. Strategic
+        pacing preserves energy for what matters.
+      steps:
+        - "Explain: 'RD schools see first semester grades'"
+        - "Plan: First semester = maximum effort"
+        - "Plan: Second semester = maintain, don't burn out"
+        - "Build in recovery periods"
+      example_usage: "'Push hard through December. After apps are in, you can breathe a bit second semester.'"
+      outcome: "Sustainable rigor without burnout"
+
+    trigger:
+      keywords: ["burned out", "can't keep this up", "exhausted"]
+      situations: ["senior year planning", "burnout prevention"]
+      lifecycle_stages: ["P4_SUMMER", "P5_SENIOR"]
+
+    applicability:
+      archetypes: ["The Overachiever"]
+      contraindications: ["student already coasting"]
+
+  - id: "B11"
+    name: "The Questbridge Self-Elimination"
+    asset_type: "technique"
+    domain: "strategy"
+    category: "B"
+    tags: ["questbridge", "fit", "opportunity-cost"]
+
+    content:
+      summary: "Recognize when prestigious opportunity isn't right fit"
+      description: |
+        QB optimized for lower stats + hardship. A 1520 SAT student with resources
+        is better served by traditional applications.
+      psychology: "Not every opportunity is right opportunity. Time saved = applied elsewhere."
+      steps:
+        - "Evaluate opportunity requirements vs student profile"
+        - "If misaligned, redirect time to better-fit opportunities"
+      example_usage: "'Questbridge is amazing, but it's designed for students with more financial need. Your time is better spent on USC apps.'"
+      outcome: "Time preserved for better-fit applications"
+
+    trigger:
+      keywords: ["questbridge", "should I apply"]
+      situations: ["counselor suggests QB for high-stat student"]
+      lifecycle_stages: ["P3_JUNIOR"]
+
+    applicability:
+      archetypes: ["high-stat students with resources"]
+      contraindications: ["genuine financial need"]
+
+  - id: "B12"
+    name: "The Financial Positioning Pivot"
+    asset_type: "technique"
+    domain: "strategy"
+    category: "B"
+    tags: ["financial-aid", "positioning", "scholarships"]
+
+    content:
+      summary: "Discover authentic financial positioning for full-ride programs"
+      description: |
+        Discover dad startup status = zero income = technically low income →
+        full ride programs. Authentic positioning, not manipulation.
+      psychology: "Many families don't realize their authentic financial story. Discovery enables access."
+      steps:
+        - "Deep dive into family financial situation"
+        - "Identify authentic angles: startup, self-employed, recent changes"
+        - "Match to programs valuing that profile"
+      example_usage: "'Your dad's startup means his income is technically zero. That qualifies you for Cameron Impact and Gates.'"
+      outcome: "Cameron Impact Foundation, Gates eligibility unlocked"
+
+    trigger:
+      keywords: ["can't afford", "financial aid", "scholarships"]
+      situations: ["financial aid planning", "scholarship search"]
+      lifecycle_stages: ["P2_BUILDING", "P3_JUNIOR"]
+
+    applicability:
+      archetypes: ["all"]
+
+  - id: "B13"
+    name: "The Organization Psychology Framework"
+    asset_type: "framework"
+    domain: "strategy"
+    category: "B"
+    tags: ["applications", "mutual-benefit", "sophistication"]
+
+    content:
+      summary: "Ask 'Why do they host this program?' to articulate mutual benefit"
+      description: |
+        For every program/scholarship, ask: "Why do they host this?" Understanding
+        their motivations (talent sourcing, PR, brand association) enables
+        strategically sophisticated positioning.
+      psychology: "Mutual benefit articulation elevates applications from 'please give me' to 'here's what I offer.'"
+      steps:
+        - "Research: Why does this organization run this program?"
+        - "Identify: talent pipeline, PR value, brand association"
+        - "Position: Show how you fulfill their goals"
+      example_usage: "'Disney Dreamers isn't charity - they're looking for future brand ambassadors. Show them you'll represent their values.'"
+      outcome: "Strategically sophisticated positioning"
+
+    trigger:
+      keywords: ["why do they", "what do they want"]
+      situations: ["program application", "scholarship essay"]
+      lifecycle_stages: ["P2_BUILDING", "P4_SUMMER"]
+
+    applicability:
+      archetypes: ["all"]
+
+  - id: "B14"
+    name: "The Disney Language Matching"
+    asset_type: "technique"
+    domain: "essays"
+    category: "B"
+    tags: ["language", "cultural-fluency", "organization-specific"]
+
+    content:
+      summary: "Research and integrate organization's specific language naturally"
+      description: |
+        Research org language, integrate naturally. Disney: "dreams become reality,
+        imagination limits, magic." Cultural fluency, not pandering.
+      psychology: "Speaking their language signals belonging. Authentic integration shows cultural fit."
+      steps:
+        - "Research organization's mission, values, language"
+        - "Identify key phrases and concepts"
+        - "Integrate naturally into application"
+        - "Don't overdo - 2-3 natural integrations max"
+      example_usage: "'Disney loves 'where dreams become reality.' Weave that into your essay naturally, not forced.'"
+      outcome: "Evaluator resonance through cultural fluency"
+
+    trigger:
+      keywords: ["disney", "company application", "brand"]
+      situations: ["corporate-sponsored program application"]
+      lifecycle_stages: ["P2_BUILDING", "P4_SUMMER"]
+
+    applicability:
+      archetypes: ["all"]
+
+  - id: "B15"
+    name: "The Byline Before Application Strategy"
+    asset_type: "strategy"
+    domain: "positioning"
+    category: "B"
+    tags: ["credentials", "publishing", "journalism"]
+
+    content:
+      summary: "Pursue publication/credential BEFORE applications"
+      description: |
+        Pursue Teen Vogue publication before college apps. Published writer >
+        interested student. Credential first, then applications.
+      psychology: "Concrete credential transforms 'I want to be' into 'I am.' Actions speak louder."
+      steps:
+        - "Identify aspirational identity (journalist, researcher, etc.)"
+        - "Find credentialing opportunity (publication, certification)"
+        - "Execute credential BEFORE applications"
+        - "Reference credential in applications"
+      example_usage: "'Don't write about wanting to be a journalist. Get published in Teen Vogue first, then write about being one.'"
+      outcome: "Concrete credential vs aspiration"
+
+    trigger:
+      keywords: ["want to be", "aspiring", "hope to"]
+      situations: ["identity without proof", "aspiration without action"]
+      lifecycle_stages: ["P2_BUILDING"]
+
+    applicability:
+      archetypes: ["all"]
+
+  - id: "B16"
+    name: "The Both/And Principle"
+    asset_type: "principle"
+    domain: "strategy"
+    category: "B"
+    tags: ["tradeoffs", "false-choice", "requirements"]
+
+    content:
+      summary: "Destroy either/or thinking when both conditions required"
+      description: |
+        "Student with 3.5 GPA without APs AND student with good GPA but no rigor -
+        BOTH get rejected." Destroys either/or thinking.
+      psychology: "Students often think they can choose. Reality: some things are both/and, not either/or."
+      steps:
+        - "Identify false choice student is making"
+        - "Show both conditions are required"
+        - "Use specific examples of failure cases"
+        - "Enable holistic planning"
+      example_usage: "'You can't choose between rigor and grades. You need both. Students with one but not the other get rejected.'"
+      outcome: "Holistic planning enabled"
+
+    trigger:
+      keywords: ["or", "instead of", "rather than"]
+      situations: ["false tradeoff proposed", "either/or thinking"]
+      lifecycle_stages: ["all"]
+
+    applicability:
+      archetypes: ["The Optimizer"]
+
+  - id: "B17"
+    name: "The Backwards Timeline Architecture"
+    asset_type: "framework"
+    domain: "execution"
+    category: "B"
+    tags: ["timeline", "planning", "deadlines", "backwards"]
+
+    content:
+      summary: "Work from deadlines backward to create clear timeline"
+      description: |
+        Nov 1 USC+Stanford → October drafts → September essays → August Common App →
+        June-July ECs only. Seeing endpoint first creates clarity.
+      psychology: "Working backwards from deadline removes ambiguity. Each milestone is inevitable."
+      steps:
+        - "Identify final deadline"
+        - "Work backwards: What needs to be done week before? Month before?"
+        - "Create reverse timeline to present"
+        - "6 months feels manageable with clear milestones"
+      example_usage: "'Nov 1 deadline → October final drafts → September first drafts → August brainstorming → We're starting now in June.'"
+      outcome: "6 months feels manageable with clear path"
+
+    trigger:
+      keywords: ["when should I start", "timeline", "how long"]
+      situations: ["application planning", "project kickoff"]
+      lifecycle_stages: ["P3_JUNIOR", "P4_SUMMER"]
+
+    applicability:
+      archetypes: ["all"]
+
+  - id: "B18"
+    name: "The Rolling Admission Speed Hack"
+    asset_type: "technique"
+    domain: "execution"
+    category: "B"
+    tags: ["rolling", "timing", "competitive-advantage"]
+
+    content:
+      summary: "Submit early to rolling schools for competitive advantage"
+      description: |
+        Submit early (Sept 27 vs Sept 30 deadline). Early = competitive advantage.
+        Stands out in smaller initial pool.
+      psychology: "Rolling admission rewards early applicants. First impressions in empty inbox > lost in pile."
+      steps:
+        - "Identify rolling admission schools on list"
+        - "Prioritize their applications for early completion"
+        - "Submit within first week of opening"
+      example_usage: "'Penn State is rolling. If you submit September 1 instead of December, you're in a pool of hundreds, not thousands.'"
+      outcome: "Stands out in smaller early pool"
+
+    trigger:
+      keywords: ["rolling", "when to submit"]
+      situations: ["rolling admission school on list"]
+      lifecycle_stages: ["P4_SUMMER", "P5_SENIOR"]
+
+    applicability:
+      archetypes: ["all"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CATEGORY C: ESSAY TECHNIQUES (Sample - C1-C6)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+  - id: "C1"
+    name: "The Challenge Question"
+    asset_type: "technique"
+    domain: "coaching"
+    category: "C"
+    tags: ["self-discovery", "questioning", "redirection"]
+
+    content:
+      summary: "Trigger self-discovery through strategic questioning"
+      description: |
+        Instead of correcting directly, pose a question that leads student to
+        self-discover the answer.
+      psychology: "Self-discovered insights are more powerful than told insights. Questions preserve agency."
+      steps:
+        - "Identify student pursuing suboptimal path"
+        - "Instead of saying 'don't do that', ask: 'Do you have to X to achieve Y?'"
+        - "Let student arrive at realization"
+        - "Support their new direction"
+      example_usage: |
+        Student: "I want to go to Launch X for entrepreneurship"
+        Jenny: "Do you have to go to an entrepreneurship program to be a leader? Just be one."
+        Result: Student realizes they can BUILD instead of attending programs
+      outcome: "Saves 4 weeks with single question"
+
+    trigger:
+      keywords: ["I need to", "I should", "I have to"]
+      situations: ["student pursuing wrong opportunity", "unnecessary dependency"]
+      lifecycle_stages: ["all"]
+
+    applicability:
+      archetypes: ["all"]
+      contraindications: ["fixed decision that can't be changed"]
+
+  - id: "C2"
+    name: "The Diagnostic Bombshell"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["feedback", "honesty", "compassion", "revision"]
+
+    content:
+      summary: "Deliver major revision needs with praise-first, quick delivery, and path forward"
+      description: |
+        "I love this essay BUT you're gonna have to switch topics." Praise first,
+        deliver quickly, cushion with empathy, immediate path forward.
+      psychology: "Rip band-aid with compassion. Extended buildup increases anxiety. Quick truth with support."
+      steps:
+        - "Start with genuine praise for effort/elements"
+        - "Deliver news quickly and directly"
+        - "Immediately provide empathy: 'I know this is hard'"
+        - "Immediately provide path forward"
+      example_usage: "'I love your writing style in this essay. But we're going to need to switch topics completely. I know that's tough - here's what we'll do instead.'"
+      outcome: "Student accepts brutal change with maintained trust"
+
+    trigger:
+      keywords: ["major revision", "doesn't work", "needs rewrite"]
+      situations: ["essay fundamentally flawed", "topic mismatch"]
+      lifecycle_stages: ["P4_SUMMER"]
+
+    applicability:
+      archetypes: ["all"]
+      anti_pattern: "Using on student's best work - save for truly necessary moments"
+
+  - id: "C3"
+    name: "The Hook 2-Paragraph Rule"
+    asset_type: "rule"
+    domain: "essays"
+    category: "C"
+    tags: ["essay-structure", "opening", "engagement"]
+
+    content:
+      summary: "Maximum 2 short paragraphs before YOU appears in essay"
+      description: |
+        Successful essays have max 2 short paragraphs before YOU appears.
+        Minimize world-building, maximize self-revelation.
+      psychology: "Admissions officers read thousands of essays. If YOU haven't appeared by paragraph 3, they've lost interest."
+      steps:
+        - "Read essay opening"
+        - "Count paragraphs before 'I' appears meaningfully"
+        - "If more than 2, cut the setup"
+        - "Start closer to action"
+      example_usage: "'Your first three paragraphs are about the Minecraft world. The essay needs to be about YOU. Start with you entering the game.'"
+      outcome: "Faster engagement with reader"
+
+    trigger:
+      keywords: ["too much setup", "takes too long", "boring opening"]
+      situations: ["essay has excessive context", "delayed start"]
+      lifecycle_stages: ["P4_SUMMER"]
+
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C4"
+    name: "The Breadcrumbing Strategy"
+    asset_type: "strategy"
+    domain: "essays"
+    category: "C"
+    tags: ["common-app", "curiosity", "hints"]
+
+    content:
+      summary: "Drop activity hints creating curiosity without full explanation"
+      description: |
+        In Common App essay, drop activity hints that create curiosity.
+        Don't fully explain - make admissions want to read more.
+      psychology: "Maximum curiosity, minimum word count. Intrigue pulls readers to activity section."
+      steps:
+        - "Identify activities to mention"
+        - "Write single-sentence hints, not explanations"
+        - "Create mystery: 'my 400-hour coding project'"
+        - "Let activities section provide full context"
+      example_usage: "'Don't explain Synthoria here. Just say 'my game that reached 10,000 players' and let them get curious.'"
+      outcome: "Maximum curiosity with minimum word count"
+
+    trigger:
+      keywords: ["too long", "explaining too much", "activity description"]
+      situations: ["common app essay writing", "word count pressure"]
+      lifecycle_stages: ["P4_SUMMER"]
+
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C5"
+    name: "The Selfish Essay Rule"
+    asset_type: "rule"
+    domain: "essays"
+    category: "C"
+    tags: ["focus", "self-revelation", "word-count"]
+
+    content:
+      summary: "Every sentence must be about YOU, not external subjects"
+      description: |
+        "Every sentence must be about YOU, not Mary Shelley." With limited
+        words, external subjects steal space from self-revelation.
+      psychology: "You're not being graded on Mary Shelley knowledge. Every word must reveal something about you."
+      steps:
+        - "Read each sentence"
+        - "Ask: Does this reveal something about ME?"
+        - "If no, cut or reframe to be about you"
+        - "External subjects only as brief context"
+      example_usage: "'You wrote 100 words about Mary Shelley. In 650 words, that's 15% about someone else. Make it about what Mary Shelley revealed about YOU.'"
+      outcome: "Self-focused narrative that reveals character"
+
+    trigger:
+      keywords: ["about other people", "not about me", "external focus"]
+      situations: ["essay drifts to external subject"]
+      lifecycle_stages: ["P4_SUMMER"]
+
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C6"
+    name: "The Doubling Strategy"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["expansion", "word-count", "depth"]
+
+    content:
+      summary: "Mark every claim point, add 2-3 sentences with evidence for each"
+      description: |
+        When essay is under word limit (246 → 350), mark every claim point
+        and add 2-3 sentences with statistics, examples, or personal details.
+      psychology: "Systematic expansion without redundancy. Each claim becomes supported claim."
+      steps:
+        - "Identify current word count gap"
+        - "Mark each claim/point in essay"
+        - "For each claim, add: specific example, statistic, or personal detail"
+        - "Target 2-3 sentences per expansion point"
+      example_usage: "'You're at 246, need 350. You have 4 main points. Add one specific example to each and you're there.'"
+      outcome: "Natural growth to requirements without filler"
+
+    trigger:
+      keywords: ["under word count", "too short", "need more"]
+      situations: ["essay significantly under limit"]
+      lifecycle_stages: ["P4_SUMMER"]
+
+    applicability:
+      archetypes: ["all"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EQ-ENRICHED TECHNIQUES (from reasoning cores)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+  - id: "EQ1"
+    name: "The Exclamation Gradient"
+    asset_type: "technique"
+    domain: "emotional_calibration"
+    category: "H"
+    tags: ["celebration", "calibration", "emotional-intelligence"]
+
+    content:
+      summary: "Calibrate celebration intensity based on achievement type and source"
+      description: |
+        External validation triggers HIGHER celebration than personal achievement.
+        Teacher trying game > NCWIT award in celebration intensity.
+      psychology: |
+        External validation is rare and precious. A teacher trying a student's game
+        represents more validation than an impersonal award.
+      calibration:
+        acknowledgment: {exclamations: 1, caps: false, emojis: 0}
+        small_win: {exclamations: 2, caps: false, emojis: 1}
+        medium_win: {exclamations: 3, caps: false, emojis: 2}
+        major_win: {exclamations: 5, caps: true, emojis: 5}
+        peak_celebration: {exclamations: 8, caps: true, emojis: 12}
+      examples:
+        external_validation: "HUDA THIS IS AMAZING FEEDBACK!!!! AHHHH I'M SO HAPPY FOR YOU!"
+        college_acceptance: "YAYYYYYY I'm so proud of you!!!! Incredible!!! Go tar heels!!! 😊😊😊😊😊🎉🎊🎉🎉🎉🎉🎉"
+        award_win: "NATIONAL!!!! Congratulations!!!!!"
+
+    trigger:
+      keywords: ["got in", "won", "accepted", "selected"]
+      events: ["achievement_announced", "positive_outcome"]
+      lifecycle_stages: ["all"]
+
+    applicability:
+      archetypes: ["all"]
+
+  - id: "EQ2"
+    name: "The 3R Rejection Protocol"
+    asset_type: "protocol"
+    domain: "crisis"
+    category: "H"
+    tags: ["rejection", "recovery", "momentum"]
+
+    content:
+      summary: "Transform rejection to momentum within 24-48 hours"
+      description: |
+        3R: Recognize, Reframe, Redirect. Maximum 2 hours to respond, 24 hours
+        to reframe, 48 hours to present new opportunity.
+      psychology: |
+        Speed prevents spiral. Immediate validation + quick pivot maintains momentum.
+      protocol:
+        minute_0:
+          response: "Awwww :( Sorry to hear that. You had a beautiful application. Onto the next"
+          elements:
+            - "Match their emoji/tone"
+            - "Validate disappointment briefly"
+            - "Praise their effort"
+            - "Forward momentum phrase"
+        hour_24:
+          reframe: "California's a super competitive region"
+          psychology: "Externalize failure to system, internalize success to self"
+        hour_48:
+          redirect: "Link to new opportunity + immediate application"
+          message: "This one might be a great fit!"
+      never_use:
+        - "You'll do better next time"
+        - "Everything happens for a reason"
+        - "It wasn't meant to be"
+      always_use:
+        - "Onto the next"
+        - "We keep going"
+        - "This is exactly why we apply for so many things!"
+
+    trigger:
+      keywords: ["rejected", "didn't get", "not accepted"]
+      events: ["rejection_received", "negative_outcome"]
+      lifecycle_stages: ["all"]
+
+    applicability:
+      archetypes: ["all"]
+
+  - id: "EQ3"
+    name: "The No Worries Protocol"
+    asset_type: "protocol"
+    domain: "emotional_calibration"
+    category: "H"
+    tags: ["anxiety-reduction", "safety", "permission"]
+
+    content:
+      summary: "Systematic anxiety reduction through consistent 'no worries' responses"
+      description: |
+        Respond to ANY apology, cancellation, or worry with "No worries!"
+        15+ instances per batch period. Creates psychological safety for risk-taking.
+      psychology: |
+        Permission to be imperfect creates safety for risk-taking. Student attempts
+        more → achieves more.
+      responses:
+        late: "No worries! Take your time"
+        cancel: "No worries! Let's reschedule when works better"
+        forgot: "No worries! I forget things too"
+        sick: "No worries! Rest up and feel better"
+        struggling: "No worries! This is exactly what we're here for"
+      metrics:
+        student_apologies_reduction: "80% reduction over 3 months"
+        risk_taking_increase: "300% increase in new initiatives"
+
+    trigger:
+      keywords: ["sorry", "apologize", "my fault", "I forgot"]
+      student_states: ["apologetic", "anxious", "worried"]
+      lifecycle_stages: ["all"]
+
+    applicability:
+      archetypes: ["all"]
+
+  - id: "EQ4"
+    name: "The Vulnerability Ladder"
+    asset_type: "framework"
+    domain: "relationships"
+    category: "D"
+    tags: ["trust", "vulnerability", "progression"]
+
+    content:
+      summary: "Progressive vulnerability sharing across 18+ months builds deep trust"
+      description: |
+        Structured progression from interest-sharing to life-integration
+        vulnerability over 18 months.
+      psychology: |
+        Trust builds through reciprocal vulnerability. Coach goes first at each level.
+      levels:
+        - {week: 1, type: "interest_sharing", example: "I just watched some videos about algorithmic justice. It's super cool!!"}
+        - {week: 12, type: "frustration_sharing", example: "That must be so frustrating... I had a teacher do that too"}
+        - {week: 24, type: "personal_struggle", example: "Not feeling the greatest today"}
+        - {week: 52, type: "current_struggle", example: "I personally am also behind on a really important application"}
+        - {week: 72, type: "institutional_pressure", example: "They are getting mad at me for scheduling out of protocol :("}
+        - {week: 90, type: "humorous_mistake", example: "I must have hallucinated this meeting"}
+        - {week: 93, type: "life_integration", example: "Hope the wedding is going well!"}
+
+    trigger:
+      situations: ["trust building needed", "relationship deepening"]
+      lifecycle_stages: ["all"]
+
+    applicability:
+      archetypes: ["all"]
+
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # CATEGORY C: ESSAY TECHNIQUES (Remaining C7-C25)
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  - id: "C7"
+    name: "The Harm Consolidation"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["structure", "flow", "problems", "solutions"]
+    content:
+      summary: "Group all problems before solutions - never mix them together"
+      description: "Essay structure should consolidate all problems/challenges in one section, then all solutions/growth in another. Never ping-pong between them."
+      psychology: "Prevents ping-pong confusion, creates emotional build-up before resolution"
+      outcome: "Logical flow achieved with emotional arc"
+    trigger:
+      keywords: ["confusing structure", "jumps around", "hard to follow"]
+      situations: ["essay structure review", "flow problems"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C8"
+    name: "The Voice Test"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["revision", "authenticity", "voice", "final-check"]
+    content:
+      summary: "Student reads essay aloud as final review to catch awkward phrasing"
+      description: "After essay is complete, have student read it aloud. Hearing catches what eyes miss."
+      psychology: "Auditory processing reveals what visual misses. If it sounds wrong, it reads wrong."
+      outcome: "Flow and authenticity verified through auditory check"
+    trigger:
+      keywords: ["final check", "sounds weird", "doesn't flow"]
+      situations: ["essay near completion", "authenticity check needed"]
+      lifecycle_stages: ["P4_SUMMER", "P5_SENIOR"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C9"
+    name: "The Template Scaffold Method"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["structure", "scaffolding", "writer's-block", "efficiency"]
+    content:
+      summary: "Coach writes full paragraph structure with placeholders, student personalizes"
+      description: "When student has blank page paralysis, coach provides full structure with bracketed placeholders."
+      psychology: "Provides structure while maintaining authenticity. Reduces overwhelm of blank page."
+      outcome: "Speeds writing without losing authentic voice"
+    trigger:
+      keywords: ["blank page", "don't know where to start", "stuck"]
+      situations: ["writer's block", "essay paralysis", "tight deadline"]
+      student_states: ["stuck", "overwhelmed", "paralyzed"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["The Procrastinator", "The Perfectionist"]
+
+  - id: "C10"
+    name: "The Campus Visualization Technique"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["school-specific", "research", "belonging", "visualization"]
+    content:
+      summary: "Research physical campus details and weave into narrative to show belonging"
+      description: "Research specific buildings, landmarks, traditions. Makes admissions picture student already there."
+      psychology: "Vivid belonging demonstrated through specific campus knowledge."
+      outcome: "Vivid belonging demonstrated; admissions can picture student on campus"
+    trigger:
+      keywords: ["why us", "why this school", "school-specific"]
+      situations: ["school supplement writing", "demonstrating fit"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C11"
+    name: "The Give-and-Get Framework"
+    asset_type: "framework"
+    domain: "essays"
+    category: "C"
+    tags: ["school-specific", "mutual-benefit", "contribution"]
+    content:
+      summary: "Balance what you'll receive from school with what you'll contribute"
+      description: "Why-this-school essays should show mutual benefit. Not just I want your resources but here's what I'll bring."
+      psychology: "Shows mutual benefit, not just consumption. Positions student as contributor."
+      outcome: "Strategic framing that positions student as asset"
+    trigger:
+      keywords: ["why us", "what will you contribute", "why should we admit"]
+      situations: ["school supplement", "interview prep"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C12"
+    name: "The Specificity Ladder"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["revision", "specificity", "depth", "memorable"]
+    content:
+      summary: "Move from vague to specific through progressive questioning"
+      description: "When essay feels vague, ask questions to climb the specificity ladder."
+      psychology: "Progressive depth enhancement. Generic to specific through systematic questioning."
+      outcome: "Generic statement transforms into memorable, unique content"
+    trigger:
+      keywords: ["vague", "generic", "could be anyone", "not specific"]
+      situations: ["essay revision", "detail needed"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C13"
+    name: "The Content Archaeology Method"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["efficiency", "reuse", "adaptation", "resource-optimization"]
+    content:
+      summary: "Mine existing writing for adaptable content instead of starting from scratch"
+      description: "Before writing new essay, ask: Did you write something similar before? Extend existing content."
+      psychology: "Efficient resource maximization. Prior work is investment, not waste."
+      outcome: "Efficient resource maximization; faster completion"
+    trigger:
+      keywords: ["new essay", "another essay", "start over"]
+      situations: ["multiple applications need similar content"]
+      lifecycle_stages: ["P4_SUMMER", "P5_SENIOR"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C14"
+    name: "The Storytelling Multiplication"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["efficiency", "narrative", "multi-purpose", "coherence"]
+    content:
+      summary: "One story serves multiple narrative purposes across applications"
+      description: "A single story can demonstrate multiple qualities. Use same story, different angles."
+      psychology: "Coherent narrative across applications. One deep story beats many shallow ones."
+      outcome: "Thematic consistency across applications"
+    trigger:
+      keywords: ["different essays", "same story", "multiple applications"]
+      situations: ["multiple prompts need coverage"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C15"
+    name: "The Cheerleader Reversal"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["reframe", "antagonist", "agency", "growth"]
+    content:
+      summary: "Reframe villain as catalyst - they weren't your enemy but your cheerleader"
+      description: "When essay has antagonist where student had no agency, reframe as inadvertent catalyst for growth."
+      psychology: "Trauma without agency weakens application. Productive response strengthens."
+      outcome: "Victim narrative transforms to advocate narrative"
+    trigger:
+      keywords: ["antagonist", "bully", "troll", "hurt me"]
+      situations: ["essay features antagonist", "victim narrative detected"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C16"
+    name: "The Minecraft Metaphor"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["hook", "gaming", "revelation", "engagement"]
+    content:
+      summary: "Open with gaming achievement, reveal it's a metaphor for real growth"
+      description: "By 7pm I'd slayed a dragon, dug for diamonds. Revelation: It's Minecraft. Then connect to real identity."
+      psychology: "Immediate engagement through mystery, universal relatability of gaming"
+      outcome: "Connects core identity to growth narrative through engaging hook"
+    trigger:
+      keywords: ["gaming", "video games", "hook needed"]
+      situations: ["gamer needs essay angle", "hook development"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["The Gamer", "tech-focused students"]
+
+  - id: "C17"
+    name: "The Neural Network Essay Metaphor"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["innovation", "form-matches-content", "technical", "memorable"]
+    content:
+      summary: "Write essay in tutorial format where teaching concept reveals identity"
+      description: "Essay structured as tutorial teaching neural networks becomes story of identity processing."
+      psychology: "Unprecedented innovation admissions will remember. Form mirrors meaning."
+      outcome: "Unprecedented format that admissions will remember"
+    trigger:
+      keywords: ["unique format", "technical essay", "stand out"]
+      situations: ["tech student needs differentiation"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["tech-focused students", "teachers"]
+
+  - id: "C18"
+    name: "The Peach Fuzz Metaphor"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["identity", "metaphor", "memorable", "cultural"]
+    content:
+      summary: "Find visceral physical metaphor for cultural/personal identity"
+      description: "Can't get rid of peach fuzz like can't get rid of cultural identity. Visceral, specific, universally relatable."
+      psychology: "Unforgettable identity marker. Physical metaphors resonate deeper than abstract."
+      outcome: "Unforgettable identity marker"
+    trigger:
+      keywords: ["identity essay", "cultural", "unique metaphor"]
+      situations: ["identity essay development"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C19"
+    name: "The Hyphen Identity Framework"
+    asset_type: "framework"
+    domain: "essays"
+    category: "C"
+    tags: ["identity", "intersectionality", "fragmentation", "power"]
+    content:
+      summary: "Identity exists in CONNECTIONS between labels, not the labels themselves"
+      description: "Power is in the hyphens. Muslim-Indian, Indian-American, girl-in-CS. Not choosing between, but existing in connections."
+      psychology: "Fragmentation becomes power. The intersection is the unique value proposition."
+      outcome: "Fragmented identity becomes source of power"
+    trigger:
+      keywords: ["torn between", "don't fit", "multiple identities"]
+      student_states: ["identity confusion", "fragmented"]
+      situations: ["identity essay", "student feels torn"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["The Multicultural", "intersectional identities"]
+
+  - id: "C20"
+    name: "The Costco Girl Principle"
+    asset_type: "principle"
+    domain: "essays"
+    category: "C"
+    tags: ["memorability", "differentiation", "identity-marker"]
+    content:
+      summary: "Admissions officers need a memorable tag - be 'peach fuzz girl' not generic"
+      description: "Admissions officers read thousands of essays. They need a tag to remember you by."
+      psychology: "Distinctive identity marker creates recall. You're competing for mental real estate."
+      outcome: "Stands out in thousands of applications"
+    trigger:
+      keywords: ["stand out", "memorable", "different"]
+      situations: ["differentiation strategy", "essay polish"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C21"
+    name: "The Mirror Method"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["parent-essay", "reflection", "centering"]
+    content:
+      summary: "For parent-focused essays, extract student's qualities first, then mirror in parent"
+      description: "Essay about student THROUGH parent lens. Student's leadership qualities mirrored in parent's story."
+      psychology: "I witnessed my mom's isolation centers student as observer."
+      outcome: "Essay about student through parent lens"
+    trigger:
+      keywords: ["about my parent", "family essay", "mom", "dad"]
+      situations: ["family/parent essay prompt"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C22"
+    name: "The Sensory Contrast Opening"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["hook", "sensory", "immersion", "opening"]
+    content:
+      summary: "Open with physical sensations before abstract concepts"
+      description: "The smell of manure, endless fields of grass. Sensory details trump generic descriptions."
+      psychology: "Sensory details create immediate immersion. Reader experiences before understanding."
+      outcome: "Immediate immersion in writer's world"
+    trigger:
+      keywords: ["boring opening", "generic start", "hook needed"]
+      situations: ["essay opening revision"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C23"
+    name: "The Local-to-Global Framework"
+    asset_type: "framework"
+    domain: "essays"
+    category: "C"
+    tags: ["structure", "sophistication", "impact", "arc"]
+    content:
+      summary: "Start local → expand universal → return actionable local"
+      description: "Personal/local story → Universal implications → Return to actionable local impact."
+      psychology: "Shows sophisticated thinking while keeping actionable."
+      outcome: "Essay sophistication with actionable ending"
+    trigger:
+      keywords: ["essay structure", "how to organize", "arc"]
+      situations: ["essay planning", "structure needed"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "C24"
+    name: "The Financial Barrier Narrative"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["financial", "positioning", "barriers", "determination"]
+    content:
+      summary: "Frame financial barriers as proof of qualification + determination"
+      description: "Accepted to program, declined for financial reasons shows qualification + barriers + determination."
+      psychology: "Limitation becomes positioning strength."
+      outcome: "Aligns with underrepresented/financial aid missions"
+    trigger:
+      keywords: ["couldn't afford", "financial", "had to decline"]
+      situations: ["financial challenges in background"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["financially constrained students"]
+
+  - id: "C25"
+    name: "The Community Weaving"
+    asset_type: "technique"
+    domain: "essays"
+    category: "C"
+    tags: ["breadth", "community", "pattern", "involvement"]
+    content:
+      summary: "Mention multiple organizations to show pattern of commitment"
+      description: "Weave multiple organizations naturally: Hack Club, Kode with Klossy, mosque. Shows pattern not single activity."
+      psychology: "Diversity breadth shown through natural mention. Pattern > single instance."
+      outcome: "Diversity breadth demonstrated through pattern"
+    trigger:
+      keywords: ["multiple activities", "show breadth", "communities"]
+      situations: ["demonstrating breadth", "activity integration"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # CATEGORY D: RELATIONSHIP TECHNIQUES (D1-D20)
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  - id: "D1"
+    name: "The Gratitude Offensive"
+    asset_type: "technique"
+    domain: "relationships"
+    category: "D"
+    tags: ["counselor", "relationship-repair", "gifts", "appreciation"]
+    content:
+      summary: "Physical thank you card + small gift to transform hostile relationship"
+      description: "When counselor relationship is hostile, execute physical gratitude offensive: Handwritten thank you card + gift card."
+      psychology: "Cognitive dissonance - hard to dislike someone showing consistent appreciation."
+      outcome: "Relationship transforms from hostile to supportive"
+    trigger:
+      keywords: ["counselor upset", "relationship damaged", "they don't like me"]
+      situations: ["counselor relationship strained", "need goodwill"]
+      lifecycle_stages: ["P2_BUILDING", "P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D2"
+    name: "The Gift Reset Protocol"
+    asset_type: "protocol"
+    domain: "relationships"
+    category: "D"
+    tags: ["relationship-repair", "gifts", "multiple-relationships"]
+    content:
+      summary: "Monday delivery of potted plants + cards to three key people"
+      description: "When email fatigue has damaged multiple relationships, physical gifts bypass digital channel fatigue."
+      psychology: "Physical gesture bypasses communication channel fatigue."
+      outcome: "Goodwill capital rebuilt across multiple relationships"
+    trigger:
+      keywords: ["multiple relationships damaged", "burned bridges", "need reset"]
+      situations: ["email overload damaged relationships"]
+      lifecycle_stages: ["P3_JUNIOR", "P4_SUMMER"]
+    applicability:
+      archetypes: ["The Over-asker", "email-heavy students"]
+
+  - id: "D3"
+    name: "The Teacher Rotation System"
+    asset_type: "strategy"
+    domain: "relationships"
+    category: "D"
+    tags: ["recommendations", "sustainability", "planning"]
+    content:
+      summary: "Cultivate three fresh sophomore teachers for senior year recommendations"
+      description: "Don't overuse same teachers. Cultivate three sophomore teachers who won't be exhausted by senior year."
+      psychology: "Fresh relationships = fresh enthusiasm. Overused teachers give diminishing returns."
+      outcome: "Sustainable long-term recommendation strategy"
+    trigger:
+      keywords: ["always ask same teacher", "teacher seems tired", "too many requests"]
+      situations: ["recommendation planning", "teacher fatigue detected"]
+      lifecycle_stages: ["P1_FOUNDATION", "P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D4"
+    name: "The Front Desk Alliance"
+    asset_type: "strategy"
+    domain: "relationships"
+    category: "D"
+    tags: ["gatekeepers", "access", "administrative"]
+    content:
+      summary: "Befriend administrative gatekeepers for scheduling advantage"
+      description: "Administrative staff control access to principals, schedule meetings, know insider information."
+      psychology: "Gatekeepers control access. Being kind to staff others ignore creates loyalty."
+      outcome: "Strategic access and insider information"
+    trigger:
+      keywords: ["can't get meeting", "need access", "administrative"]
+      situations: ["need institutional access"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D5"
+    name: "The Principal Relationship Protocol"
+    asset_type: "protocol"
+    domain: "relationships"
+    category: "D"
+    tags: ["principal", "relationship-building", "leadership"]
+    content:
+      summary: "Request 30-minute meeting with no specific agenda - just get to know you"
+      description: "Request meeting with principal with no ask. Builds capital before you need it."
+      psychology: "Builds capital before requests. Most students only see principal when in trouble."
+      outcome: "Future leverage created through genuine relationship"
+    trigger:
+      keywords: ["principal", "leadership endorsement", "recommendation"]
+      situations: ["need authority figure relationship"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D6"
+    name: "The Reciprocal Nomination Strategy"
+    asset_type: "strategy"
+    domain: "relationships"
+    category: "D"
+    tags: ["reciprocity", "nominations", "teacher-awards"]
+    content:
+      summary: "Nominate teachers for THEIR awards to build relationship capital"
+      description: "Nominate teachers for awards they're eligible for. Mutual recognition builds relationship capital."
+      psychology: "Reciprocity creates obligation. Teacher nominated = teacher invested in your success."
+      outcome: "Long-term relationship cultivation through reciprocity"
+    trigger:
+      keywords: ["teacher relationship", "want to thank teacher", "recommendation later"]
+      situations: ["relationship building", "gratitude expression"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D7"
+    name: "The Fact Sheet Template"
+    asset_type: "template"
+    domain: "relationships"
+    category: "D"
+    tags: ["recommendations", "efficiency", "preparation"]
+    content:
+      summary: "Pre-write bullet points for recommenders to minimize their effort"
+      description: "Provide recommenders with pre-written content: award descriptions, achievements, timeline."
+      psychology: "Minimal effort required = increased compliance. You control the narrative."
+      outcome: "Lower friction request fulfillment with better content"
+    trigger:
+      keywords: ["recommendation request", "make it easy", "what should I send"]
+      situations: ["recommendation request", "nomination request"]
+      lifecycle_stages: ["P3_JUNIOR", "P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D8"
+    name: "The Direct Ask Protocol"
+    asset_type: "protocol"
+    domain: "relationships"
+    category: "D"
+    tags: ["communication", "efficiency", "established-relationships"]
+    content:
+      summary: "Skip buildup when relationship is established - direct requests"
+      description: "With established relationships, skip the buildup. Hey, remember you said to reach out? I'm ready."
+      psychology: "Relationship capital utilization. Excessive preamble signals insecurity."
+      outcome: "Efficient communication that respects established relationship"
+    trigger:
+      keywords: ["established relationship", "they offered", "follow up"]
+      situations: ["leveraging existing offer"]
+      lifecycle_stages: ["P2_BUILDING", "P3_JUNIOR"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D9"
+    name: "The Insider Tea Strategy"
+    asset_type: "strategy"
+    domain: "relationships"
+    category: "D"
+    tags: ["trust", "vulnerability", "deeper-connection"]
+    content:
+      summary: "Share sensitive organizational knowledge to build deeper trust"
+      description: "Share insider knowledge about organizations to signal trust. Vulnerability demonstrates trust."
+      psychology: "Vulnerability demonstrates trust. Shared secrets = bond."
+      outcome: "Friendship beyond transactional networking"
+    trigger:
+      keywords: ["deeper connection", "trust building", "beyond networking"]
+      situations: ["relationship deepening needed"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D10"
+    name: "The LinkedIn Adult Practice"
+    asset_type: "technique"
+    domain: "relationships"
+    category: "D"
+    tags: ["networking", "practice", "LinkedIn", "skills"]
+    content:
+      summary: "Cold message 10 random strangers for conversation practice"
+      description: "Message 10 random LinkedIn strangers with no agenda. Practice professional communication."
+      psychology: "Awkward phase necessary for skill building. Low stakes practice builds high stakes skills."
+      outcome: "Professional communication developed through practice"
+    trigger:
+      keywords: ["networking", "professional communication", "LinkedIn"]
+      situations: ["networking skill development needed"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["shy students", "networking-averse"]
+
+  - id: "D11"
+    name: "The Networking Volume Principle"
+    asset_type: "principle"
+    domain: "relationships"
+    category: "D"
+    tags: ["networking", "volume", "persistence", "numbers-game"]
+    content:
+      summary: "Low response rates? Message MORE people, not fewer"
+      description: "3 messages, 0 responses → message MORE people, not fewer. It's a numbers game."
+      psychology: "Non-response is normal, not personal. Persistence normalized through expectation setting."
+      outcome: "Persistence normalized through expectation management"
+    trigger:
+      keywords: ["no one responds", "no replies", "networking not working"]
+      student_states: ["discouraged", "defeated"]
+      situations: ["low networking response rate"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D12"
+    name: "The Rejection Bridge Technique"
+    asset_type: "technique"
+    domain: "relationships"
+    category: "D"
+    tags: ["rejection", "redirection", "networking", "opportunity"]
+    content:
+      summary: "Every 'no' should lead to a new connection or opportunity"
+      description: "When someone says no, ask: Do you know anyone who might be interested?"
+      psychology: "Network expansion through rejection. No isn't dead end, it's redirection."
+      outcome: "Network expansion through graceful rejection handling"
+    trigger:
+      keywords: ["rejected", "said no", "can't help"]
+      situations: ["networking rejection received"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D13"
+    name: "The LinkedIn Reconnaissance"
+    asset_type: "technique"
+    domain: "relationships"
+    category: "D"
+    tags: ["research", "preparation", "LinkedIn", "strategy"]
+    content:
+      summary: "Research people on platforms before meeting without mentioning it"
+      description: "Research people extensively before meetings - career path, interests. Use to inform but never reveal."
+      psychology: "Information is power. Prepared conversations feel more natural."
+      outcome: "Strategic advantage through preparation"
+    trigger:
+      keywords: ["meeting someone", "interview", "informational"]
+      situations: ["pre-meeting preparation"]
+      lifecycle_stages: ["all"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D14"
+    name: "The Opportunity Research Pattern"
+    asset_type: "technique"
+    domain: "strategy"
+    category: "D"
+    tags: ["research", "reverse-engineering", "winners", "LinkedIn"]
+    content:
+      summary: "Research every winner on LinkedIn to reverse-engineer success patterns"
+      description: "For any program or award, stalk every previous winner on LinkedIn. Find patterns, understand trajectories."
+      psychology: "Learn trajectories, understand pathways. Success leaves clues."
+      outcome: "Reverse-engineered success patterns inform positioning"
+    trigger:
+      keywords: ["how do I win", "what do they look for", "previous winners"]
+      situations: ["competitive application preparation"]
+      lifecycle_stages: ["P2_BUILDING", "P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D15"
+    name: "The Recommendation Relationship Sequence"
+    asset_type: "protocol"
+    domain: "relationships"
+    category: "D"
+    tags: ["recommendations", "relationship-building", "sequence"]
+    content:
+      summary: "Catch up → share wins → build rapport → THEN request"
+      description: "Never start with the ask. Sequence: catch up genuinely → share recent wins → build rapport → then request."
+      psychology: "Avoids transactional approach. Investment before withdrawal."
+      outcome: "Stronger recommendation from genuine relationship"
+    trigger:
+      keywords: ["need recommendation", "how to ask"]
+      situations: ["recommendation request planning"]
+      lifecycle_stages: ["P3_JUNIOR"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D16"
+    name: "The Popular Kid Integration"
+    asset_type: "strategy"
+    domain: "relationships"
+    category: "D"
+    tags: ["visibility", "social", "recognition"]
+    content:
+      summary: "Branch out social circles to increase teacher recognition"
+      description: "Teacher recognition depends on peer visibility. Branch out social circles, learn names."
+      psychology: "Teacher recognition depends on peer visibility. Social presence = institutional presence."
+      outcome: "Enhanced institutional presence through social expansion"
+    trigger:
+      keywords: ["invisible", "teachers don't know me", "no recognition"]
+      situations: ["low visibility", "recognition needed"]
+      lifecycle_stages: ["P1_FOUNDATION", "P2_BUILDING"]
+    applicability:
+      archetypes: ["The Invisible", "introverts"]
+
+  - id: "D17"
+    name: "The Personal Vulnerability Strategy"
+    asset_type: "strategy"
+    domain: "relationships"
+    category: "D"
+    tags: ["vulnerability", "authenticity", "repair", "connection"]
+    content:
+      summary: "Share personal struggles for authentic connection and relationship repair"
+      description: "When relationship repair needed, share genuine struggles. Humanization creates understanding."
+      psychology: "Humanization creates understanding. Vulnerability invites empathy."
+      outcome: "Trust and depth built through appropriate vulnerability"
+    trigger:
+      keywords: ["relationship repair", "authentic connection", "make amends"]
+      situations: ["relationship strained", "trust building needed"]
+      lifecycle_stages: ["all"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D18"
+    name: "The Parent Witness Strategy"
+    asset_type: "strategy"
+    domain: "relationships"
+    category: "D"
+    tags: ["parents", "buy-in", "transformation", "investment"]
+    content:
+      summary: "Have both parents observe coaching session to witness transformation"
+      description: "Invite parents to observe session where student makes progress. Witnessing transformation creates buy-in."
+      psychology: "Relationships can always be amended. Seeing > hearing."
+      outcome: "Family buy-in through witnessed transformation"
+    trigger:
+      keywords: ["parents skeptical", "need family buy-in", "parents don't understand"]
+      situations: ["parent resistance", "family alignment needed"]
+      lifecycle_stages: ["P1_FOUNDATION", "P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D19"
+    name: "The Parent Education Layer"
+    asset_type: "technique"
+    domain: "relationships"
+    category: "D"
+    tags: ["parents", "education", "multi-level", "alignment"]
+    content:
+      summary: "Teach multiple levels simultaneously - student learns while parent educated"
+      description: "In sessions with parent present, teach on multiple levels. Student gets direct instruction while parent learns context."
+      psychology: "Family alignment achieved through shared learning."
+      outcome: "Family aligned through shared learning experience"
+    trigger:
+      keywords: ["parent in session", "family present", "need alignment"]
+      situations: ["parent joins coaching session"]
+      lifecycle_stages: ["all"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "D20"
+    name: "The Parent Exit Strategy"
+    asset_type: "technique"
+    domain: "relationships"
+    category: "D"
+    tags: ["parents", "autonomy", "transitions", "independence"]
+    content:
+      summary: "Dad present for setup, leaves for deep work - satisfies oversight while building autonomy"
+      description: "Parent present for session start, then exits for detailed work. Both needs met."
+      psychology: "Both needs met - parent satisfied, student independent."
+      outcome: "Both parent oversight and student autonomy achieved"
+    trigger:
+      keywords: ["parent hovering", "need autonomy", "parent too involved"]
+      situations: ["parent present in session", "autonomy needed"]
+      lifecycle_stages: ["all"]
+    applicability:
+      archetypes: ["all"]
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # CATEGORY E: PRODUCTIVITY & EXECUTION (E1-E22)
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  - id: "E1"
+    name: "The Synchronous Send Tactic"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["immediate-action", "momentum", "procrastination-prevention"]
+    content:
+      summary: "Send email/submit during session to prevent overthinking"
+      description: "When plan is made, execute immediately. Send this even during our session."
+      psychology: "Prevents overthinking and procrastination. Immediate progress > endless planning."
+      outcome: "Immediate progress vs endless planning"
+    trigger:
+      keywords: ["I'll do it later", "I'll send it tomorrow", "need to think about it"]
+      situations: ["communication planned", "submission ready"]
+      lifecycle_stages: ["all"]
+    applicability:
+      archetypes: ["The Procrastinator", "The Perfectionist"]
+
+  - id: "E2"
+    name: "The Real-Time Application Build"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["applications", "momentum", "session-productivity"]
+    content:
+      summary: "Open documents and start writing during session"
+      description: "Open application documents during session, paste prompts, start writing. Momentum prevents procrastination."
+      psychology: "Momentum prevents procrastination. Starting is hardest - do it together."
+      outcome: "Visible progress, deadline pressure managed"
+    trigger:
+      keywords: ["haven't started", "application pending", "deadline coming"]
+      situations: ["application not started", "deadline pressure"]
+      lifecycle_stages: ["P4_SUMMER", "P5_SENIOR"]
+    applicability:
+      archetypes: ["The Procrastinator"]
+
+  - id: "E3"
+    name: "The 8-Week Goal Architecture"
+    asset_type: "framework"
+    domain: "execution"
+    category: "E"
+    tags: ["goals", "milestones", "chunking", "achievable"]
+    content:
+      summary: "Break overwhelming target into weekly milestones"
+      description: "8-week breakdown: Week 1: 1400 → Week 2: 1450. 50-point improvement per week feels doable."
+      psychology: "50-point improvement feels doable. Large goal / small increments = achievable."
+      outcome: "Impossible becomes achievable through chunking"
+    trigger:
+      keywords: ["overwhelming", "too big", "can't do it"]
+      situations: ["large goal intimidation"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "E4"
+    name: "The Strategic Overwhelm"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["productivity", "capacity", "expectations", "momentum"]
+    content:
+      summary: "Assign 140% of capacity, expect 70%, celebrate 50%"
+      description: "Counter-intuitive: Give students more than they can do. Creates urgency without paralysis."
+      psychology: "Creates urgency without paralysis. High volume bypasses perfectionism."
+      outcome: "More accomplished through volume than through conservative assignment"
+    trigger:
+      keywords: ["needs momentum", "too slow", "not enough done"]
+      situations: ["student needs pushing", "momentum building"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["The Builder", "The Steady"]
+
+  - id: "E5"
+    name: "The Formal Kickoff Protocol"
+    asset_type: "protocol"
+    domain: "execution"
+    category: "E"
+    tags: ["projects", "structure", "accountability", "ownership"]
+    content:
+      summary: "Treat major projects like professional programs with tracker and timeline"
+      description: "For major projects, create formal structure: tracker, timeline, defined roles. Then transfer ownership."
+      psychology: "Structure reduces anxiety, builds accountability."
+      outcome: "Ownership transfer after structured start"
+    trigger:
+      keywords: ["big project", "don't know where to start", "overwhelmed"]
+      situations: ["major initiative starting"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "E6"
+    name: "The Manifestation Documentation"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["goals", "visualization", "commitment", "documentation"]
+    content:
+      summary: "Write down goals formally for commitment and accountability"
+      description: "Writing them down... active manifestation through visualization. Tangible written goals increase follow-through."
+      psychology: "Tangible goals increase follow-through. Written = real."
+      outcome: "Commitment architecture built through documentation"
+    trigger:
+      keywords: ["goals", "commit", "accountability"]
+      situations: ["goal setting", "commitment needed"]
+      lifecycle_stages: ["all"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "E7"
+    name: "The Go Hard or Go Home"
+    asset_type: "principle"
+    domain: "execution"
+    category: "E"
+    tags: ["commitment", "focus", "mediocrity-elimination"]
+    content:
+      summary: "Full commitment or strategic pivot - no mediocrity"
+      description: "Get a coach and win nationals OR redirect time completely. Eliminates mediocrity."
+      psychology: "Eliminates mediocrity. Either win or reallocate - no middle ground."
+      outcome: "Full commitment or strategic reallocation"
+    trigger:
+      keywords: ["not really working", "half-hearted", "going through motions"]
+      situations: ["mediocre commitment detected"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["The Spreader"]
+
+  - id: "E8"
+    name: "The Intensive Option Offer"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["anchoring", "commitment", "negotiation"]
+    content:
+      summary: "Present extreme option first to make moderate seem reasonable"
+      description: "Present extreme option first (2hr daily SAT) making moderate option seem reasonable."
+      psychology: "Anchoring effect makes moderate option acceptable."
+      outcome: "Moderate commitment accepted through anchoring"
+    trigger:
+      keywords: ["need commitment", "not doing enough"]
+      situations: ["commitment negotiation"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["The Reluctant"]
+
+  - id: "E9"
+    name: "The Incentive Ladder"
+    asset_type: "framework"
+    domain: "execution"
+    category: "E"
+    tags: ["incentives", "participation", "recruitment"]
+    content:
+      summary: "Progressive incentives: candy → raffle → officer positions → opportunities"
+      description: "Layer incentives for maximum participation. Start small, escalate to meaningful."
+      psychology: "Progressive incentives maximize participation at each level."
+      outcome: "Maximum participation through layered incentives"
+    trigger:
+      keywords: ["need participants", "no one signing up", "recruitment"]
+      situations: ["recruiting for initiative"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["leaders starting initiatives"]
+
+  - id: "E10"
+    name: "The Attendance Penalty Psychology"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["commitment", "accountability", "behavioral-economics"]
+    content:
+      summary: "Checkbox agreement with stated penalty increases follow-through"
+      description: "I agree to attend every meeting or [penalty]. Checkbox agreement dramatically increases attendance."
+      psychology: "Behavioral economics commitment device. Public commitment + penalty = follow-through."
+      outcome: "Dramatic attendance increase through commitment device"
+    trigger:
+      keywords: ["people don't show up", "low attendance", "flaky"]
+      situations: ["running initiative with attendance issues"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["leaders"]
+
+  - id: "E11"
+    name: "The Partnership Dissolution"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["collaboration", "boundaries", "efficiency"]
+    content:
+      summary: "End unproductive collaborations decisively - zero contribution = clean break"
+      description: "Some collaborations drain without contributing. Zero contribution = clean break."
+      psychology: "Some collaborations drain without contributing. Sunk cost fallacy must be overcome."
+      outcome: "Time and energy redistributed to productive areas"
+    trigger:
+      keywords: ["partner not helping", "doing all the work", "dragging me down"]
+      situations: ["unproductive collaboration"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "E12"
+    name: "The Multiple Initiative Resilience"
+    asset_type: "strategy"
+    domain: "execution"
+    category: "E"
+    tags: ["diversification", "resilience", "portfolio"]
+    content:
+      summary: "Diversified portfolio: when one fails, others succeed"
+      description: "Maintain multiple initiatives so failure in one doesn't devastate. Never single point of failure."
+      psychology: "Distributed risk maintains momentum."
+      outcome: "Momentum maintained despite individual failures"
+    trigger:
+      keywords: ["everything depends on", "if this fails", "all eggs in one basket"]
+      situations: ["single initiative risk", "failure recovery"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "E13"
+    name: "The Local Leadership Activation"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["quick-wins", "existing-organizations", "activation"]
+    content:
+      summary: "Reactivate dormant memberships for easy leadership credentials"
+      description: "Mountain House Youth member → start attending → become officer. Easy leadership through activation."
+      psychology: "Established organization = easy win. Reactivation easier than creation."
+      outcome: "Credential activated with minimal effort"
+    trigger:
+      keywords: ["need leadership", "no positions", "quick credential"]
+      situations: ["leadership credential needed quickly"]
+      lifecycle_stages: ["P1_FOUNDATION", "P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "E14"
+    name: "The QR Code Discovery"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["resourcefulness", "problem-solving", "initiative"]
+    content:
+      summary: "Student independently finds workarounds to access blocked resources"
+      description: "When school systems block access, resourceful students find workarounds. This becomes a story."
+      psychology: "Resourcefulness demonstrated is itself valuable."
+      outcome: "Problem solved + initiative demonstrated"
+    trigger:
+      keywords: ["can't access", "blocked", "no way to get"]
+      situations: ["resource access blocked"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["The Resourceful"]
+
+  - id: "E15"
+    name: "The Facebook Broadcast"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["recruitment", "community", "inbound"]
+    content:
+      summary: "Post in community groups to attract interested people vs chasing reluctant"
+      description: "Post in community Facebook groups to find interested participants. Pull vs push marketing."
+      psychology: "Pull vs push marketing. Attracted participants > chased participants."
+      outcome: "Right people find you through broadcast"
+    trigger:
+      keywords: ["need participants", "no one interested", "recruiting"]
+      situations: ["initiative recruitment"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["leaders"]
+
+  - id: "E16"
+    name: "The DevPost Sponsorship Discovery"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["hackathons", "sponsors", "research", "funding"]
+    content:
+      summary: "Research similar events on DevPost to identify and pitch existing sponsors"
+      description: "Research similar hackathons on DevPost, identify their sponsors, personalize pitch."
+      psychology: "Sponsors already support hackathons = easier conversion."
+      outcome: "Significant sponsorship through research-based outreach"
+    trigger:
+      keywords: ["need sponsors", "funding", "hackathon sponsors"]
+      situations: ["hackathon planning", "event funding"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["event organizers"]
+
+  - id: "E17"
+    name: "The Discord Hackathon Promotion Hack"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["promotion", "Discord", "hackathons", "reach"]
+    content:
+      summary: "Join hackathons to access their Discord servers for promotion"
+      description: "Sign up for hackathons to access their Discord servers. Hackathon participants = high-propensity participants."
+      psychology: "Hackathon participants = high-propensity participants for your initiative."
+      outcome: "Thousands of potential participants reached"
+    trigger:
+      keywords: ["need reach", "promote my thing", "find participants"]
+      situations: ["initiative promotion needed"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["tech-focused"]
+
+  - id: "E18"
+    name: "The Domain Legitimacy Investment"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["credibility", "branding", "investment", "legitimacy"]
+    content:
+      summary: "Small domain investment creates disproportionate credibility"
+      description: "Small cost (folklift.org) creates major credibility. Custom domain = legitimate operation."
+      psychology: "Custom domain = legitimate operation. Small investment, large credibility return."
+      outcome: "Professional positioning at minimal cost"
+    trigger:
+      keywords: ["looks amateur", "need credibility", "professional"]
+      situations: ["initiative needs credibility"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "E19"
+    name: "The 10x Distribution Principle"
+    asset_type: "principle"
+    domain: "execution"
+    category: "E"
+    tags: ["outreach", "volume", "conversion", "scaling"]
+    content:
+      summary: "Calculate required outreach volume from conversion rate"
+      description: "I want the number to be 200, not 20. 5% conversion sustainable if outreach scales."
+      psychology: "5% conversion sustainable if outreach scales. Math determines volume needed."
+      outcome: "Outcome achieved through calculated volume"
+    trigger:
+      keywords: ["not enough responses", "need more", "low conversion"]
+      situations: ["outreach results below target"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "E20"
+    name: "The Amplification Strategy"
+    asset_type: "strategy"
+    domain: "execution"
+    category: "E"
+    tags: ["social-proof", "amplification", "reach", "validation"]
+    content:
+      summary: "DM organizations requesting reshare of your achievement"
+      description: "After award/achievement, systematically DM related organizations requesting reshare."
+      psychology: "Systematic outreach increases reach and validation. Social proof compounds."
+      outcome: "Social proof compounded through systematic amplification"
+    trigger:
+      keywords: ["won award", "announcement", "share the news"]
+      situations: ["achievement announcement"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "E21"
+    name: "The Publicity Pressure Accountability"
+    asset_type: "technique"
+    domain: "execution"
+    category: "E"
+    tags: ["accountability", "publicity", "momentum", "family"]
+    content:
+      summary: "Use family/public visibility to create forward momentum"
+      description: "Dad: Can't just hide awards. Public visibility creates accountability and forward momentum."
+      psychology: "Family involvement creates forward motion. Public commitment creates accountability."
+      outcome: "Visibility increases through public accountability"
+    trigger:
+      keywords: ["hiding achievements", "too modest", "won't share"]
+      situations: ["student underplaying achievements"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["The Modest"]
+
+  - id: "E22"
+    name: "The Bookmark Technique"
+    asset_type: "technique"
+    domain: "emotional_calibration"
+    category: "E"
+    tags: ["emotional-management", "pacing", "bad-news", "celebration"]
+    content:
+      summary: "Defer bad news through strategic 'bookmark' while celebrating wins first"
+      description: "We can put a bookmark in that, come back to that - celebrate success first, then navigate crisis."
+      psychology: "Creates emotional buffer before crisis navigation."
+      outcome: "Prevents emotional spiral through strategic deferral"
+    trigger:
+      keywords: ["bad news", "rejection", "difficult topic"]
+      situations: ["bad news during session with other items to cover"]
+      lifecycle_stages: ["all"]
+    applicability:
+      archetypes: ["all"]
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # CATEGORY F: TEST PREPARATION (F1-F8)
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  - id: "F1"
+    name: "The Sandwich Method"
+    asset_type: "technique"
+    domain: "strategy"
+    category: "F"
+    tags: ["SAT", "reading", "paired-passages"]
+    content:
+      summary: "Read first passage → answer its questions → THEN read second passage"
+      description: "For paired passages, don't read both first. Read P1 → Answer P1 → Read P2 → Answer P2."
+      psychology: "Prevents content confusion between passages. Sequential processing > parallel."
+      outcome: "Improved accuracy on paired passage questions"
+    trigger:
+      keywords: ["paired passages", "confused", "mixing up passages"]
+      situations: ["SAT reading strategy", "paired passage confusion"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "F2"
+    name: "The Cross-Off Median Method"
+    asset_type: "technique"
+    domain: "strategy"
+    category: "F"
+    tags: ["SAT", "math", "statistics", "median"]
+    content:
+      summary: "Cross off equal frequencies from both ends until middle found"
+      description: "For median in histogram/frequency problems, physically cross off equal numbers from both ends."
+      psychology: "Visual technique makes abstract concrete. Physical action prevents careless errors."
+      outcome: "Mode vs median confusion eliminated"
+    trigger:
+      keywords: ["median", "histogram", "frequency", "statistics"]
+      situations: ["SAT math statistics questions"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "F3"
+    name: "The Evidence Hunting Protocol"
+    asset_type: "technique"
+    domain: "strategy"
+    category: "F"
+    tags: ["SAT", "reading", "evidence", "accuracy"]
+    content:
+      summary: "Point to exact line before selecting answer"
+      description: "Before selecting any reading answer, find and point to the exact line that supports it."
+      psychology: "Grounds guessing in text evidence. Prevents overthinking and wrong inferences."
+      outcome: "Fewer careless errors through evidence grounding"
+    trigger:
+      keywords: ["wrong answers", "careless mistakes", "reading errors"]
+      situations: ["SAT reading practice"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "F4"
+    name: "The Zone Focus Philosophy"
+    asset_type: "principle"
+    domain: "strategy"
+    category: "F"
+    tags: ["focus", "mindset", "performance"]
+    content:
+      summary: "Treat every question as if it's the only one that matters"
+      description: "Scattered attention kills performance. Present-moment focus maximizes performance."
+      psychology: "Present-moment focus maximizes performance. One question at a time."
+      outcome: "Sustained concentration throughout test"
+    trigger:
+      keywords: ["distracted", "can't focus", "mind wandering"]
+      situations: ["test-taking strategy", "focus issues"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "F5"
+    name: "The Roommate Card"
+    asset_type: "technique"
+    domain: "motivation"
+    category: "F"
+    tags: ["hope", "precedent", "similar-case"]
+    content:
+      summary: "Share specific similar case to transform impossible to possible"
+      description: "My roommate had 3 B's, and she's at Stanford. Specific similar case transforms impossible to possible."
+      psychology: "Specific similar case transforms impossible to possible. If they can, you can."
+      outcome: "Hope through concrete precedent"
+    trigger:
+      keywords: ["impossible", "can't", "no way", "hopeless"]
+      student_states: ["hopeless", "defeated"]
+      situations: ["student believes goal is impossible"]
+      lifecycle_stages: ["all"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "F6"
+    name: "The Both/And Principle (Test Context)"
+    asset_type: "principle"
+    domain: "strategy"
+    category: "F"
+    tags: ["grades", "rigor", "both-required"]
+    content:
+      summary: "Need BOTH good grades AND rigor - neither alone works"
+      description: "Students choosing between rigor and grades. Reality: Need both. 3.5 without APs rejected."
+      psychology: "Destroys wishful thinking. Both conditions required, not either/or."
+      outcome: "Real planning enabled through truth"
+    trigger:
+      keywords: ["rigor or grades", "which is more important"]
+      situations: ["course selection", "grade discussion"]
+      lifecycle_stages: ["P1_FOUNDATION", "P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "F7"
+    name: "The Grade Normalization"
+    asset_type: "technique"
+    domain: "emotional_calibration"
+    category: "F"
+    tags: ["grades", "anxiety", "normalization"]
+    content:
+      summary: "Normalize adjustment period grades to reduce anxiety"
+      description: "B's first semester while adjusting is totally normal. Reduces anxiety while maintaining standards."
+      psychology: "Reduces anxiety while maintaining standards. Normal doesn't mean acceptable long-term."
+      outcome: "Sustainable performance expectations"
+    trigger:
+      keywords: ["got a B", "grades dropped", "struggling"]
+      student_states: ["anxious", "disappointed"]
+      situations: ["grade disappointment"]
+      lifecycle_stages: ["P1_FOUNDATION", "P2_BUILDING"]
+    applicability:
+      archetypes: ["The Perfectionist", "The Anxious"]
+
+  - id: "F8"
+    name: "The Permission to be Bad"
+    asset_type: "technique"
+    domain: "strategy"
+    category: "F"
+    tags: ["perfectionism", "permission", "strategic-shortcuts"]
+    content:
+      summary: "Validate strategic shortcuts to remove guilt about prioritization"
+      description: "Bad students in stereotypical sense - validates strategic shortcuts and prioritization."
+      psychology: "Removes guilt about prioritization. Perfect is enemy of strategic."
+      outcome: "Strategic focus enabled through permission"
+    trigger:
+      keywords: ["feel guilty", "should be doing", "bad student"]
+      student_states: ["guilty", "torn"]
+      situations: ["perfectionism blocking progress"]
+      lifecycle_stages: ["all"]
+    applicability:
+      archetypes: ["The Perfectionist"]
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # CATEGORY G: CREATIVE & INNOVATION (G1-G10)
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  - id: "G1"
+    name: "The Creative Challenge Protocol"
+    asset_type: "protocol"
+    domain: "essays"
+    category: "G"
+    tags: ["creativity", "pushing", "alternatives", "better-ideas"]
+    content:
+      summary: "Accept first idea, then push: 'Just want to challenge you, see if anything else'"
+      description: "Accept student's first idea, then gently push for alternatives. Permission to be ordinary while inviting extraordinary."
+      psychology: "Permission to be ordinary while inviting extraordinary."
+      outcome: "Breakthrough discovery through gentle pushing"
+    trigger:
+      keywords: ["first idea", "is this good", "should I use this"]
+      situations: ["brainstorming", "idea generation"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "G2"
+    name: "The Reverse Engineering"
+    asset_type: "technique"
+    domain: "essays"
+    category: "G"
+    tags: ["essays", "prompts", "authenticity", "matching"]
+    content:
+      summary: "Start with story you want to tell, then find matching prompt"
+      description: "Don't start with prompt and force story. Start with story then match to prompt."
+      psychology: "Authenticity over compliance. Your best story first, prompt fit second."
+      outcome: "Genuine voice preserved through story-first approach"
+    trigger:
+      keywords: ["which prompt", "what should I write about", "match prompt"]
+      situations: ["prompt selection", "essay planning"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "G3"
+    name: "The Stanford Daily Games Innovation"
+    asset_type: "technique"
+    domain: "essays"
+    category: "G"
+    tags: ["school-specific", "innovation", "contribution", "games"]
+    content:
+      summary: "Propose concrete, achievable, unique contribution to school"
+      description: "For 'why us' essay, create NYT-style games section for Stanford Daily. Concrete, achievable, unique."
+      psychology: "Concrete, achievable, unique contribution shows genuine interest and capability."
+      outcome: "Memorable school-specific innovation"
+    trigger:
+      keywords: ["why this school", "what will you contribute", "unique idea"]
+      situations: ["school supplement writing"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "G4"
+    name: "The Gamification Reframe"
+    asset_type: "technique"
+    domain: "positioning"
+    category: "G"
+    tags: ["gaming", "reframe", "universal", "normalization"]
+    content:
+      summary: "Reframe gaming as universal through mainstream examples"
+      description: "Everyone uses gamified apps - Duolingo, NYT Mini, Strava. Gaming = universal, not niche."
+      psychology: "Reframes negative perception using reader's experience."
+      outcome: "Gaming positioned as universal, not niche"
+    trigger:
+      keywords: ["gaming seems bad", "worried about gaming", "too nerdy"]
+      situations: ["gaming interest needs positioning"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["The Gamer"]
+
+  - id: "G5"
+    name: "The Observation Origin Story"
+    asset_type: "technique"
+    domain: "essays"
+    category: "G"
+    tags: ["origin", "childhood", "passion-evidence", "authenticity"]
+    content:
+      summary: "Find earliest memory to show deep-rooted, not recent, passion"
+      description: "When's earliest moment you remember? Diary at 7 about family shows passion is deep-rooted."
+      psychology: "Shows deep-rooted passion, not recent interest. Earlier = more authentic."
+      outcome: "Childhood foundation establishes authentic passion"
+    trigger:
+      keywords: ["when did this start", "passion evidence", "how long"]
+      situations: ["passion narrative development"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "G6"
+    name: "The Time Travel Dream Trip"
+    asset_type: "technique"
+    domain: "essays"
+    category: "G"
+    tags: ["creativity", "unique-answers", "beyond-obvious"]
+    content:
+      summary: "Push beyond geographic answers to creative possibilities"
+      description: "What about time travel? 1950s to see grandma as teenager? Beyond geography = unique memorable answer."
+      psychology: "Beyond geography = unique memorable. Unexpected answers stand out."
+      outcome: "Creative pivot to memorable answer"
+    trigger:
+      keywords: ["boring answer", "everyone says that", "unique response"]
+      situations: ["interview prep", "creative essay questions"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "G7"
+    name: "The Best vs Favorite Framework"
+    asset_type: "framework"
+    domain: "essays"
+    category: "G"
+    tags: ["analysis", "critical-thinking", "evaluation"]
+    content:
+      summary: "Answer 'objectively best' not 'personal favorite' for analytical depth"
+      description: "Not favorite - what you can EVALUATE as objectively best. Demonstrates analytical vs emotional response."
+      psychology: "Analytical vs emotional response shows critical thinking capability."
+      outcome: "Critical thinking demonstrated through analysis"
+    trigger:
+      keywords: ["favorite", "best", "which do you like"]
+      situations: ["interview prep", "analytical essays"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["analytical students"]
+
+  - id: "G8"
+    name: "The Depth Questioning Cascade"
+    asset_type: "technique"
+    domain: "essays"
+    category: "G"
+    tags: ["depth", "5-whys", "authentic", "core-values"]
+    content:
+      summary: "5 why layers to reach core truth from surface answer"
+      description: "India sites → family history → can't ask parents → see struggles → empathy. Each layer reveals deeper truth."
+      psychology: "Each layer reveals deeper truth. Surface answers hide depth."
+      outcome: "Authentic content uncovered through depth"
+    trigger:
+      keywords: ["shallow answer", "go deeper", "why do you care"]
+      situations: ["essay brainstorming", "finding depth"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "G9"
+    name: "The Prize Psychology Discovery"
+    asset_type: "framework"
+    domain: "execution"
+    category: "G"
+    tags: ["incentives", "participation", "psychology", "events"]
+    content:
+      summary: "Exclusivity + Tangible Benefits + Urgency + Social Proof = Participation"
+      description: "Why bootcamp failed but hackathon succeeded: $23,000 prizes → 100 participants."
+      psychology: "People join for prizes, discover mission later. Incentives first, engagement follows."
+      outcome: "High participation through incentive psychology"
+    trigger:
+      keywords: ["no one signed up", "how to get people", "event planning"]
+      situations: ["event recruitment struggling"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["event organizers"]
+
+  - id: "G10"
+    name: "The Three Version Method"
+    asset_type: "technique"
+    domain: "essays"
+    category: "G"
+    tags: ["perfectionism", "decision-making", "options", "comparison"]
+    content:
+      summary: "Create THREE versions, choose favorite, explain why - enables decision"
+      description: "Perfectionism paralysis solved by creating 3 versions. Comparative judgment easier than absolute."
+      psychology: "Comparative judgment vs absolute perfection."
+      outcome: "Decision-making enabled through comparison"
+    trigger:
+      keywords: ["can't decide", "which is better", "perfectionist"]
+      student_states: ["stuck", "perfectionist paralysis"]
+      situations: ["decision paralysis", "perfectionism blocking"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["The Perfectionist"]
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # CATEGORY H: EMOTIONAL CALIBRATION (H1-H10)
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  - id: "H1"
+    name: "The Game Demo Moment"
+    asset_type: "technique"
+    domain: "emotional_calibration"
+    category: "H"
+    tags: ["first-session", "celebration", "validation", "ownership"]
+    content:
+      summary: "In first session, ask to see their work and celebrate it enthusiastically"
+      description: "Show me your game! Wow! Early work showcase creates massive investment through celebration."
+      psychology: "Creates massive investment through celebration. Ownership through validation."
+      outcome: "Ownership and investment created through early validation"
+    trigger:
+      keywords: ["first session", "getting to know", "show me"]
+      situations: ["first meeting", "relationship building"]
+      lifecycle_stages: ["P1_FOUNDATION"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "H2"
+    name: "The Future Self Visioning"
+    asset_type: "technique"
+    domain: "motivation"
+    category: "H"
+    tags: ["motivation", "sacrifice", "delayed-gratification", "future"]
+    content:
+      summary: "Connect current sacrifice to future application benefit"
+      description: "When you're applying next year, you'll need these activities. Makes current sacrifice worthwhile."
+      psychology: "Makes current sacrifice worthwhile. Present pain = future gain visualization."
+      outcome: "Delayed gratification accepted through future visualization"
+    trigger:
+      keywords: ["why bother", "does it matter", "don't want to"]
+      student_states: ["resistant", "unmotivated"]
+      situations: ["student resisting necessary task"]
+      lifecycle_stages: ["P1_FOUNDATION", "P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "H3"
+    name: "The Identity Excavation"
+    asset_type: "technique"
+    domain: "emotional_calibration"
+    category: "H"
+    tags: ["identity", "discovery", "authenticity", "depth"]
+    content:
+      summary: "Dig beneath surface activities to find core identity elements"
+      description: "Why do you really do this? Keep asking until you hit the core motivation and identity."
+      psychology: "Core identity drives authentic narrative. Activities are symptoms, identity is cause."
+      outcome: "Core identity discovered for authentic positioning"
+    trigger:
+      keywords: ["who am I", "what makes me different", "identity"]
+      situations: ["personal statement brainstorming", "identity crisis"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "H4"
+    name: "The Cultural Gem Mining"
+    asset_type: "technique"
+    domain: "emotional_calibration"
+    category: "H"
+    tags: ["culture", "identity", "differentiation", "hidden-assets"]
+    content:
+      summary: "Excavate hidden cultural identity elements and amplify strategically"
+      description: "Excavate hidden Muslim identity, amplify across video + MSA + Sunday school. Identity as asset."
+      psychology: "Identity as asset, not liability. What makes you different makes you memorable."
+      outcome: "Differentiation achieved through cultural identity"
+    trigger:
+      keywords: ["cultural background", "don't mention", "hide identity"]
+      situations: ["identity underutilized", "differentiation needed"]
+      lifecycle_stages: ["P2_BUILDING", "P4_SUMMER"]
+    applicability:
+      archetypes: ["multicultural students"]
+
+  - id: "H5"
+    name: "The Club Cascade Strategy"
+    asset_type: "strategy"
+    domain: "emotional_calibration"
+    category: "H"
+    tags: ["backup", "dignity", "alternatives", "resilience"]
+    content:
+      summary: "Pre-load 4 alternatives before attempting anything that might fail"
+      description: "Before trying something risky, pre-load alternatives: Women in AI → CS for Good → Encode Justice → backup."
+      psychology: "Maintains dignity through options. Failure of one doesn't equal failure overall."
+      outcome: "Momentum preserved through pre-planned alternatives"
+    trigger:
+      keywords: ["what if it fails", "backup plan", "risky attempt"]
+      situations: ["high-risk initiative", "uncertainty about success"]
+      lifecycle_stages: ["P2_BUILDING"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "H6"
+    name: "The Parent Password Protocol"
+    asset_type: "technique"
+    domain: "execution"
+    category: "H"
+    tags: ["willpower", "screen-time", "delegation", "self-control"]
+    content:
+      summary: "Delegate screen time control to parent to remove daily willpower battles"
+      description: "Ask your dad to set the screen time password. Delegates willpower to parent."
+      psychology: "Removes daily willpower decisions. Outsource self-control to environment."
+      outcome: "Student agency maintained through environmental control"
+    trigger:
+      keywords: ["screen time", "can't stop", "addicted", "wasting time"]
+      situations: ["digital distraction", "willpower failures"]
+      lifecycle_stages: ["all"]
+    applicability:
+      archetypes: ["The Distracted"]
+
+  - id: "H7"
+    name: "The Hollow Detection"
+    asset_type: "technique"
+    domain: "essays"
+    category: "H"
+    tags: ["authenticity", "detection", "revision", "endings"]
+    content:
+      summary: "Mutual recognition when essay ending feels hollow or forced"
+      description: "Both coach and student agree 'feels hollow, forced' - cliche, generic. Authentic radar activated."
+      psychology: "Authentic radar activated. If it feels hollow to you, it reads hollow to admissions."
+      outcome: "Authentic ending found through mutual recognition"
+    trigger:
+      keywords: ["feels fake", "sounds generic", "doesn't feel right"]
+      situations: ["essay ending revision", "authenticity check"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "H8"
+    name: "The Joy of Becoming Unnecessary"
+    asset_type: "principle"
+    domain: "coaching"
+    category: "H"
+    tags: ["independence", "teaching", "letting-go", "philosophy"]
+    content:
+      summary: "Ultimate coaching goal: student no longer needs you"
+      description: "Bike teaching metaphor - let go before ready - joy in becoming unnecessary."
+      psychology: "Ultimate educational goal = student independence. Coach yourself out of a job."
+      outcome: "Powerful philosophy of coaching and education"
+    trigger:
+      keywords: ["when to let go", "too dependent", "independence"]
+      situations: ["coaching philosophy", "transition to independence"]
+      lifecycle_stages: ["P5_SENIOR"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "H9"
+    name: "The Biryani Breakthrough"
+    asset_type: "technique"
+    domain: "emotional_calibration"
+    category: "H"
+    tags: ["interviews", "pivot", "authenticity", "heritage"]
+    content:
+      summary: "Pivot expected business question to heritage/personal story"
+      description: "Expected: profit margins question. Pivot: First memory in kitchen → grandmother's recipe."
+      psychology: "Heritage questions unlock legacy. Real story emerges through personal pivot."
+      outcome: "Connection through authenticity, not just transaction"
+    trigger:
+      keywords: ["interview prep", "expected question", "how to stand out"]
+      situations: ["interview preparation"]
+      lifecycle_stages: ["P4_SUMMER", "P5_SENIOR"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "H10"
+    name: "The Teaching Philosophy Metaphor"
+    asset_type: "technique"
+    domain: "essays"
+    category: "H"
+    tags: ["metaphor", "teaching", "philosophy", "universal"]
+    content:
+      summary: "Connect physical teaching experience to universal learning philosophy"
+      description: "Teaching brother to ride bike = teaching ELD students language. Trust, balance, letting go."
+      psychology: "Universal resonance through specific physical experience."
+      outcome: "Universally resonant framework from specific experience"
+    trigger:
+      keywords: ["teaching essay", "mentoring", "philosophy"]
+      situations: ["teaching/mentoring essay"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["teachers", "mentors"]
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # CATEGORY I: CONTENT OPTIMIZATION (I1-I10)
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  - id: "I1"
+    name: "The Character Limit Mastery"
+    asset_type: "technique"
+    domain: "content_optimization"
+    category: "I"
+    tags: ["character-limits", "efficiency", "activities", "formatting"]
+    content:
+      summary: "Maximize impact within character limits using specific techniques"
+      description: "Action verb FIRST, semicolons for multiple points, numbers front-loaded, present tense."
+      psychology: "Maximum information density. Every character must earn its place."
+      outcome: "Maximum information density achieved"
+    trigger:
+      keywords: ["character limit", "too long", "need to cut"]
+      situations: ["activity description optimization"]
+      lifecycle_stages: ["P4_SUMMER", "P5_SENIOR"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "I2"
+    name: "The Activities Merger Strategy"
+    asset_type: "strategy"
+    domain: "content_optimization"
+    category: "I"
+    tags: ["activities", "slots", "efficiency", "positioning"]
+    content:
+      summary: "Combine related activities under umbrella term to save slots"
+      description: "10-slot constraint requires combination. Tech content + freelance = Technology influencer and freelancer."
+      psychology: "Stronger positioning through strategic combination. Less is more."
+      outcome: "Stronger positioning through strategic combination"
+    trigger:
+      keywords: ["too many activities", "which to include", "10 slots"]
+      situations: ["activity list optimization", "slot constraints"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "I3"
+    name: "The 1.8 Million Discovery"
+    asset_type: "technique"
+    domain: "content_optimization"
+    category: "I"
+    tags: ["quantification", "social-media", "aggregation", "impact"]
+    content:
+      summary: "Combine metrics across platforms into single impressive number"
+      description: "Scattered social media presence → aggregate: YouTube + TikTok + Instagram = 1.8M total views."
+      psychology: "Quantification creates credibility. Aggregation reveals hidden scale."
+      outcome: "Generic description becomes quantified impact"
+    trigger:
+      keywords: ["social media", "content creator", "views"]
+      situations: ["social media presence quantification"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["content creators"]
+
+  - id: "I4"
+    name: "The 50-Word Maximization"
+    asset_type: "technique"
+    domain: "content_optimization"
+    category: "I"
+    tags: ["word-count", "supplements", "school-specific", "optimization"]
+    content:
+      summary: "Use every available word in supplements - spare words are wasted opportunity"
+      description: "Duke 200 word limit, essay at 246. Can go to 250. Add research + basketball = strategic fill."
+      psychology: "Every word is opportunity. Spare words = wasted space = weaker application."
+      outcome: "School-specific optimization through full word utilization"
+    trigger:
+      keywords: ["under word count", "spare words", "can add more"]
+      situations: ["supplement under word limit"]
+      lifecycle_stages: ["P4_SUMMER", "P5_SENIOR"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "I5"
+    name: "The Creative Detail Enhancement"
+    asset_type: "technique"
+    domain: "content_optimization"
+    category: "I"
+    tags: ["specificity", "creativity", "quick-improvement"]
+    content:
+      summary: "30-second fixes that transform generic to specific"
+      description: "Card flipping → drawing pictures on paper shows creativity through specificity."
+      psychology: "Specificity shows creativity and authenticity. Small changes, big impact."
+      outcome: "Specificity demonstrated through quick detail addition"
+    trigger:
+      keywords: ["too generic", "vague", "could be anyone"]
+      situations: ["quick essay improvement"]
+      lifecycle_stages: ["P4_SUMMER", "P5_SENIOR"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "I6"
+    name: "The Parallel Document Surgery"
+    asset_type: "technique"
+    domain: "execution"
+    category: "I"
+    tags: ["efficiency", "deadlines", "parallel-processing"]
+    content:
+      summary: "Edit multiple documents simultaneously to double productivity"
+      description: "Jenny edits one essay while Huda revises another. Parallel processing doubles productivity."
+      psychology: "Doubles productivity under pressure. Parallel > sequential for deadline sprints."
+      outcome: "5 essays completed in 63 minutes"
+    trigger:
+      keywords: ["multiple deadlines", "no time", "sprint needed"]
+      situations: ["deadline pressure with multiple essays"]
+      lifecycle_stages: ["P5_SENIOR"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "I7"
+    name: "The Technical Translation"
+    asset_type: "technique"
+    domain: "content_optimization"
+    category: "I"
+    tags: ["accessibility", "technical", "translation", "audience"]
+    content:
+      summary: "Translate technical terms for non-technical reader"
+      description: "CS essay for admissions: strings/arrays → block code Javascript. Test every term for understanding."
+      psychology: "Universal understanding required. Admissions often non-technical."
+      outcome: "Accessibility achieved for non-technical readers"
+    trigger:
+      keywords: ["too technical", "won't understand", "jargon"]
+      situations: ["technical essay for general audience"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["tech-focused students"]
+
+  - id: "I8"
+    name: "The Geographic Explanation"
+    asset_type: "technique"
+    domain: "positioning"
+    category: "I"
+    tags: ["context", "rural", "geography", "explanation"]
+    content:
+      summary: "Explain geographic context to justify self-driven activities"
+      description: "Rural location justifies self-driven activities, explains no school clubs."
+      psychology: "Preempts questions about why no school activities. Limitation → strength."
+      outcome: "Context established, questions preempted"
+    trigger:
+      keywords: ["no clubs", "small town", "rural", "limited resources"]
+      situations: ["explaining limited traditional activities"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["The Rural", "The Under-resourced"]
+
+  - id: "I9"
+    name: "The Analogy Accessibility Test"
+    asset_type: "technique"
+    domain: "essays"
+    category: "I"
+    tags: ["accessibility", "analogies", "universal", "clarity"]
+    content:
+      summary: "Test analogies for universal understanding - simpler beats clever"
+      description: "Harry Potter artifacts rejected → simple Dumbledore teaching chosen. Universal understanding over clever."
+      psychology: "Universal understanding over clever. Better to be clear than clever."
+      outcome: "Broader resonance through universal reference"
+    trigger:
+      keywords: ["obscure reference", "will they get it", "too clever"]
+      situations: ["analogy selection"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+  - id: "I10"
+    name: "The 100-Word Maximization"
+    asset_type: "technique"
+    domain: "content_optimization"
+    category: "I"
+    tags: ["expansion", "activities", "progression", "timeline"]
+    content:
+      summary: "Fill activity descriptions with timeline showing growth"
+      description: "Progression: Scratch at 12 → complex engines → ethics teaching → Synthoria timeline. Shows growth."
+      psychology: "Timeline shows growth. Development > static description."
+      outcome: "Development demonstrated through timeline"
+    trigger:
+      keywords: ["activity description", "show growth", "spare words"]
+      situations: ["activity description expansion"]
+      lifecycle_stages: ["P4_SUMMER"]
+    applicability:
+      archetypes: ["all"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TECHNIQUE CHAINS (Common Sequences)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+technique_chains:
+
+  identity_discovery:
+    name: "Identity Discovery Chain"
+    sequence: ["A3", "A4", "C19", "C20"]
+    description: "21 Facts → Stranger Test → Hyphen Framework → Costco Girl Principle"
+    use_when: "Student needs to discover unique identity for essays"
+
+  essay_development:
+    name: "Essay Development Chain"
+    sequence: ["C9", "C12", "C8", "I4"]
+    description: "Template Scaffold → Specificity Ladder → Voice Test → 50-Word Maximization"
+    use_when: "Essay needs development from draft to final"
+
+  relationship_repair:
+    name: "Relationship Repair Chain"
+    sequence: ["D2", "D17", "D5"]
+    description: "Gift Reset Protocol → Personal Vulnerability → Principal Relationship Protocol"
+    use_when: "Damaged relationship needs repair"
+
+  deadline_sprint:
+    name: "Deadline Sprint Chain"
+    sequence: ["I6", "E1", "H10"]
+    description: "Parallel Document Surgery → Synchronous Send → Micro-Celebration Cascade"
+    use_when: "Multiple deadlines approaching"
+
+  application_strategy:
+    name: "Application Strategy Chain"
+    sequence: ["B1", "B2", "B17"]
+    description: "Priority Question → Acceptance Rate Arbitrage → Backwards Timeline"
+    use_when: "Setting application strategy"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ANTI-PATTERNS (When NOT to use techniques)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+anti_patterns:
+
+  - technique: "E4"
+    situation: "Already overwhelmed student"
+    use_instead: "A1"
+
+  - technique: "C1"
+    situation: "Fixed decision that can't be changed"
+    use_instead: "Support + pivot planning"
+
+  - technique: "D1"
+    situation: "Inauthentic appreciation would be detected"
+    use_instead: "D17"
+
+  - technique: "C2"
+    situation: "Student's best work - not fundamentally flawed"
+    use_instead: "C12"
+
+  - technique: "C17"
+    situation: "Audience won't understand technical metaphor"
+    use_instead: "Simpler universally accessible metaphor"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHASE-SPECIFIC DEFAULTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+phase_defaults:
+
+  P1_FOUNDATION:
+    start_with: ["A1", "A2", "H4"]
+    always_use: ["H1", "D20", "F7"]
+    ratio: "Diagnostic 60% : Strategic 30% : Tactical 10%"
+
+  P2_BUILDING:
+    start_with: ["E4", "B9", "D11"]
+    always_use: ["A9", "D7", "D1"]
+    ratio: "Tactical 50% : Strategic 30% : Trust 20%"
+
+  P3_JUNIOR:
+    start_with: ["B1", "B2"]
+    always_use: ["B17", "A5", "E5"]
+    ratio: "Strategic 60% : Tactical 30% : Diagnostic 10%"
+
+  P4_SUMMER:
+    start_with: ["C9", "C3"]
+    always_use: ["C12", "C8", "C13"]
+    ratio: "Creation 60% : Tactical 30% : Strategic 10%"
+
+  P5_SENIOR:
+    start_with: ["I6", "I4"]
+    always_use: ["I1", "E1", "H10"]
+    ratio: "Execution 70% : Quality 20% : Celebration 10%"

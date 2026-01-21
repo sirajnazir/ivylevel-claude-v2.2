@@ -83,6 +83,8 @@ export function ExecutionTab() {
   const [stalledProjects, setStalledProjects] = useState<StalledProject[]>([]);
   const [activeProjects, setActiveProjects] = useState<ActiveProject[]>([]);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [hasAttemptedAutoGenerate, setHasAttemptedAutoGenerate] = useState(false);
 
   // Chat
   const {
@@ -164,12 +166,59 @@ export function ExecutionTab() {
     }
   }, [profileId]);
 
+  // v5.4: Generate weekly plan (auto or manual)
+  const generateWeeklyPlan = useCallback(async () => {
+    if (!profileId || isGeneratingPlan) return;
+
+    setIsGeneratingPlan(true);
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_AGENTS_API_URL || 'http://localhost:8001';
+      console.log('[ExecutionTab] Generating weekly plan for:', profileId);
+
+      const response = await fetch(`${backendUrl}/api/execution/weekly-plan/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile_id: profileId }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('[ExecutionTab] Weekly plan generated:', result);
+        // Reload dashboard to show new plan
+        await loadDashboardData();
+      } else {
+        console.error('[ExecutionTab] Failed to generate weekly plan:', response.status);
+      }
+    } catch (err) {
+      console.error('[ExecutionTab] Error generating weekly plan:', err);
+    } finally {
+      setIsGeneratingPlan(false);
+    }
+  }, [profileId, isGeneratingPlan, loadDashboardData]);
+
   // Load data on mount
   useEffect(() => {
     if (profileId && activeView === 'dashboard') {
       loadDashboardData();
     }
   }, [profileId, activeView, loadDashboardData]);
+
+  // v5.4: Auto-generate weekly plan if none exists (one-time attempt)
+  useEffect(() => {
+    if (
+      profileId &&
+      activeView === 'dashboard' &&
+      !isLoadingDashboard &&
+      !hasAttemptedAutoGenerate &&
+      weeklyFocus &&
+      weeklyFocus.focus_items?.length === 0 &&
+      activeProjects.length > 0 // Only generate if we have projects
+    ) {
+      console.log('[ExecutionTab] No weekly plan found, auto-generating...');
+      setHasAttemptedAutoGenerate(true);
+      generateWeeklyPlan();
+    }
+  }, [profileId, activeView, isLoadingDashboard, hasAttemptedAutoGenerate, weeklyFocus, activeProjects, generateWeeklyPlan]);
 
   // Handle send message
   const handleSend = async () => {
@@ -277,8 +326,10 @@ export function ExecutionTab() {
           stalledProjects={stalledProjects}
           activeProjects={activeProjects}
           isLoading={isLoadingDashboard}
+          isGeneratingPlan={isGeneratingPlan}
           onProjectChat={handleProjectChat}
           onSwitchToChat={() => setActiveView('chat')}
+          onGeneratePlan={generateWeeklyPlan}
         />
       )}
 
@@ -310,8 +361,10 @@ interface DashboardViewProps {
   stalledProjects: StalledProject[];
   activeProjects: ActiveProject[];
   isLoading: boolean;
+  isGeneratingPlan: boolean;
   onProjectChat: (projectId: string, title: string) => void;
   onSwitchToChat: () => void;
+  onGeneratePlan: () => void;
 }
 
 function DashboardView({
@@ -320,8 +373,10 @@ function DashboardView({
   stalledProjects,
   activeProjects,
   isLoading,
+  isGeneratingPlan,
   onProjectChat,
   onSwitchToChat,
+  onGeneratePlan,
 }: DashboardViewProps) {
   if (isLoading && !edsData) {
     return (
@@ -367,10 +422,11 @@ function DashboardView({
               highlight={stalledProjects.length > 0}
             />
             <QuickActionButton
-              icon={<Calendar size={20} />}
-              label="Generate Plan"
-              description="Create weekly plan"
-              onClick={onSwitchToChat}
+              icon={isGeneratingPlan ? <Loader2 size={20} className="animate-spin" /> : <Calendar size={20} />}
+              label={isGeneratingPlan ? 'Generating...' : 'Generate Plan'}
+              description={isGeneratingPlan ? 'Creating weekly plan' : 'Create weekly plan'}
+              onClick={onGeneratePlan}
+              disabled={isGeneratingPlan}
             />
           </div>
         </div>
@@ -482,19 +538,23 @@ interface QuickActionButtonProps {
   description: string;
   onClick: () => void;
   highlight?: boolean;
+  disabled?: boolean;
 }
 
-function QuickActionButton({ icon, label, description, onClick, highlight }: QuickActionButtonProps) {
+function QuickActionButton({ icon, label, description, onClick, highlight, disabled }: QuickActionButtonProps) {
   return (
     <motion.button
       onClick={onClick}
+      disabled={disabled}
       className="flex items-center gap-3 p-4 rounded-xl text-left transition-all"
       style={{
         backgroundColor: highlight ? BRAND_COLORS.primaryBg : BRAND_COLORS.bgSecondary,
         border: highlight ? `1px solid ${BRAND_COLORS.primary}` : `1px solid transparent`,
+        opacity: disabled ? 0.6 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
       }}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={disabled ? {} : { scale: 1.02 }}
+      whileTap={disabled ? {} : { scale: 0.98 }}
     >
       <div
         className="w-10 h-10 rounded-lg flex items-center justify-center"

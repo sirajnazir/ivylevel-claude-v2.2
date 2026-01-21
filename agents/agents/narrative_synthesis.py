@@ -33,6 +33,19 @@ from config import settings
 # v8: Middleware Integration (40 patterns)
 from .mixins import MiddlewareIntegrationMixin
 
+# v11: Coaching Asset Integration (139 techniques)
+try:
+    from intelligence.registry import AssetRegistry, AssetSelector
+    from intelligence.primitives import AssetDomain
+    from intelligence.student import StudentIntelligenceProfile
+    COACHING_ASSETS_AVAILABLE = True
+except ImportError:
+    COACHING_ASSETS_AVAILABLE = False
+    AssetRegistry = None
+    AssetSelector = None
+    AssetDomain = None
+    StudentIntelligenceProfile = None
+
 import logging
 mw_logger = logging.getLogger(__name__)
 
@@ -79,6 +92,118 @@ class NarrativeSynthesisAgent(MiddlewareIntegrationMixin):
             )
         except Exception as e:
             mw_logger.warning(f"Middleware init failed (non-fatal): {e}")
+
+        # v11: Initialize coaching asset selector (139 techniques)
+        self.asset_selector = None
+        self.asset_registry = None
+        if COACHING_ASSETS_AVAILABLE:
+            try:
+                self.asset_registry = AssetRegistry(self.db)
+                self.asset_selector = AssetSelector(self.asset_registry)
+                mw_logger.info(f"[NarrativeSynthesis] Coaching assets enabled (139 techniques)")
+            except Exception as e:
+                mw_logger.warning(f"Coaching asset init failed (non-fatal): {e}")
+
+    async def _select_narrative_technique(
+        self,
+        profile_id: str,
+        identity_context: Dict[str, Any],
+        archetype: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Select the best coaching technique for narrative synthesis.
+
+        Uses the 139-technique library to find techniques relevant to:
+        - Identity (C19: Hyphen Identity, H4: Cultural Gem Mining)
+        - Essays (C1-C25 essay techniques)
+        - Content optimization (I1-I10)
+
+        Returns:
+            Selected technique with content or None if unavailable
+        """
+        if not self.asset_selector:
+            return None
+
+        try:
+            # Build context for technique selection
+            context = {
+                "event_type": "narrative_synthesis",
+                "keywords": ["identity", "narrative", "brand", "story"],
+                "tags": ["identity", "essays", "authenticity"],
+            }
+
+            # Add identity-specific keywords
+            identity_summary = identity_context.get("summary", "")
+            if "immigrant" in identity_summary.lower():
+                context["keywords"].append("immigrant")
+            if "first-generation" in identity_summary.lower():
+                context["keywords"].append("first-gen")
+            if identity_context.get("cultural_background"):
+                context["keywords"].append("cultural")
+
+            # Create minimal student profile for selection
+            # In production, this would use the actual StudentIntelligenceProfile
+            class MinimalProfile:
+                def __init__(self, archetype_name):
+                    self.pressure_response = "balanced"
+                    self.risk_tolerance = "medium"
+                    self.motivation_style = "intrinsic"
+                    self.feedback_reception = "direct"
+                    self.celebration_preference = "private"
+                    self.task_approach = "sequential"
+                    self.failure_recovery = "moderate"
+                    self.overwhelm_threshold = 0.7
+                    self.communication_style = "direct"
+
+                def get_coaching_adaptations(self):
+                    return {}
+
+            profile = MinimalProfile(archetype)
+
+            # Select technique focused on essays domain
+            result = await self.asset_selector.select(
+                context=context,
+                student_profile=profile,
+                domain=AssetDomain.ESSAYS,
+            )
+
+            if result.success:
+                technique = result.asset
+                return {
+                    "id": str(technique.id),
+                    "name": technique.name,
+                    "content": technique.content,
+                    "score": result.score,
+                    "reasoning": result.reasoning,
+                }
+
+            return None
+
+        except Exception as e:
+            mw_logger.warning(f"Technique selection failed (non-fatal): {e}")
+            return None
+
+    async def _track_technique_usage(
+        self,
+        profile_id: str,
+        technique_id: str,
+        outcome: Dict[str, Any],
+    ) -> None:
+        """Track technique usage for effectiveness learning."""
+        if not self.asset_registry:
+            return
+
+        try:
+            from uuid import UUID
+            await self.asset_registry.record_usage(
+                asset_id=UUID(technique_id),
+                profile_id=UUID(profile_id),
+                agent_name=self.name,
+                trigger_context="narrative_synthesis",
+                outcome=outcome,
+            )
+        except Exception as e:
+            mw_logger.warning(f"Technique usage tracking failed (non-fatal): {e}")
 
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
         """
@@ -181,14 +306,24 @@ class NarrativeSynthesisAgent(MiddlewareIntegrationMixin):
             passion = self._extract_passion(assessment_contract)
             service = self._extract_service(assessment_contract)
 
-            # Build the synthesis prompt
+            # v11: Select relevant coaching technique (139-technique library)
+            archetype_info = assessment_contract.get("archetype")
+            archetype_name = archetype_info.get("id") if isinstance(archetype_info, dict) else archetype_info
+            selected_technique = await self._select_narrative_technique(
+                profile_id=profile_id,
+                identity_context=identity,
+                archetype=archetype_name,
+            )
+
+            # Build the synthesis prompt (with optional technique guidance)
             prompt = self._build_synthesis_prompt(
                 identity=identity,
                 aptitude=aptitude,
                 passion=passion,
                 service=service,
                 scores=assessment_contract.get("scores", {}),
-                archetype=assessment_contract.get("archetype")
+                archetype=assessment_contract.get("archetype"),
+                technique=selected_technique,  # v11: Pass selected technique
             )
 
             # Generate narrative via LLM
@@ -216,11 +351,31 @@ class NarrativeSynthesisAgent(MiddlewareIntegrationMixin):
                 }
             }
 
+            # v11: Add technique info to output
+            if selected_technique:
+                output["_coaching_technique"] = {
+                    "id": selected_technique["id"],
+                    "name": selected_technique["name"],
+                    "score": selected_technique["score"],
+                }
+
             # Store in database
             await self._store_narrative(profile_id, output)
 
             # Version state
             await self._version_state(profile_id, "narrative_synthesized", output)
+
+            # v11: Track technique usage for effectiveness learning
+            if selected_technique:
+                await self._track_technique_usage(
+                    profile_id=profile_id,
+                    technique_id=selected_technique["id"],
+                    outcome={
+                        "confidence": confidence,
+                        "themes_generated": len(result.get("themes", [])),
+                        "requires_handoff": confidence < 0.7,
+                    },
+                )
 
             return output
 
@@ -485,14 +640,33 @@ class NarrativeSynthesisAgent(MiddlewareIntegrationMixin):
         passion: Dict,
         service: Dict,
         scores: Dict,
-        archetype: Optional[Dict]
+        archetype: Optional[Dict],
+        technique: Optional[Dict] = None,  # v11: Coaching technique from 139-asset library
     ) -> str:
         """Build the LLM prompt for narrative synthesis."""
 
         archetype_label = archetype.get("label", "Scholar") if archetype else "Scholar"
         archetype_rationale = archetype.get("rationale", "") if archetype else ""
 
+        # v11: Build technique guidance section if a coaching technique was selected
+        technique_guidance = ""
+        if technique:
+            technique_guidance = f"""
+## COACHING TECHNIQUE (from IvyLevel KB)
+Apply this expert coaching technique in your narrative synthesis:
+
+**{technique.get('name', 'Coaching Technique')}** ({technique.get('id', 'TECH')})
+Category: {technique.get('category', 'General')}
+{technique.get('description', '')}
+
+Trigger Conditions: {technique.get('trigger_conditions', 'Apply when relevant to student profile')}
+Expected Outcome: {technique.get('expected_outcome', 'Enhanced narrative clarity and impact')}
+
+IMPORTANT: Subtly incorporate this technique's principles into the narrative. Do not mention the technique by name - let it shape how you frame the student's story.
+"""
+
         return f"""You are an elite college admissions strategist with 20+ years of experience placing students at top universities. Your task is to synthesize a powerful, authentic narrative for this student.
+{technique_guidance}
 
 CRITICAL: Do NOT use any names like "Jenny", "John", or any made-up names in the narrative. Refer to the student as "this student", "they", or write in a way that describes their journey without using a specific name. The narrative should be written about the student in third person without naming them.
 

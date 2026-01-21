@@ -32,6 +32,17 @@ from agents.core.ec_generation_engine import ECGenerationEngine
 # v8: Middleware Integration (40 patterns)
 from .mixins import MiddlewareIntegrationMixin
 
+# v11: Coaching Asset Integration (139 techniques)
+try:
+    from intelligence.registry import AssetRegistry, AssetSelector
+    from intelligence.primitives import AssetDomain
+    COACHING_ASSETS_AVAILABLE = True
+except ImportError:
+    COACHING_ASSETS_AVAILABLE = False
+    AssetRegistry = None
+    AssetSelector = None
+    AssetDomain = None
+
 import logging
 mw_logger = logging.getLogger(__name__)
 
@@ -170,6 +181,82 @@ class ExtracurricularsAgent(MiddlewareIntegrationMixin):
             )
         except Exception as e:
             mw_logger.warning(f"Middleware init failed (non-fatal): {e}")
+
+        # v11: Initialize coaching asset selector (B1-B18 strategy techniques)
+        self.asset_selector = None
+        self.asset_registry = None
+        if COACHING_ASSETS_AVAILABLE:
+            try:
+                self.asset_registry = AssetRegistry(self.db)
+                self.asset_selector = AssetSelector(self.asset_registry)
+                mw_logger.info("[Extracurriculars] Coaching assets enabled (B1-B18 strategy techniques)")
+            except Exception as e:
+                mw_logger.warning(f"Coaching asset init failed (non-fatal): {e}")
+
+    async def _select_portfolio_technique(
+        self,
+        analysis_type: str = "portfolio_optimization",
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Select the best coaching technique for extracurricular analysis.
+
+        Uses B1-B18 strategic activities techniques:
+        - B1: The Activity Audit Framework
+        - B2: The Spike Detector Protocol
+        - B3: The Leadership Ladder
+        - B4: The Impact Amplifier
+        - etc.
+
+        Returns:
+            Selected technique with content or None if unavailable
+        """
+        if not self.asset_selector:
+            return None
+
+        try:
+            context = {
+                "event_type": f"extracurriculars_{analysis_type}",
+                "keywords": ["extracurriculars", "activities", "portfolio", "spike"],
+                "tags": ["strategy", "activities", "portfolio"],
+            }
+
+            class MinimalProfile:
+                def __init__(self):
+                    self.pressure_response = "balanced"
+                    self.risk_tolerance = "medium"
+                    self.motivation_style = "intrinsic"
+                    self.feedback_reception = "direct"
+                    self.celebration_preference = "private"
+                    self.task_approach = "sequential"
+                    self.failure_recovery = "moderate"
+                    self.overwhelm_threshold = 0.7
+                    self.communication_style = "direct"
+
+                def get_coaching_adaptations(self):
+                    return {}
+
+            result = await self.asset_selector.select(
+                context=context,
+                student_profile=MinimalProfile(),
+                domain=AssetDomain.STRATEGY,
+            )
+
+            if result.success and result.asset:
+                technique = result.asset
+                return {
+                    "id": str(technique.id),
+                    "name": technique.name,
+                    "content": technique.content,
+                    "description": technique.description,
+                    "score": result.score,
+                    "reasoning": result.reasoning,
+                }
+
+            return None
+
+        except Exception as e:
+            mw_logger.warning(f"Portfolio technique selection failed (non-fatal): {e}")
+            return None
 
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
         """

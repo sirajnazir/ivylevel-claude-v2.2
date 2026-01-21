@@ -16,6 +16,17 @@ from tools.cri import compute_cri, get_chetty_baseline
 # v8: Middleware Integration (40 patterns)
 from .mixins import MiddlewareIntegrationMixin
 
+# v11: Coaching Asset Integration (139 techniques)
+try:
+    from intelligence.registry import AssetRegistry, AssetSelector
+    from intelligence.primitives import AssetDomain
+    COACHING_ASSETS_AVAILABLE = True
+except ImportError:
+    COACHING_ASSETS_AVAILABLE = False
+    AssetRegistry = None
+    AssetSelector = None
+    AssetDomain = None
+
 import logging
 mw_logger = logging.getLogger(__name__)
 
@@ -50,6 +61,97 @@ class AssessmentAgent(MiddlewareIntegrationMixin):
             )
         except Exception as e:
             mw_logger.warning(f"Middleware init failed (non-fatal): {e}")
+
+        # v11: Initialize coaching asset selector (A1-A12 assessment techniques)
+        self.asset_selector = None
+        self.asset_registry = None
+        if COACHING_ASSETS_AVAILABLE:
+            try:
+                self.asset_registry = AssetRegistry(self.db)
+                self.asset_selector = AssetSelector(self.asset_registry)
+                mw_logger.info(f"[Assessment] Coaching assets enabled (A1-A12 assessment techniques)")
+            except Exception as e:
+                mw_logger.warning(f"Coaching asset init failed (non-fatal): {e}")
+
+    async def _select_assessment_technique(
+        self,
+        profile: Dict[str, Any],
+        task_type: str = "narrative_synthesis",
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Select the best coaching technique for assessment tasks.
+
+        Uses A1-A12 assessment techniques from the 139-technique library:
+        - A1: The 5 Whys Root Cause Analysis
+        - A2: The Spike vs Spread Diagnostic
+        - A3: The Identity Strength Matrix
+        - A4: The Constraint Reframe Protocol
+        - etc.
+
+        Returns:
+            Selected technique with content or None if unavailable
+        """
+        if not self.asset_selector:
+            return None
+
+        try:
+            # Build context for technique selection
+            context = {
+                "event_type": f"assessment_{task_type}",
+                "keywords": ["assessment", "diagnosis", "identity", "narrative"],
+                "tags": ["assessment", "identity"],
+            }
+
+            # Add profile-specific keywords
+            profile_data = profile.get("profile_data", profile)
+            if profile_data.get("demographics", {}).get("first_gen"):
+                context["keywords"].append("first-gen")
+            if profile_data.get("passion", {}).get("spike_category"):
+                context["keywords"].append("spike")
+            if profile_data.get("identity", {}).get("cultural_background"):
+                context["keywords"].append("cultural")
+
+            # Create minimal student profile for selection
+            class MinimalProfile:
+                def __init__(self):
+                    self.pressure_response = "balanced"
+                    self.risk_tolerance = "medium"
+                    self.motivation_style = "intrinsic"
+                    self.feedback_reception = "direct"
+                    self.celebration_preference = "private"
+                    self.task_approach = "sequential"
+                    self.failure_recovery = "moderate"
+                    self.overwhelm_threshold = 0.7
+                    self.communication_style = "direct"
+
+                def get_coaching_adaptations(self):
+                    return {}
+
+            # Select technique focused on assessment domain
+            result = await self.asset_selector.select(
+                context=context,
+                student_profile=MinimalProfile(),
+                domain=AssetDomain.ASSESSMENT,
+            )
+
+            if result.success and result.asset:
+                technique = result.asset
+                return {
+                    "id": str(technique.id),
+                    "name": technique.name,
+                    "content": technique.content,
+                    "description": technique.description,
+                    "trigger_conditions": technique.trigger_conditions,
+                    "expected_outcome": technique.expected_outcome,
+                    "score": result.score,
+                    "reasoning": result.reasoning,
+                }
+
+            return None
+
+        except Exception as e:
+            mw_logger.warning(f"Assessment technique selection failed (non-fatal): {e}")
+            return None
 
     async def process(self, profile_id: str, **kwargs) -> Dict[str, Any]:
         """
@@ -203,6 +305,8 @@ class AssessmentAgent(MiddlewareIntegrationMixin):
         The "12-second moment" where scattered interests crystallize into a
         single narrative DNA sentence that threads through all activities.
 
+        v11: Now enhanced with coaching techniques from 139-asset library.
+
         Returns:
         {
             "dna": "Single crystallized narrative sentence",
@@ -212,6 +316,11 @@ class AssessmentAgent(MiddlewareIntegrationMixin):
             "identity_markers": ["marker1", "marker2"]
         }
         """
+        # v11: Select relevant assessment technique
+        selected_technique = await self._select_assessment_technique(profile, "narrative_synthesis")
+        if selected_technique:
+            mw_logger.info(f"[Assessment] Using technique: {selected_technique['name']} (score: {selected_technique['score']:.2f})")
+
         # Extract relevant profile data
         passion = profile.get("passion", profile.get("profile_data", {}).get("passion", {}))
         operating = profile.get("operating", profile.get("profile_data", {}).get("operating", {}))
@@ -243,8 +352,24 @@ class AssessmentAgent(MiddlewareIntegrationMixin):
         if "family" in str(brag_text).lower() or "work" in str(operating).lower():
             constraints.append("family responsibilities")
 
-        prompt = f"""You are an elite college admissions coach with 20+ years of experience at top programs.
+        # v11: Build technique guidance section if a coaching technique was selected
+        technique_guidance = ""
+        if selected_technique:
+            technique_guidance = f"""
+## COACHING TECHNIQUE (from IvyLevel KB)
+Apply this expert assessment technique:
 
+**{selected_technique.get('name', 'Assessment Technique')}**
+{selected_technique.get('description', '')}
+
+Trigger: {selected_technique.get('trigger_conditions', 'Apply when relevant')}
+Expected Outcome: {selected_technique.get('expected_outcome', 'Enhanced assessment clarity')}
+
+IMPORTANT: Incorporate this technique's principles into your analysis without mentioning the technique name.
+"""
+
+        prompt = f"""You are an elite college admissions coach with 20+ years of experience at top programs.
+{technique_guidance}
 Analyze this student profile and synthesize their Narrative DNA - the single crystallized sentence that captures their unique identity and mission.
 
 ## STUDENT PROFILE

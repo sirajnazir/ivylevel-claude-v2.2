@@ -262,6 +262,8 @@ class ExecutionChatAgent(MiddlewareIntegrationMixin):
             "active_projects": await self._get_active_projects_summary(profile_id),
             "eds": await self.tool_calculate_eds(profile_id),
             "stalled_projects": await self.tool_detect_stalls(profile_id, threshold_days=5),
+            "pending_nudges": await self.tool_get_pending_nudges(profile_id),
+            "game_plan": await self._get_game_plan(profile_id),  # v5.4: Include full game plan
         }
 
         # Add specific context if provided
@@ -275,11 +277,13 @@ class ExecutionChatAgent(MiddlewareIntegrationMixin):
         return context
 
     def _build_system_prompt(self, context: Dict[str, Any]) -> str:
-        """Build the system prompt with context."""
+        """Build the system prompt with Jenny's coaching patterns."""
         profile = context.get("profile", {})
         weekly_plan = context.get("weekly_plan", {})
         eds = context.get("eds", {})
         stalled = context.get("stalled_projects", [])
+        pending_nudges = context.get("pending_nudges", [])
+        game_plan = context.get("game_plan", {})  # v5.4: Game plan data
 
         # Get profile data from nested structure if needed
         profile_data = profile.get("profile_data", {}) or {}
@@ -298,44 +302,161 @@ class ExecutionChatAgent(MiddlewareIntegrationMixin):
              for p in stalled[:3]], indent=2
         ) if stalled else "None - great job!"
 
-        return f"""You are the Execution Agent - a supportive, proactive coaching buddy helping {first_name} execute their college preparation plan.
+        # Format pending nudges for proactive topics
+        nudge_display = ""
+        if pending_nudges:
+            nudge_items = []
+            for n in pending_nudges[:3]:
+                nudge_items.append(f"- [{n.get('nudge_type')}] {n.get('message_draft', '')[:100]}...")
+            nudge_display = "\n".join(nudge_items)
+        else:
+            nudge_display = "None pending"
 
-## YOUR ROLE
-- Help the student focus on their TOP 3 priorities (P0 items)
-- Detect when they're stuck and offer specific help
-- Celebrate progress and maintain momentum
-- Be conversational, warm, and encouraging
-- Use the 5Ws framework: What, Why, When, Who, How
+        # v5.4: Format game plan components (summer programs, awards, ECs)
+        summer_programs = game_plan.get("summer_programs", [])
+        awards = game_plan.get("awards", [])
+        ecs = game_plan.get("ecs", [])
+        spike = game_plan.get("spike", "")
+        narrative_theme = game_plan.get("narrative_theme", "")
+
+        # Format summer programs for display
+        summer_display = ""
+        if summer_programs:
+            program_items = []
+            for p in summer_programs[:5]:
+                name = p.get("name") or p.get("program_name", "Unknown Program")
+                deadline = p.get("deadline", "TBD")
+                fit = p.get("fit_score") or p.get("match_score", "")
+                fit_str = f" (Fit: {fit}%)" if fit else ""
+                program_items.append(f"- {name} - Deadline: {deadline}{fit_str}")
+            summer_display = "\n".join(program_items)
+        else:
+            summer_display = "None in game plan"
+
+        # Format awards for display
+        awards_display = ""
+        if awards:
+            award_items = []
+            for a in awards[:5]:
+                name = a.get("name") or a.get("award_name", "Unknown Award")
+                deadline = a.get("deadline", "TBD")
+                award_items.append(f"- {name} - Deadline: {deadline}")
+            awards_display = "\n".join(award_items)
+        else:
+            awards_display = "None in game plan"
+
+        # Format ECs for display
+        ecs_display = ""
+        if ecs:
+            ec_items = []
+            for e in ecs[:5]:
+                name = e.get("name") or e.get("activity_name", "Unknown EC")
+                role = e.get("role") or e.get("position", "")
+                role_str = f" ({role})" if role else ""
+                ec_items.append(f"- {name}{role_str}")
+            ecs_display = "\n".join(ec_items)
+        else:
+            ecs_display = "None in game plan"
+
+        return f"""You are the Execution Coach (EC) - {first_name}'s personal coaching buddy for the next 2+ years. You help students GET THINGS DONE, not just advise.
+
+## YOUR IDENTITY
+- You're always available, 24/7, whenever they need help
+- You're proactive - you reach out first when you notice issues
+- You learn their execution style and adapt
+- You coordinate with specialist agents (Game Plan, Essay, Research)
+
+## COACHING PATTERNS (from elite college prep coaching)
+
+### Crisis → Opportunity
+When student hits a setback (rejection, failure, missed deadline):
+1. VALIDATE first (2 seconds): "I hear you. That's frustrating."
+2. ACT immediately (10 seconds): Give ONE concrete micro-action
+3. REFRAME (30 seconds): Find the opportunity angle
+4. CREATE (2 minutes): Design a pivot or new approach
+
+### Talk First, Write Second
+For essays and applications, help them talk through ideas before writing:
+- "Tell me about that experience..."
+- "What made that moment meaningful?"
+- Extract themes from conversation, then help structure
+
+### Blocker Removal Doctrine
+Your PRIMARY job is removing what's in their way:
+- "What's blocking you right now?"
+- "What would make this easier?"
+- Offer specific help: "I can help you outline that" / "Let's break this into 3 steps"
+
+### Bookmark Technique
+When overwhelmed, help them:
+1. Pick the ONE thing that matters most right now
+2. Set aside everything else (bookmark for later)
+3. Focus energy on that one thing
+4. Return to bookmarks after completion
+
+## SESSION ANATOMY
+Follow this flow for substantive conversations:
+1. **Check-in** (30s): "How are you doing? What's on your mind?"
+2. **Progress Scan** (1-2 min): What got done since last time?
+3. **Blocker Detection**: "What's in your way?"
+4. **Deep Work**: Help with the actual task
+5. **Tactical Planning**: What happens next? By when?
+6. **Confidence Close**: End on an encouraging note
 
 ## CURRENT CONTEXT
 Student: {first_name} {last_name}
 Grade: {grade}
 Archetype: {archetype}
+Spike/Focus: {spike or 'Not defined'}
+Narrative Theme: {narrative_theme or 'Not defined'}
+
+## GAME PLAN - SUMMER PROGRAMS (These are the ACTUAL programs to apply to)
+{summer_display}
+
+## GAME PLAN - AWARDS TO PURSUE
+{awards_display}
+
+## GAME PLAN - EXTRACURRICULARS
+{ecs_display}
 
 ## WEEKLY FOCUS (P0 Items)
 {p0_display}
 
 ## EXECUTION STATUS
 EDS Score: {eds.get('eds_score', 0)} ({eds.get('status', 'unknown')})
-Incomplete Steps: {eds.get('incomplete_steps', 0)}
+Active Projects: {eds.get('active_projects', 0)}
 Overdue Projects: {eds.get('overdue_projects', 0)}
 
-## STALLED PROJECTS ({len(stalled)} items)
+## STALLED PROJECTS ({len(stalled)} items needing attention)
 {stalled_display}
 
-## INTERACTION GUIDELINES
-1. If student asks about priorities → Reference their weekly focus
-2. If student seems stuck → Offer specific help based on stalled projects
-3. If discussing a project → Reference project details
-4. If progress is made → Celebrate and encourage
-5. If severely blocked (14+ days) → Suggest escalation
+## PROACTIVE TOPICS TO RAISE
+{nudge_display}
+
+## BEHAVIOR RULES
+1. ALWAYS use the ACTUAL program/award/EC names from the Game Plan sections above - NEVER say "Program A" or generic placeholders
+2. If there are pending nudges → Weave them into conversation naturally
+3. If student seems stressed → Use Blocker Removal Doctrine
+4. If discussing rejection/failure → Use Crisis → Opportunity
+5. If they're overwhelmed → Use Bookmark Technique
+6. If they're working on essays → Use Talk First, Write Second
+7. If severely blocked (14+ days) → Escalate to crisis mode
+8. When discussing summer programs, reference the specific deadlines and fit scores from the game plan
 
 ## TONE
-- Warm and encouraging ("Great question!", "You've got this!")
-- Specific and actionable (not vague advice)
-- Brief for simple questions, detailed when needed
+- Warm but not sycophantic ("Good" not "Amazing!")
+- Direct and specific (no vague advice)
+- Brief for simple questions, thorough when needed
+- Use their name occasionally
+- Celebrate real wins proportional to difficulty
 
-Remember: You're their coach for 2+ years. Build rapport, remember context, and help them succeed."""
+## WHAT NOT TO DO
+- Don't just advise - help them DO
+- Don't overwhelm with options - give them THE answer
+- Don't ignore blockers - always ask what's in the way
+- Don't be passive - if you notice an issue, raise it
+
+Remember: Your job is to help {first_name} execute, not just plan. Every conversation should end with a clear next action."""
 
     # =========================================================================
     # TOOL IMPLEMENTATIONS (13 tools)
@@ -837,6 +958,418 @@ Return ONLY valid JSON (no markdown):
         """Get recent conversation history."""
         return await self._get_recent_conversations(profile_id, limit)
 
+    # --- Project Update Tools (v9.1) ---
+
+    async def tool_update_project(
+        self,
+        project_id: str,
+        status: Optional[str] = None,
+        notes: Optional[str] = None,
+        progress_update: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Update project status after conversation.
+        Called when student provides update or completes something.
+
+        Args:
+            project_id: UUID of the project
+            status: New status ('active', 'completed', 'stalled', 'dropped')
+            notes: Optional notes to add
+            progress_update: Description of progress made (stored in notes)
+
+        Returns:
+            Result dict with success status and updated project data
+        """
+        try:
+            update_data = {
+                "last_update": datetime.now().isoformat(),
+                "last_activity_at": datetime.now().isoformat(),
+            }
+
+            if status:
+                update_data["status"] = status
+                if status == "completed":
+                    update_data["completed_at"] = datetime.now().isoformat()
+
+            if notes or progress_update:
+                # Append to existing notes
+                existing = self.supabase.table("projects").select("notes").eq(
+                    "id", project_id
+                ).execute()
+
+                existing_notes = ""
+                if existing.data and existing.data[0].get("notes"):
+                    existing_notes = existing.data[0]["notes"]
+
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
+                new_note = progress_update or notes
+                combined_notes = f"{existing_notes}\n[{timestamp}] {new_note}".strip()
+                update_data["notes"] = combined_notes
+
+            result = self.supabase.table("projects").update(update_data).eq(
+                "id", project_id
+            ).execute()
+
+            if result.data:
+                self.logger.info(
+                    "project_updated",
+                    project_id=project_id,
+                    status=status,
+                    has_notes=bool(notes or progress_update),
+                )
+                return {
+                    "success": True,
+                    "project": result.data[0],
+                    "message": f"Project updated successfully",
+                }
+            else:
+                return {"success": False, "error": "Project not found"}
+
+        except Exception as e:
+            self.logger.error("update_project_error", error=str(e), project_id=project_id)
+            return {"success": False, "error": str(e)}
+
+    async def tool_get_pending_nudges(self, profile_id: str) -> List[Dict[str, Any]]:
+        """
+        Get pending nudges for a profile.
+        Used at start of conversation to know what proactive topics to raise.
+
+        Args:
+            profile_id: Student's profile UUID
+
+        Returns:
+            List of pending nudges, ordered by priority and creation time
+        """
+        try:
+            result = self.supabase.table("nudge_queue").select(
+                "id, nudge_type, project_id, priority, message_draft, created_at"
+            ).eq("profile_id", profile_id).eq("status", "pending").order(
+                "priority", desc=True
+            ).order("created_at").execute()
+
+            nudges = result.data or []
+            self.logger.info(
+                "pending_nudges_retrieved",
+                profile_id=profile_id,
+                count=len(nudges),
+            )
+            return nudges
+
+        except Exception as e:
+            self.logger.error("get_pending_nudges_error", error=str(e), profile_id=profile_id)
+            return []
+
+    async def tool_mark_nudge_delivered(self, nudge_id: str) -> Dict[str, Any]:
+        """
+        Mark a nudge as delivered after it's been raised in conversation.
+
+        Args:
+            nudge_id: UUID of the nudge to mark as delivered
+
+        Returns:
+            Result dict with success status
+        """
+        try:
+            self.supabase.table("nudge_queue").update({
+                "status": "delivered",
+                "delivered_at": datetime.now().isoformat(),
+            }).eq("id", nudge_id).execute()
+
+            return {"success": True, "nudge_id": nudge_id}
+
+        except Exception as e:
+            self.logger.error("mark_nudge_delivered_error", error=str(e), nudge_id=nudge_id)
+            return {"success": False, "error": str(e)}
+
+    async def tool_mark_nudge_dismissed(self, nudge_id: str) -> Dict[str, Any]:
+        """
+        Mark a nudge as dismissed (user acknowledged but didn't act).
+
+        Args:
+            nudge_id: UUID of the nudge to dismiss
+
+        Returns:
+            Result dict with success status
+        """
+        try:
+            self.supabase.table("nudge_queue").update({
+                "status": "dismissed",
+                "dismissed_at": datetime.now().isoformat(),
+            }).eq("id", nudge_id).execute()
+
+            return {"success": True, "nudge_id": nudge_id}
+
+        except Exception as e:
+            self.logger.error("mark_nudge_dismissed_error", error=str(e), nudge_id=nudge_id)
+            return {"success": False, "error": str(e)}
+
+    async def tool_get_upcoming_deadlines(
+        self,
+        profile_id: str,
+        days_ahead: int = 14,
+    ) -> List[Dict[str, Any]]:
+        """
+        Get upcoming project deadlines for a student.
+
+        Args:
+            profile_id: Student's profile UUID
+            days_ahead: Number of days to look ahead (default 14)
+
+        Returns:
+            List of projects with upcoming deadlines, ordered by urgency
+        """
+        try:
+            # Get active projects with deadlines
+            result = self.supabase.table("projects").select(
+                "id, name, category, deadline, status, metadata"
+            ).eq("profile_id", profile_id).eq("status", "active").not_.is_(
+                "deadline", "null"
+            ).execute()
+
+            now = datetime.now()
+            threshold = now + timedelta(days=days_ahead)
+
+            upcoming = []
+            for project in result.data or []:
+                deadline_str = project.get("deadline")
+                if not deadline_str:
+                    continue
+
+                try:
+                    if isinstance(deadline_str, str):
+                        deadline = datetime.fromisoformat(
+                            deadline_str.replace("Z", "+00:00").replace("+00:00", "")
+                        )
+                    else:
+                        deadline = deadline_str
+
+                    deadline = deadline.replace(tzinfo=None)
+
+                    if now < deadline <= threshold:
+                        days_until = (deadline - now).days
+
+                        # Determine urgency
+                        if days_until <= 1:
+                            urgency = "critical"
+                        elif days_until <= 3:
+                            urgency = "urgent"
+                        elif days_until <= 7:
+                            urgency = "soon"
+                        else:
+                            urgency = "normal"
+
+                        upcoming.append({
+                            "project_id": project["id"],
+                            "name": project["name"],
+                            "category": project.get("category"),
+                            "deadline": deadline.isoformat(),
+                            "days_until": days_until,
+                            "urgency": urgency,
+                        })
+
+                except Exception:
+                    continue
+
+            # Sort by days until deadline
+            return sorted(upcoming, key=lambda x: x["days_until"])
+
+        except Exception as e:
+            self.logger.error("get_upcoming_deadlines_error", error=str(e), profile_id=profile_id)
+            return []
+
+    async def get_proactive_welcome(self, profile_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get proactive welcome message for new students.
+
+        Called when Execution tab loads to check if there's a welcome
+        message waiting (from EC onboarding after game plan generation).
+
+        Returns:
+            Welcome message data or None if no welcome pending
+        """
+        try:
+            # Check for welcome_onboarding nudge
+            result = self.supabase.table("nudge_queue").select(
+                "id, nudge_type, message_draft, created_at"
+            ).eq("profile_id", profile_id).eq(
+                "nudge_type", "welcome_onboarding"
+            ).eq("status", "pending").limit(1).execute()
+
+            if result.data:
+                nudge = result.data[0]
+                self.logger.info(
+                    "welcome_message_found",
+                    profile_id=profile_id,
+                    nudge_id=nudge["id"],
+                )
+                return {
+                    "has_welcome": True,
+                    "nudge_id": nudge["id"],
+                    "message": nudge.get("message_draft", ""),
+                    "created_at": nudge.get("created_at"),
+                }
+
+            return None
+
+        except Exception as e:
+            self.logger.error("get_proactive_welcome_error", error=str(e), profile_id=profile_id)
+            return None
+
+    async def deliver_welcome_and_mark(self, profile_id: str, nudge_id: str) -> Dict[str, Any]:
+        """
+        Deliver the welcome message and mark nudge as delivered.
+
+        This is called after the frontend displays the welcome message.
+
+        Args:
+            profile_id: Student's profile UUID
+            nudge_id: Welcome nudge UUID
+
+        Returns:
+            Result with success status
+        """
+        try:
+            # Get the nudge message
+            nudge_result = self.supabase.table("nudge_queue").select(
+                "message_draft"
+            ).eq("id", nudge_id).single().execute()
+
+            if not nudge_result.data:
+                return {"success": False, "error": "Nudge not found"}
+
+            message = nudge_result.data.get("message_draft", "")
+
+            # Store in conversations as the first message
+            self.supabase.table("conversations").insert({
+                "profile_id": profile_id,
+                "agent_type": self.AGENT_TYPE,
+                "role": "assistant",
+                "content": message,
+                "is_proactive": True,
+                "context_type": "onboarding",
+                "created_at": datetime.now().isoformat(),
+            }).execute()
+
+            # Mark nudge as delivered
+            await self.tool_mark_nudge_delivered(nudge_id)
+
+            self.logger.info(
+                "welcome_delivered",
+                profile_id=profile_id,
+                nudge_id=nudge_id,
+            )
+
+            return {
+                "success": True,
+                "message": message,
+            }
+
+        except Exception as e:
+            self.logger.error("deliver_welcome_error", error=str(e), profile_id=profile_id)
+            return {"success": False, "error": str(e)}
+
+    async def get_first_session_context(self, profile_id: str) -> Dict[str, Any]:
+        """
+        Get first session context for new students.
+
+        Returns session agenda and priority focus for the first conversation.
+
+        Args:
+            profile_id: Student's profile UUID
+
+        Returns:
+            First session agenda and priorities
+        """
+        try:
+            # Get profile for personalization
+            profile = await self._get_profile(profile_id)
+            profile_data = profile.get("profile_data", {}) or {}
+            first_name = profile_data.get("first_name") or profile.get("first_name", "Student")
+            archetype = profile.get("archetype", "Unknown")
+
+            # Get projects and find nearest deadline
+            projects = await self.tool_get_active_projects(profile_id)
+            now = datetime.now()
+
+            nearest_deadline = None
+            nearest_project = None
+
+            for project in projects:
+                deadline_str = project.get("target_end_date")
+                if deadline_str:
+                    try:
+                        deadline = datetime.fromisoformat(
+                            deadline_str.replace("Z", "+00:00").replace("+00:00", "")
+                        )
+                        days_until = (deadline.replace(tzinfo=None) - now).days
+                        if days_until > 0 and (nearest_deadline is None or days_until < nearest_deadline):
+                            nearest_deadline = days_until
+                            nearest_project = project
+                    except:
+                        pass
+
+            # Build first session agenda
+            agenda = {
+                "title": f"Welcome, {first_name}!",
+                "sections": [
+                    {
+                        "name": "Game Plan Overview",
+                        "description": "Walk through your personalized game plan",
+                        "duration_minutes": 5,
+                    },
+                    {
+                        "name": "168-Hour Framework",
+                        "description": "Map out how you'll allocate your time each week",
+                        "duration_minutes": 10,
+                    },
+                    {
+                        "name": "Priority Projects",
+                        "description": "Identify your P0 priority for the next 2 weeks",
+                        "duration_minutes": 10,
+                    },
+                    {
+                        "name": "Working Style & Support",
+                        "description": "Understand how you work best",
+                        "duration_minutes": 5,
+                    },
+                ],
+                "total_projects": len(projects),
+                "immediate_priority": None,
+            }
+
+            # Determine immediate priority
+            if nearest_deadline and nearest_deadline <= 14:
+                agenda["immediate_priority"] = {
+                    "project": nearest_project.get("title", "Upcoming Deadline"),
+                    "days_until": nearest_deadline,
+                    "reason": f"Due in {nearest_deadline} days",
+                }
+            elif archetype == "SCHOLAR":
+                agenda["immediate_priority"] = {
+                    "focus": "Academic Foundation",
+                    "reason": "Scholars thrive when academics are solid",
+                }
+            elif archetype == "BUILDER":
+                agenda["immediate_priority"] = {
+                    "focus": "EC Impact Projects",
+                    "reason": "Builders need tangible projects to drive",
+                }
+            else:
+                agenda["immediate_priority"] = {
+                    "focus": "168-Hour Framework",
+                    "reason": "Start with time management foundation",
+                }
+
+            return agenda
+
+        except Exception as e:
+            self.logger.error("get_first_session_context_error", error=str(e), profile_id=profile_id)
+            return {
+                "title": "Welcome to Your Coaching Journey",
+                "sections": [],
+                "error": str(e),
+            }
+
     # =========================================================================
     # HELPER METHODS
     # =========================================================================
@@ -862,6 +1395,38 @@ Return ONLY valid JSON (no markdown):
             return result.data[0] if result.data else {}
         except Exception as e:
             self.logger.warning("get_weekly_plan_error", error=str(e))
+            return {}
+
+    async def _get_game_plan(self, profile_id: str) -> Dict[str, Any]:
+        """
+        Get the student's game plan with summer programs, awards, and ECs.
+        v5.4: Critical for Execution Agent to know WHAT to help execute.
+        """
+        try:
+            result = self.supabase.table("game_plans") \
+                .select("id, plan_data, created_at") \
+                .eq("profile_id", profile_id) \
+                .order("created_at", desc=True) \
+                .limit(1) \
+                .execute()
+
+            if not result.data:
+                return {}
+
+            plan_data = result.data[0].get("plan_data", {})
+
+            # Extract key components for context
+            return {
+                "summer_programs": plan_data.get("summer_programs", []),
+                "awards": plan_data.get("awards", []),
+                "ecs": plan_data.get("ecs", []),
+                "academic_goals": plan_data.get("academic_goals", []),
+                "timeline": plan_data.get("timeline", {}),
+                "spike": plan_data.get("spike", ""),
+                "narrative_theme": plan_data.get("narrative_theme", ""),
+            }
+        except Exception as e:
+            self.logger.warning("get_game_plan_error", error=str(e))
             return {}
 
     async def _get_active_projects_summary(self, profile_id: str) -> List[Dict[str, Any]]:

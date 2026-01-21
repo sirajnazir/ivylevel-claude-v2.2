@@ -1,0 +1,351 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ivylevel.com/schemas/coaching_asset.json",
+  "title": "Coaching Asset Library Schema",
+  "description": "Schema for validating coaching asset YAML files",
+  "type": "object",
+  "required": ["metadata", "techniques"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["coach_name", "coach_id", "version"],
+      "properties": {
+        "coach_name": {
+          "type": "string",
+          "description": "Name of the coach who created these techniques"
+        },
+        "coach_id": {
+          "type": "string",
+          "pattern": "^[a-z_]+$",
+          "description": "Unique identifier for the coach (lowercase, underscores)"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+(\\.\\d+)?$",
+          "description": "Semantic version of the asset library"
+        },
+        "source": {
+          "type": "string",
+          "description": "Source of the techniques"
+        },
+        "total_techniques": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "properties": {
+              "id": {"type": "string"},
+              "name": {"type": "string"},
+              "count": {"type": "integer"}
+            }
+          }
+        },
+        "phases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "properties": {
+              "id": {"type": "string"},
+              "name": {"type": "string"},
+              "weeks": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "techniques": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/technique"
+      }
+    },
+    "technique_chains": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/technique_chain"
+      }
+    },
+    "anti_patterns": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/anti_pattern"
+      }
+    },
+    "phase_defaults": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/phase_default"
+      }
+    }
+  },
+  "$defs": {
+    "technique": {
+      "type": "object",
+      "required": ["id", "name", "asset_type", "domain", "content"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z]+\\d+$|^EQ\\d+$",
+          "description": "Unique technique ID (e.g., A1, B2, EQ1)"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 100,
+          "description": "Human-readable technique name"
+        },
+        "asset_type": {
+          "type": "string",
+          "enum": ["technique", "framework", "protocol", "strategy", "principle", "rule", "template", "reference", "checklist", "prompt", "example"],
+          "description": "Type of coaching asset"
+        },
+        "domain": {
+          "type": "string",
+          "enum": ["assessment", "execution", "awards", "programs", "essays", "activities", "emotional", "strategy", "general", "time_management", "relationships", "coaching", "crisis", "motivation", "content_optimization", "positioning", "emotional_calibration", "decision_making", "opportunities", "research"],
+          "description": "Primary domain of the technique"
+        },
+        "secondary_domains": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Additional domains this technique applies to"
+        },
+        "category": {
+          "type": "string",
+          "pattern": "^[A-I]$",
+          "description": "Category letter (A-I)"
+        },
+        "tags": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1,
+          "description": "Searchable tags for the technique"
+        },
+        "content": {
+          "$ref": "#/$defs/technique_content"
+        },
+        "trigger": {
+          "$ref": "#/$defs/trigger_config"
+        },
+        "applicability": {
+          "$ref": "#/$defs/applicability_config"
+        },
+        "effectiveness": {
+          "$ref": "#/$defs/effectiveness_config"
+        },
+        "phase_deployment": {
+          "$ref": "#/$defs/phase_deployment"
+        }
+      }
+    },
+    "technique_content": {
+      "type": "object",
+      "required": ["summary"],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "One-line summary of the technique"
+        },
+        "description": {
+          "type": "string",
+          "description": "Full description of the technique"
+        },
+        "psychology": {
+          "type": "string",
+          "description": "Psychological reasoning behind the technique"
+        },
+        "steps": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Step-by-step instructions"
+        },
+        "example_usage": {
+          "type": "string",
+          "description": "Example of how to use the technique"
+        },
+        "outcome": {
+          "type": "string",
+          "description": "Expected outcome of using the technique"
+        },
+        "methodology": {
+          "type": "object",
+          "description": "Detailed methodology for complex techniques"
+        },
+        "protocol": {
+          "type": "object",
+          "description": "Protocol details for protocol-type assets"
+        },
+        "calibration": {
+          "type": "object",
+          "description": "Calibration settings for emotional techniques"
+        },
+        "examples": {
+          "type": "object",
+          "description": "Example responses for different situations"
+        },
+        "responses": {
+          "type": "object",
+          "description": "Templated responses for different situations"
+        },
+        "metrics": {
+          "type": "object",
+          "description": "Metrics for measuring effectiveness"
+        },
+        "levels": {
+          "type": "array",
+          "description": "Progressive levels for framework-type assets"
+        },
+        "never_use": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Phrases to never use"
+        },
+        "always_use": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Phrases to always use"
+        }
+      }
+    },
+    "trigger_config": {
+      "type": "object",
+      "properties": {
+        "keywords": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Keywords that trigger this technique"
+        },
+        "phrases": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Phrases that trigger this technique"
+        },
+        "situations": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Situations where this technique applies"
+        },
+        "student_states": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Student emotional/mental states"
+        },
+        "events": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Events that trigger this technique"
+        },
+        "lifecycle_stages": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Lifecycle stages where applicable"
+        }
+      }
+    },
+    "applicability_config": {
+      "type": "object",
+      "properties": {
+        "archetypes": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Student archetypes this works for"
+        },
+        "grade_levels": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 9, "maximum": 12},
+          "description": "Applicable grade levels"
+        },
+        "psychobehavioral_fit": {
+          "type": "object",
+          "description": "Psychobehavioral patterns this fits"
+        },
+        "contraindications": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "When NOT to use this technique"
+        },
+        "anti_pattern": {
+          "type": "string",
+          "description": "Anti-pattern description"
+        }
+      }
+    },
+    "effectiveness_config": {
+      "type": "object",
+      "properties": {
+        "quality_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "confidence_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "success_rate_benchmark": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "phase_deployment": {
+      "type": "object",
+      "properties": {
+        "primary_phases": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "secondary_phases": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "phase_ratio": {
+          "type": "string"
+        }
+      }
+    },
+    "technique_chain": {
+      "type": "object",
+      "required": ["name", "sequence"],
+      "properties": {
+        "name": {"type": "string"},
+        "sequence": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "description": {"type": "string"},
+        "use_when": {"type": "string"}
+      }
+    },
+    "anti_pattern": {
+      "type": "object",
+      "required": ["technique", "situation"],
+      "properties": {
+        "technique": {"type": "string"},
+        "situation": {"type": "string"},
+        "use_instead": {"type": "string"}
+      }
+    },
+    "phase_default": {
+      "type": "object",
+      "properties": {
+        "start_with": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "always_use": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "ratio": {"type": "string"}
+      }
+    }
+  }
+}

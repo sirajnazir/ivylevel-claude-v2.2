@@ -42,6 +42,16 @@ export function AssessmentAgentCard({ profileId, onChat, onViewDetails }: Assess
   // v5.2: Prefer DB data, fallback to API data
   const brandStatement = identity?.brandStatement || narrativeData?.rationale || '';
   const narrativeDna = identity?.narrativeDna || narrativeData?.dna || '';
+
+  // Debug: Log what data we're receiving
+  console.log('[AssessmentAgentCard] Data received:', {
+    profileId,
+    identityLoading,
+    identityBrandStatement: identity?.brandStatement?.substring(0, 50),
+    identityNarrativeDna: identity?.narrativeDna?.substring(0, 50),
+    narrativeDataRationale: narrativeData?.rationale?.substring(0, 50),
+    finalBrandStatement: brandStatement?.substring(0, 50),
+  });
   const themes = (identity?.narrativeThemes?.length ?? 0) > 0
     ? identity?.narrativeThemes ?? []
     : narrativeData?.themes || [];
