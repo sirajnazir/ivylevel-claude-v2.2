@@ -191,9 +191,9 @@ CREATE INDEX IF NOT EXISTS idx_reasoning_cycles_created ON autonomous_reasoning_
 CREATE TABLE IF NOT EXISTS coaching_assets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL UNIQUE,
-    category TEXT NOT NULL,
+    category TEXT DEFAULT 'technique',
     description TEXT,
-    content TEXT NOT NULL,
+    content TEXT DEFAULT '',
     applicable_archetypes TEXT[] DEFAULT '{}',
     applicable_situations TEXT[] DEFAULT '{}',
     tags TEXT[] DEFAULT '{}',
@@ -205,6 +205,50 @@ CREATE TABLE IF NOT EXISTS coaching_assets (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add missing columns if table exists but is incomplete
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'coaching_assets' AND column_name = 'category') THEN
+        ALTER TABLE coaching_assets ADD COLUMN category TEXT DEFAULT 'technique';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'coaching_assets' AND column_name = 'content') THEN
+        ALTER TABLE coaching_assets ADD COLUMN content TEXT DEFAULT '';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'coaching_assets' AND column_name = 'applicable_archetypes') THEN
+        ALTER TABLE coaching_assets ADD COLUMN applicable_archetypes TEXT[] DEFAULT '{}';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'coaching_assets' AND column_name = 'applicable_situations') THEN
+        ALTER TABLE coaching_assets ADD COLUMN applicable_situations TEXT[] DEFAULT '{}';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'coaching_assets' AND column_name = 'tags') THEN
+        ALTER TABLE coaching_assets ADD COLUMN tags TEXT[] DEFAULT '{}';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'coaching_assets' AND column_name = 'times_used') THEN
+        ALTER TABLE coaching_assets ADD COLUMN times_used INT DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'coaching_assets' AND column_name = 'success_count') THEN
+        ALTER TABLE coaching_assets ADD COLUMN success_count INT DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'coaching_assets' AND column_name = 'effectiveness_score') THEN
+        ALTER TABLE coaching_assets ADD COLUMN effectiveness_score FLOAT DEFAULT 0.5;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'coaching_assets' AND column_name = 'source') THEN
+        ALTER TABLE coaching_assets ADD COLUMN source TEXT DEFAULT 'jenny';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'coaching_assets' AND column_name = 'is_active') THEN
+        ALTER TABLE coaching_assets ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
+    END IF;
+END $$;
 
 -- Note: CHECK constraints intentionally omitted to allow flexibility with existing data
 
