@@ -385,8 +385,18 @@ CREATE INDEX IF NOT EXISTS idx_technique_effectiveness_rate ON technique_effecti
 -- ============================================================
 
 -- Get pending nudges for a profile (sorted by priority)
--- Drop any existing versions to avoid ambiguity
-DROP FUNCTION IF EXISTS get_pending_nudges(UUID, INT);
+-- Drop ALL existing versions to avoid ambiguity
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN SELECT oid::regprocedure as func_sig
+             FROM pg_proc
+             WHERE proname = 'get_pending_nudges'
+    LOOP
+        EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_sig || ' CASCADE';
+    END LOOP;
+END $$;
 
 CREATE OR REPLACE FUNCTION get_pending_nudges(
     p_profile_id UUID,
@@ -421,8 +431,18 @@ AS $$
 $$;
 
 -- Update coaching asset effectiveness after an outcome
--- Drop any existing versions to avoid ambiguity
-DROP FUNCTION IF EXISTS update_asset_effectiveness(UUID, TEXT, TEXT, BOOLEAN);
+-- Drop ALL existing versions to avoid ambiguity (cascade drops dependent objects)
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN SELECT oid::regprocedure as func_sig
+             FROM pg_proc
+             WHERE proname = 'update_asset_effectiveness'
+    LOOP
+        EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_sig || ' CASCADE';
+    END LOOP;
+END $$;
 
 CREATE OR REPLACE FUNCTION update_asset_effectiveness(
     p_asset_id UUID,
