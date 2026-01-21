@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS autonomous_reasoning_cycles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     agent_name TEXT NOT NULL DEFAULT 'autonomous_monitor',
-    trigger_event TEXT NOT NULL,
+    trigger_event TEXT DEFAULT 'unknown',
     monitoring_state JSONB DEFAULT '{}',
     predictions JSONB DEFAULT '[]',
     decisions JSONB DEFAULT '{}',
@@ -137,6 +137,46 @@ CREATE TABLE IF NOT EXISTS autonomous_reasoning_cycles (
     errors JSONB DEFAULT '[]',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add missing columns if table exists but is incomplete
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_reasoning_cycles' AND column_name = 'trigger_event') THEN
+        ALTER TABLE autonomous_reasoning_cycles ADD COLUMN trigger_event TEXT DEFAULT 'unknown';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_reasoning_cycles' AND column_name = 'monitoring_state') THEN
+        ALTER TABLE autonomous_reasoning_cycles ADD COLUMN monitoring_state JSONB DEFAULT '{}';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_reasoning_cycles' AND column_name = 'predictions') THEN
+        ALTER TABLE autonomous_reasoning_cycles ADD COLUMN predictions JSONB DEFAULT '[]';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_reasoning_cycles' AND column_name = 'decisions') THEN
+        ALTER TABLE autonomous_reasoning_cycles ADD COLUMN decisions JSONB DEFAULT '{}';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_reasoning_cycles' AND column_name = 'actions_taken') THEN
+        ALTER TABLE autonomous_reasoning_cycles ADD COLUMN actions_taken JSONB DEFAULT '{}';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_reasoning_cycles' AND column_name = 'notification_sent') THEN
+        ALTER TABLE autonomous_reasoning_cycles ADD COLUMN notification_sent BOOLEAN DEFAULT FALSE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_reasoning_cycles' AND column_name = 'learnings') THEN
+        ALTER TABLE autonomous_reasoning_cycles ADD COLUMN learnings JSONB DEFAULT '{}';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_reasoning_cycles' AND column_name = 'duration_ms') THEN
+        ALTER TABLE autonomous_reasoning_cycles ADD COLUMN duration_ms INT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_reasoning_cycles' AND column_name = 'errors') THEN
+        ALTER TABLE autonomous_reasoning_cycles ADD COLUMN errors JSONB DEFAULT '[]';
+    END IF;
+END $$;
 
 -- Indexes for autonomous_reasoning_cycles
 CREATE INDEX IF NOT EXISTS idx_reasoning_cycles_profile ON autonomous_reasoning_cycles(profile_id);
