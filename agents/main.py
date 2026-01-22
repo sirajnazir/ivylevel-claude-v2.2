@@ -51,6 +51,9 @@ from evaluation import EvaluationPipeline, GoldenDatasetLoader
 # v5.3: Execution Agent API routes
 from api.routes.execution import router as execution_router
 
+# v10.0: Proactive Autonomy API routes
+from api.routes.proactive import router as proactive_router
+
 # Configure structured logging
 structlog.configure(
     processors=[
@@ -2189,6 +2192,10 @@ app.include_router(v13_router)
 
 # v5.3: Register Execution Agent router
 app.include_router(execution_router)
+
+# v10.0: Register Proactive Autonomy router
+app.include_router(proactive_router)
+logger.info("Proactive Autonomy router registered at /proactive")
 
 # v10.0: Register Autonomous Intelligence Layer router
 # ADDITIVE: New endpoints for autonomous coaching (Phase 3 Intelligence)
