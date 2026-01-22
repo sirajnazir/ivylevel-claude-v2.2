@@ -1,8 +1,8 @@
 # IvyLevel Documentation
 
-**Version:** v10.0
-**Last Updated:** January 21, 2026
-**Status:** Production MVP
+**Version:** MVP 1.0.1
+**Last Updated:** January 21, 2026 @ 19:15 PST
+**Status:** Production
 
 ---
 
@@ -46,13 +46,15 @@
 
 ## Version Reference
 
-| Type | Version | Meaning |
-|------|---------|---------|
-| **Product** | MVP v1.0 | User-facing release version |
-| **Backend** | 15.0.0 | Server health endpoint version |
-| **Feature** | v10.0 | Proactive Autonomy feature set |
+**Current:** MVP 1.0.1
 
-All refer to the same codebase state (tag: `ivylevel-mvp-v1.0`).
+| Version | Type | When to Increment |
+|---------|------|-------------------|
+| MVP **X**.0.0 | Major | Breaking changes, major features |
+| MVP 1.**Y**.0 | Feature | New features, enhancements |
+| MVP 1.0.**Z** | Patch | Bug fixes, doc updates |
+
+See [CHANGELOG.md](./CHANGELOG.md) for full history.
 
 ---
 

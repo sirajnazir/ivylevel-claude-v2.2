@@ -1,7 +1,7 @@
 # IvyLevel Project Structure
 
-**Last Updated:** January 21, 2026
-**Version:** v10.0
+**Version:** MVP 1.0.1
+**Last Updated:** January 21, 2026 @ 19:15 PST
 
 ---
 

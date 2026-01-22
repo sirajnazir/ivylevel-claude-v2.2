@@ -1,7 +1,8 @@
-# IvyLevel Architecture (v10.0)
+# IvyLevel Architecture
 
-**Last Updated:** January 21, 2026
-**Status:** Production MVP
+**Version:** MVP 1.0.1
+**Last Updated:** January 21, 2026 @ 19:15 PST
+**Status:** Production
 
 ---
 
