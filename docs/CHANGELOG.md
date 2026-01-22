@@ -13,6 +13,8 @@
 
 **Implementation:** Complete 6-phase surgical enhancement (Phases 0-6 ALL IMPLEMENTED)
 
+**⚡ Zero-Downtime Deployment:** No database migrations required! All new fields stored in existing JSONB columns.
+
 This release transforms the assessment experience with visual enhancements, deeper narrative capture, and identity-first profiling while maintaining 100% backward compatibility.
 
 #### Phase 0: Foundation (Constants & Types) ✅
@@ -415,11 +417,66 @@ When Frame 6 completes, the following data is correctly saved to `assessments` t
 - ✅ Assessment marked as complete in database
 - ✅ Scoring results available for game plan generation
 
+### Database Migration Required
+**NONE** - No SQL scripts needed!
+
+**Why No Migration?**
+All new fields are stored in existing JSONB columns:
+- `assessments.profile_data` (JSONB) - Stores complete StudentProfile object
+- `assessments.scores` (JSONB) - Stores flat scores
+
+JSONB columns are schema-less and can accommodate any JSON structure. The 18 new fields are simply additional properties within these existing JSONB objects.
+
+**Existing Schema (unchanged):**
+```sql
+CREATE TABLE assessments (
+  id UUID PRIMARY KEY,
+  user_id UUID,
+  session_id UUID,
+  profile_data JSONB,  -- ← Stores StudentProfile with ALL fields
+  scores JSONB,        -- ← Stores flat scores object
+  archetype TEXT,
+  completeness_score INTEGER,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+);
+```
+
+**Before MVP 1.0.4:**
+```json
+profile_data = {
+  "passion": {
+    "spike_category": "CREATE",
+    "leadership_level": "FOUNDER_NATIONAL"
+  }
+}
+```
+
+**After MVP 1.0.4:**
+```json
+profile_data = {
+  "passion": {
+    "spike_category": "CREATE",
+    "leadership_level": "FOUNDER_NATIONAL",
+    "why_passion": "I love coding because...",
+    "passion_origin": "created",
+    "passion_reason": "genuine"
+  }
+}
+```
+
+The database table structure is **identical** - only the JSON content changes.
+
 ### Breaking Changes
 None - backward compatible with defensive data loading
 
-### Migration Required
-None - old malformed data is handled gracefully
+### Backward Compatibility
+- ✅ Old profiles without new fields load correctly
+- ✅ New profiles with new fields save correctly
+- ✅ Mixed environments (some users on old version, some on new) work seamlessly
+- ✅ TypeScript types have all new fields as optional (`field?: type | null`)
+- ✅ Code defensively handles missing fields with null coalescing
 
 ---
 
@@ -623,8 +680,11 @@ assessments.scores = {
 ### Development Stats
 - **Lines of Code Added:** ~2,800 (across 18 new files)
 - **TypeScript Types Enhanced:** 7 new optional fields in student.ts
+- **Database Schema Changes:** 0 (no migrations needed!)
 - **Database Tables Modified:** 0 (all stored in existing JSONB columns)
+- **SQL Scripts Run:** 0 (JSONB is schema-less)
 - **Breaking Changes:** 0
+- **Deployment Complexity:** Zero-downtime (just deploy code)
 - **Test Coverage:** Database inspection tool + manual validation
 
 ### Testing Completed
