@@ -48,7 +48,16 @@ outputs/
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
 .enrichment_checkpoints/
+agents/venv/
 
 # Server logs
 logs/
+
+# Test backups (moved to _archive)
+tests_v*/
+tests_*_backup*/
+
+# Old code (moved to _archive)
+ivyquest_*/
