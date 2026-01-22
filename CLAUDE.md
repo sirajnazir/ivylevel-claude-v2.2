@@ -182,55 +182,159 @@ Claude Code MUST NOT proceed with implementation until:
 4. Proper DEFAULTS and VALIDATION are in place
 5. The fix is FUTURE-PROOF and extensible
 
-## Documentation & Spec Naming Convention
+## CRITICAL: Documentation Management Rules
 
-### Spec File Naming (MANDATORY)
+### NEVER CREATE DUPLICATE DOCS - UPDATE IN PLACE
 
-All specification documents MUST follow this naming convention:
+**This is the #1 documentation rule. Violations cause chaos.**
+
+When releasing new versions, fixing bugs, or adding features, Claude Code MUST:
+
+1. **UPDATE the existing canonical doc** - DO NOT create a new file
+2. **Add a timestamp** to the "Last Updated" field in the doc header
+3. **Update the version number** if it's a version release
+4. **Add changelog entry** to `/docs/CHANGELOG.md`
+
+### Canonical Documentation Files (NEVER DUPLICATE)
+
+These files are the SINGLE SOURCE OF TRUTH. Update them in place:
+
+| File | Purpose | Update When |
+|------|---------|-------------|
+| `/STRUCTURE.md` | Project structure | Adding folders/files |
+| `/docs/ARCHITECTURE.md` | System architecture | Adding components |
+| `/docs/DATABASE.md` | Database schema | Adding tables/columns |
+| `/docs/API.md` | API endpoints | Adding/changing APIs |
+| `/docs/DEPLOYMENT.md` | Deployment guide | Changing deploy process |
+| `/docs/CHANGELOG.md` | Version history | EVERY release |
+| `/agents/docs/AGENTS.md` | Agent catalog | Adding/modifying agents |
+| `/agents/docs/PROACTIVE.md` | Proactive system | Changing proactive features |
+| `/app/docs/COMPONENTS.md` | Component guide | Adding components |
+| `/app/docs/FRAMES.md` | Assessment frames | Changing frames |
+
+### How to Update Canonical Docs
+
+```markdown
+# Document Title
+
+**Version:** v1.1 → v1.2          ← INCREMENT VERSION
+**Last Updated:** January 21, 2026 → January 22, 2026  ← UPDATE DATE
+
+... rest of content (update relevant sections) ...
+```
+
+### When to Create NEW Files (Rare Cases Only)
+
+Create a new file ONLY when:
+1. It's a completely NEW topic/scope not covered by existing docs
+2. It's a temporary PLANNING spec (prefix with `SPEC_`)
+
+Planning specs use dated names and get archived after implementation:
+```
+SPEC_<feature>_YYYYMMDD.md  →  Move to /_archive/docs/specs/ when done
+```
+
+### WRONG vs RIGHT Examples
+
+#### WRONG - Creating version duplicates:
+```
+docs/ARCHITECTURE.md
+docs/ARCHITECTURE_v2.md        ❌ NEVER DO THIS
+docs/ARCHITECTURE_20260121.md  ❌ NEVER DO THIS
+docs/ARCHITECTURE_new.md       ❌ NEVER DO THIS
+```
+
+#### RIGHT - Update in place:
+```
+docs/ARCHITECTURE.md           ✅ Update this file
+                               ✅ Change "Last Updated" date
+                               ✅ Add entry to CHANGELOG.md
+```
+
+#### WRONG - Multiple API docs:
+```
+docs/API.md
+docs/API_v2.md                 ❌
+docs/API_ENDPOINTS.md          ❌
+docs/API_REFERENCE.md          ❌
+```
+
+#### RIGHT - One canonical API doc:
+```
+docs/API.md                    ✅ Single source of truth
+```
+
+### Documentation Update Checklist
+
+Before ANY release, bug fix, or feature:
+
+- [ ] Update `/docs/CHANGELOG.md` with version/date/changes
+- [ ] Update relevant canonical docs (ARCHITECTURE, DATABASE, API, etc.)
+- [ ] Update "Last Updated" timestamp in each modified doc
+- [ ] Increment version number if it's a release
+- [ ] DO NOT create new files for existing topics
+- [ ] Archive old planning specs to `/_archive/docs/specs/`
+
+### Version Tracking
+
+All version history goes in ONE file: `/docs/CHANGELOG.md`
+
+```markdown
+# Changelog
+
+## v1.2.0 - January 22, 2026
+- Added: New proactive feature X
+- Fixed: Bug in opportunity matcher
+- Changed: API endpoint Y
+
+## v1.1.0 - January 21, 2026
+- Added: MVP cleanup
+- ...
+```
+
+---
+
+## Planning Specs (Temporary Docs)
+
+### When to Use Planning Specs
+
+Use `SPEC_*.md` files ONLY for:
+- New feature planning before implementation
+- Design decisions that need approval
+- Complex changes requiring detailed spec
+
+### Spec File Naming
 
 ```
-SPEC_<DESCRIPTION>_<DATE>_<TIME>_v<VERSION>_<SEQ>.md
+SPEC_<FEATURE>_YYYYMMDD.md
 ```
 
-**Format breakdown:**
-- `SPEC_` - Prefix indicating this is a specification document
-- `<DESCRIPTION>` - Brief snake_case description (e.g., `AGENT_ARCHITECTURE`, `UI_FLOW`)
-- `<DATE>` - Date in YYYYMMDD format
-- `<TIME>` - Time in HHMM format (24-hour)
-- `v<VERSION>` - Version number (e.g., v1, v2)
-- `<SEQ>` - Incremental sequence number for same-day specs (001, 002, etc.)
-
-**Examples:**
+Examples:
 ```
-SPEC_AGENT_ARCHITECTURE_20260120_1830_v1_001.md
-SPEC_LETTA_INTEGRATION_20260120_1900_v1_002.md
-SPEC_UI_UX_FLOW_20260121_0900_v2_001.md
+SPEC_PAYMENTS_20260122.md
+SPEC_REALTIME_CHAT_20260125.md
 ```
 
-**Why this matters:**
-- Many docs are generated daily - this prevents losing track of latest versions
-- Enables chronological sorting in file explorers
-- Clear versioning for iterative refinements
-- Sequence numbers handle multiple specs on same day
+### Spec Lifecycle
+
+1. **Create** in `/agents/specs/` during planning
+2. **Implement** the feature
+3. **Update** canonical docs with final implementation
+4. **Archive** spec to `/_archive/docs/specs/`
 
 ### Spec File Location
 
-All specs should be stored in:
 ```
-/agents/specs/           # For backend/agent specs
-/docs/specs/             # For frontend/UI specs (if exists)
+/agents/specs/           # Active planning specs only
+/_archive/docs/specs/    # Completed/archived specs
 ```
 
 ### Spec Document Structure
 
 Every spec MUST include:
-1. **Header** - Title, version, date, author
+1. **Header** - Title, date, author
 2. **Status** - Draft/Review/Approved/Implemented
 3. **Summary** - 2-3 sentence overview
-4. **Current State** - What exists today
-5. **Proposed Changes** - What will change (if applicable)
-6. **Technical Details** - Architecture, DB schema, API endpoints
-7. **UI/UX Flow** - User journey with screenshots/diagrams
-8. **Dependencies** - What this depends on
-9. **Risks & Mitigations** - What could break
-10. **Testing Plan** - How to verify
+4. **Proposed Changes** - What will change
+5. **Technical Details** - Implementation approach
+6. **Testing Plan** - How to verify

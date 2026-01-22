@@ -1,11 +1,49 @@
-# IvyLevel Version History
+# IvyLevel Changelog
 
-**Current Production Version:** v10.0
+**Current Production Version:** MVP v1.0
 **Last Updated:** January 21, 2026
 
 ---
 
-## Current: v10.0 - Proactive Autonomy (January 2026)
+## MVP v1.0 - Production Release (January 21, 2026)
+
+**Tag:** `ivylevel-mvp-v1.0`
+
+### Summary
+First production-ready release with complete codebase cleanup and canonical documentation.
+
+### Changes
+
+#### Codebase Cleanup
+- Archived 91+ old documentation files to `/_archive/docs/`
+- Archived 21 old code directories to `/_archive/code/`
+- Removed `.pytest_cache/` and other cache directories
+- Updated `.gitignore` with proper patterns
+- Clean root directory with only essential files
+
+#### Documentation Restructure
+- Created `/STRUCTURE.md` - Master project structure reference
+- Created `/docs/` canonical documentation (ARCHITECTURE, DATABASE, API, DEPLOYMENT)
+- Created `/agents/docs/` backend documentation (AGENTS, PROACTIVE)
+- Created `/app/docs/` frontend documentation (COMPONENTS, FRAMES)
+- Established naming conventions: canonical docs vs planning specs
+- Added strict documentation rules to CLAUDE.md
+
+#### Proactive System (v10.0)
+- Fixed opportunity matcher schema (application_deadline vs deadline)
+- Created REST API at `/proactive/*`
+- Tested with real profile data (0.85 match scores)
+
+### Commits Included
+- `be697cd` - Fix opportunity matcher schema and add API endpoints
+- `49f3e85` - Pre-launch codebase cleanup and organization
+- `3d96e5f` - Additional root cleanup
+- `767c857` - Documentation restructure with canonical naming
+- `06e901b` - Add STRUCTURE.md master reference
+
+---
+
+## v10.0 - Proactive Autonomy (January 2026)
 
 ### Features
 - **Proactive Opportunity Matching** - Automatically matches students to awards/programs
