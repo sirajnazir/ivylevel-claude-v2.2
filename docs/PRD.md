@@ -486,13 +486,19 @@ IvyLevel Web App (Next.js 14)
 
 ### 13.1 Dashboard Tabs (Implemented)
 
-| Tab | Purpose | Key Components |
-|-----|---------|----------------|
-| Overview | Central hub | Next Actions, Progress rings, Deadline alerts |
-| Game Plan | Strategic roadmap | Year-by-year timeline, Projects, Milestones |
-| Execution | Weekly coaching | EDS display, Weekly plan, Chat with Jenny |
-| Multi-Agent | Specialized agents | 6 agent cards, Agent chat interface |
-| Profile | Student profile | Assessment data, Settings |
+| Tab | Component File | Purpose |
+|-----|----------------|---------|
+| Mission Control | MissionControl.tsx | Central hub - Next Actions, Progress, Alerts |
+| Game Plan | GamePlanFull.tsx | Strategic roadmap - Timeline, Projects, Milestones |
+| Coach Connect | CoachConnect.tsx | Weekly coaching - Chat with Jenny, EDS |
+| Multi-Agent | MultiAgentTab.tsx | Specialized agents - 6 agent cards |
+| Ivy Score | IvyScoreCard.tsx | Score visualization and breakdown |
+| Awards | AwardTracker.tsx | Award tracking and deadlines |
+| Opportunities | OpportunityRadar.tsx | Opportunity matching display |
+| Narrative | NarrativeLab.tsx | Narrative and essay workspace |
+| Crisis | CrisisCenter.tsx | Crisis detection and recovery |
+
+**Note:** All dashboard components are in `/components/dashboard/`
 
 ### 13.2 Execution Tab Components
 
@@ -634,8 +640,8 @@ Autonomous notifications:
 │   │   ├── (assessment)/     # 6-frame flow
 │   │   └── (dashboard)/      # Main app
 │   ├── components/           # React components
-│   │   ├── frames/           # Frame0-Frame6
-│   │   ├── dashboard/        # Dashboard tabs
+│   │   ├── frames/           # Frame1-Frame6 (6 frames)
+│   │   ├── dashboard/        # 10 dashboard components
 │   │   └── ui/               # shadcn/ui
 │   ├── hooks/                # React hooks
 │   ├── lib/                  # Utilities, stores
@@ -660,7 +666,7 @@ Autonomous notifications:
 │       └── main.py           # FastAPI entry
 │
 ├── DATABASE
-│   └── supabase/migrations/  # 43 SQL migrations
+│   └── supabase/migrations/  # 32 SQL migrations
 │
 └── DOCUMENTATION
     ├── docs/                 # Master docs

@@ -1,7 +1,7 @@
 # IvyLevel Documentation
 
-**Version:** MVP 1.0.2
-**Last Updated:** January 21, 2026 @ 19:45 PST
+**Version:** MVP 1.0.3
+**Last Updated:** January 21, 2026 @ 20:15 PST
 **Status:** Production
 
 ---
@@ -47,7 +47,7 @@
 
 ## Version Reference
 
-**Current:** MVP 1.0.2
+**Current:** MVP 1.0.3
 
 | Version | Type | When to Increment |
 |---------|------|-------------------|

@@ -1,7 +1,28 @@
 # IvyLevel Changelog
 
-**Current Version:** MVP 1.0.2
-**Last Updated:** January 21, 2026 @ 19:45 PST
+**Current Version:** MVP 1.0.3
+**Last Updated:** January 21, 2026 @ 20:15 PST
+
+---
+
+## MVP 1.0.3 - PRD Accuracy Fix (January 21, 2026 @ 20:15 PST)
+
+**Tag:** `ivylevel-mvp-1.0.3`
+
+### Changes
+- Fixed PRD.md discrepancies found during critical analysis:
+  - **Migration count**: Changed "43 SQL migrations" → "32 SQL migrations" (line 663)
+  - **Frame naming**: Changed "Frame0-Frame6" → "Frame1-Frame6" (line 637)
+  - **Dashboard tabs**: Updated to reflect actual component names (MissionControl, GamePlanFull, CoachConnect, etc.)
+  - **Dashboard count**: Changed "Dashboard tabs" → "10 dashboard components"
+
+### Verification Performed
+All PRD claims verified against codebase:
+- ✅ 8 Active Agents (all exist)
+- ✅ 4 Proactive Jobs (all exist)
+- ✅ 6-Frame Assessment (confirmed)
+- ✅ Proactive System Architecture (confirmed)
+- ✅ API Routes (confirmed)
 
 ---
 
