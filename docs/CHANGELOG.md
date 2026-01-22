@@ -1,7 +1,168 @@
 # IvyLevel Changelog
 
-**Current Version:** MVP 1.0.3
-**Last Updated:** January 21, 2026 @ 20:15 PST
+**Current Version:** MVP 1.0.4
+**Last Updated:** January 22, 2026 @ 14:50 PST
+
+---
+
+## MVP 1.0.4 - Critical Assessment Data Persistence Fix (January 22, 2026 @ 14:50 PST)
+
+**Tag:** `ivylevel-mvp-1.0.4`
+
+### Critical Bug Fixed
+
+**Issue:** Assessment completion was NOT saving data to Supabase database
+- ❌ All assessment data remained in browser localStorage only (Zustand stores)
+- ❌ No profile data persisted to database
+- ❌ No scoring results saved to `assessments` table
+- ❌ Assessment marked as incomplete in database
+- ❌ Dashboard showed empty/placeholder data after refresh
+
+**Root Cause:**
+`handleFrame6Complete()` in `/app/assessment/page.tsx` (lines 91-97) was passing the entire `AssessmentResults` object as the `scores` parameter instead of extracting the flat scores structure that `saveAssessment()` expects.
+
+```typescript
+// BEFORE (WRONG):
+const scores = results || { score_aptitude: 0, ... };
+// This assigned the ENTIRE AssessmentResults object, including nested ivy_ready_score
+
+// AFTER (CORRECT):
+const scores = results?.ivy_ready_score
+  ? {
+      aptitude: results.ivy_ready_score.category_scores.aptitude,
+      passion: results.ivy_ready_score.category_scores.passion,
+      community: results.ivy_ready_score.category_scores.community,
+      identity: results.ivy_ready_score.category_scores.narrative,
+      overall: results.ivy_ready_score.total_score,
+      ivy_ready_score: results.ivy_ready_score.total_score,
+    }
+  : { /* defaults */ };
+```
+
+### Files Changed
+
+#### 1. `/app/assessment/page.tsx` (lines 91-122)
+- **Fixed:** Score extraction to properly convert `AssessmentResults` → flat scores structure
+- **Impact:** Assessments now save correctly to database on Frame 6 completion
+- **Verification:** Toast notification shows "Assessment Complete - Your profile has been saved!"
+
+#### 2. `/lib/hooks/useUserData.ts` (lines 118-135)
+- **Added:** Defensive code to handle existing malformed data in database
+- **Fix:** Type guard to detect if `ivy_ready_score` is object vs number
+- **Impact:** Dashboard can load both old (malformed) and new (correct) data gracefully
+
+#### 3. `/app/dashboard/page.tsx` (lines 397-408)
+- **Removed:** Extensive debug logging from previous debugging session
+- **Kept:** Defensive type guards to filter non-string values from arrays
+- **Cleanup:** Simplified validation logic while maintaining safety
+
+#### 4. `/components/tabs/AssessmentTab.tsx` (lines 70-92)
+- **Removed:** Debug console.log statements
+- **Kept:** Defensive validation to prevent rendering invalid data as React children
+- **Cleanup:** Condensed validation logic for better readability
+
+#### 5. `/app/logout/page.tsx` (NEW FILE)
+- **Created:** Utility route for easy sign-out during testing
+- **Purpose:** Clears Supabase session + localStorage, redirects to EntryPortal
+- **Usage:** `localhost:3006/logout`
+
+#### 6. `/app/reset/page.tsx` (NEW FILE)
+- **Created:** Utility route for deleting all user data during testing
+- **Purpose:** Calls `deleteUserData()` → signs out → redirects to EntryPortal
+- **Usage:** `localhost:3006/reset` (requires authentication)
+- **UI:** Red warning screen with confirmation button
+
+#### 7. `/middleware.ts` (lines 16-23, 147-150)
+- **Added:** `/assessment` to protected routes
+- **Added:** `/logout` to public routes
+- **Added:** `/reset` to protected routes
+- **Updated:** Student route check to include `/assessment`
+
+#### 8. `/app/page.tsx` (lines 41, 60)
+- **Fixed:** Two redirects from `/quest` → `/assessment`
+- **Completed:** Migration from legacy `/quest` route to new `/assessment` route
+- **Impact:** Fresh assessments and incomplete assessments now route to correct page
+
+### What Gets Saved to Database Now
+
+When Frame 6 completes, the following data is correctly saved to `assessments` table:
+
+**Profile Data (complete StudentProfile object):**
+- Identity Pillar: name, grade, role
+- Aptitude Pillar: GPA, SAT/ACT, AP count, academic awards
+- Passion Pillar: spike category, leadership level, EC commitment, research level, awards
+  - **NEW WHY fields:** why_passion, passion_origin, passion_reason (from Frame 3 Card 10)
+- Community Pillar: service leadership, service hours, community impact
+- Operating Data: first-gen status, work hours, parent occupations (from Frame 4)
+- Target Schools & Major
+
+**Scores Data (flat structure):**
+```typescript
+{
+  aptitude: 78,          // 0-100
+  passion: 65,           // 0-100
+  community: 52,         // 0-100
+  identity: 70,          // 0-100 (narrative)
+  overall: 68,           // Total score
+  ivy_ready_score: 68    // Same as overall
+}
+```
+
+**Additional Fields:**
+- `archetype`: Student archetype detected by scoring engine
+- `completeness_score`: Profile completeness percentage (0-100)
+- `completed_at`: Timestamp when assessment finished
+- `session_id`: Unique session identifier
+
+### Verification Performed
+
+**Testing Flow:**
+1. ✅ Cleared localStorage and sessionStorage
+2. ✅ Deleted test user data from database using `/reset` route
+3. ✅ Completed fresh assessment (all 6 frames)
+4. ✅ Verified toast notification: "Assessment Complete - Your profile has been saved!"
+5. ✅ Verified browser console: `[Assessment] Saved successfully: c3c5581f-94f6-425d-ab1f-d3d708b76795`
+6. ✅ Verified server logs: `POST /api/score 200 in 481ms`
+7. ✅ Verified server logs: `[AssessmentService] Assessment saved: c3c5581f-94f6-425d-ab1f-d3d708b76795`
+8. ✅ Navigated to dashboard - no React rendering errors
+9. ✅ Dashboard loaded with real scores (not objects)
+10. ✅ Database query confirmed data persisted correctly
+
+**Console Logs Confirmed:**
+```
+[AssessmentService] Assessment saved: c3c5581f-94f6-425d-ab1f-d3d708b76795
+[Assessment] Saved successfully: c3c5581f-94f6-425d-ab1f-d3d708b76795
+[useUserData] Found assessment data, loading into stores
+[useUserData] Marking assessment as complete
+[Dashboard] Generating game plan...
+```
+
+**No Errors:**
+- ❌ No "Objects are not valid as a React child" errors
+- ❌ No `totalScore` being an object errors
+- ❌ No `ivy_ready_score` structure errors
+
+### Impact
+
+**Before Fix:**
+- Students could complete assessment but data wasn't saved
+- Dashboard showed empty/placeholder data
+- Refreshing browser lost all progress
+- Required re-taking entire assessment
+
+**After Fix:**
+- ✅ Assessment data persists to database on completion
+- ✅ Dashboard loads real data from database
+- ✅ Refreshing browser maintains all data
+- ✅ Cross-device session continuity (if enabled)
+- ✅ Assessment marked as complete in database
+- ✅ Scoring results available for game plan generation
+
+### Breaking Changes
+None - backward compatible with defensive data loading
+
+### Migration Required
+None - old malformed data is handled gracefully
 
 ---
 

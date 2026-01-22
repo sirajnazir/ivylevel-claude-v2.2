@@ -268,7 +268,7 @@ function DashboardContent() {
   // Redirect if assessment not complete
   useEffect(() => {
     if (mounted && !is_completed) {
-      router.replace('/quest/1');
+      router.replace('/assessment');
     }
   }, [is_completed, router, mounted]);
 
@@ -350,7 +350,7 @@ function DashboardContent() {
 
   const handleRetakeAssessment = () => {
     // Use centralized session manager to start fresh
-    startFreshAssessment({ redirectTo: '/quest/1' });
+    startFreshAssessment({ redirectTo: '/assessment' });
   };
 
   const handleDeleteUserData = async () => {
@@ -373,7 +373,7 @@ function DashboardContent() {
       if (result.success) {
         console.log('[Dashboard] User data deleted:', result.deletedCounts);
         // Clear local stores and redirect to start fresh assessment
-        startFreshAssessment({ redirectTo: '/quest/1' });
+        startFreshAssessment({ redirectTo: '/assessment' });
       } else {
         console.error('[Dashboard] Failed to delete user data:', result.error);
         alert('Failed to delete data. Please try again.');
@@ -394,9 +394,18 @@ function DashboardContent() {
     const overallScore = totalScore;
     const tier = getTierFromScore(overallScore);
 
+    // Defensive: Ensure factors are strings (filter out any non-string values)
+    const safeHelpingFactors = Array.isArray(helpingFactors)
+      ? helpingFactors.filter((f) => typeof f === 'string')
+      : [];
+
+    const safeHoldingBackFactors = Array.isArray(holdingBackFactors)
+      ? holdingBackFactors.filter((f) => typeof f === 'string')
+      : [];
+
     // Generate strengths from real helping factors
-    const strengths = helpingFactors.length > 0
-      ? helpingFactors.slice(0, 3).map((factor, i) => ({
+    const strengths = safeHelpingFactors.length > 0
+      ? safeHelpingFactors.slice(0, 3).map((factor, i) => ({
           title: factor,
           roi: 3.5 - i * 0.5,
           impact: i === 0 ? 'High admission boost' : i === 1 ? 'Strong differentiation' : 'Solid foundation',
@@ -415,8 +424,8 @@ function DashboardContent() {
       return 'P2';
     };
 
-    const weakSpots = holdingBackFactors.length > 0
-      ? holdingBackFactors.slice(0, 3).map((factor, i) => ({
+    const weakSpots = safeHoldingBackFactors.length > 0
+      ? safeHoldingBackFactors.slice(0, 3).map((factor, i) => ({
           title: factor,
           priority: (i === 0 ? 'P0' : i === 1 ? 'P1' : 'P2') as 'P0' | 'P1' | 'P2',
           description: `Address this to improve your overall profile`,
@@ -429,9 +438,14 @@ function DashboardContent() {
         ].filter(Boolean) as Array<{ title: string; priority: 'P0' | 'P1' | 'P2'; description: string }>;
 
     // Get target schools from real probabilities
-    const targetSchools = schoolProbabilities.length > 0
+    const rawTargetSchools = schoolProbabilities.length > 0
       ? schoolProbabilities.slice(0, 4).map((s) => s.school_id)
       : studentProfile?.target_schools || ['Harvard', 'Stanford', 'MIT', 'Yale'];
+
+    // Defensive: Ensure target schools are strings
+    const targetSchools = Array.isArray(rawTargetSchools)
+      ? rawTargetSchools.filter((school) => typeof school === 'string')
+      : ['Harvard', 'Stanford', 'MIT', 'Yale'];
 
     // Calculate admissions probability from real data
     const avgProbability = schoolProbabilities.length > 0
@@ -469,7 +483,7 @@ function DashboardContent() {
       criMultiplier: studentProfile?.demographics?.first_gen ? 1.3 : 1.0,
       // Narrative synthesis data from agents
       brandStatement: brandStatement || null,
-      narrativeThemes: narrativeThemes || [],
+      narrativeThemes: Array.isArray(narrativeThemes) ? narrativeThemes.filter((t): t is string => typeof t === 'string') : [],
       narrativeDna: narrativeDna || null,
       firstPrinciple: firstPrinciple || null,
     };

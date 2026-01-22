@@ -67,6 +67,29 @@ interface AssessmentTabProps {
 }
 
 export function AssessmentTab({ data }: AssessmentTabProps) {
+  // Defensive validation to prevent rendering invalid data as React children
+  const safeStrengths = data.strengths.filter((s) =>
+    s &&
+    typeof s === 'object' &&
+    typeof s.title === 'string' &&
+    typeof s.impact === 'string'
+  );
+
+  const safeWeakSpots = data.weakSpots.filter((w) =>
+    w &&
+    typeof w === 'object' &&
+    typeof w.title === 'string' &&
+    typeof w.description === 'string'
+  );
+
+  const safeNarrativeThemes = Array.isArray(data.narrativeThemes)
+    ? data.narrativeThemes.filter((t): t is string => typeof t === 'string')
+    : [];
+
+  const safeTargetSchools = data.admissionsRubric?.targetSchools
+    ? data.admissionsRubric.targetSchools.filter((school) => typeof school === 'string')
+    : [];
+
   return (
     <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8 space-y-6">
       {/* Brand Statement - Narrative Synthesis Result */}
@@ -93,9 +116,9 @@ export function AssessmentTab({ data }: AssessmentTabProps) {
           >
             "{data.brandStatement}"
           </p>
-          {data.narrativeThemes && data.narrativeThemes.length > 0 && (
+          {safeNarrativeThemes.length > 0 && (
             <div className="flex flex-wrap justify-center gap-2 mt-4">
-              {data.narrativeThemes.slice(0, 4).map((theme, i) => (
+              {safeNarrativeThemes.slice(0, 4).map((theme, i) => (
                 <span
                   key={i}
                   className="px-3 py-1 rounded-full text-xs font-medium"
@@ -420,11 +443,11 @@ export function AssessmentTab({ data }: AssessmentTabProps) {
               </div>
             </div>
 
-            {data.admissionsRubric.targetSchools.length > 0 && (
+            {safeTargetSchools.length > 0 && (
               <div className="mt-4">
                 <span className="text-sm opacity-75">Target Schools</span>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {data.admissionsRubric.targetSchools.map(school => (
+                  {safeTargetSchools.map(school => (
                     <span key={school} className="px-2 py-1 rounded-full text-xs bg-white/20">
                       {school}
                     </span>
@@ -495,7 +518,7 @@ export function AssessmentTab({ data }: AssessmentTabProps) {
             </h2>
           </div>
           <div className="space-y-3">
-            {data.strengths.map((strength, i) => (
+            {safeStrengths.map((strength, i) => (
               <motion.div
                 key={strength.title}
                 initial={{ opacity: 0, x: -10 }}
@@ -536,7 +559,7 @@ export function AssessmentTab({ data }: AssessmentTabProps) {
             </h2>
           </div>
           <div className="space-y-3">
-            {data.weakSpots.map((spot, i) => {
+            {safeWeakSpots.map((spot, i) => {
               const priorityColors = {
                 P0: { bg: '#fee2e2', text: '#dc2626', border: '#dc2626' },
                 P1: { bg: '#fef3c7', text: '#d97706', border: '#d97706' },

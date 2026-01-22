@@ -16,7 +16,9 @@ import { createServerClient } from '@supabase/ssr';
 // Routes that require authentication
 const PROTECTED_ROUTES = [
   '/dashboard',
-  '/quest',
+  '/assessment',
+  '/quest', // Legacy route (deprecated)
+  '/reset', // Utility route for deleting user data (requires auth)
   '/coach',
   '/admin',
   '/account',
@@ -34,6 +36,7 @@ const PUBLIC_ROUTES = [
   '/auth/reset-password',
   '/auth/callback',
   '/api',
+  '/logout', // Utility route for signing out (no auth needed)
 ];
 
 // =============================================================================
@@ -144,7 +147,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Student routes allow only students
-    if ((pathname.startsWith('/dashboard') || pathname.startsWith('/quest')) && 
+    if ((pathname.startsWith('/dashboard') || pathname.startsWith('/assessment') || pathname.startsWith('/quest')) &&
         userRole && !['student', 'admin'].includes(userRole)) {
       return NextResponse.redirect(new URL('/coach', request.url));
     }

@@ -38,7 +38,7 @@ function HomePageContent() {
 
     if (shouldStartFresh) {
       // Clear all state and start new assessment
-      startFreshAssessment({ redirectTo: '/quest/1' });
+      startFreshAssessment({ redirectTo: '/assessment' });
       return;
     }
 
@@ -57,7 +57,7 @@ function HomePageContent() {
           if (isCompleted) {
             router.replace('/dashboard');
           } else {
-            router.replace('/quest');
+            router.replace('/assessment');
           }
           break;
       }

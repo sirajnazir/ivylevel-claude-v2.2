@@ -118,8 +118,20 @@ export function useUserData(): UseUserDataReturn {
         if (assessmentResult.data.scores) {
           // Construct AssessmentResults from scores
           const scores = assessmentResult.data.scores;
+
+          // DEFENSIVE: Handle malformed data where ivy_ready_score might be an object instead of number
+          // This can happen if old assessment data saved the entire AssessmentResults object as scores
+          let totalScore = 0;
+          if (typeof scores.ivy_ready_score === 'object' && scores.ivy_ready_score !== null) {
+            // Malformed data: scores.ivy_ready_score is an IvyReadyScore object
+            totalScore = (scores.ivy_ready_score as any).total_score ?? 0;
+          } else {
+            // Correct data: scores.ivy_ready_score is a number
+            totalScore = scores.overall ?? scores.ivy_ready_score ?? 0;
+          }
+
           const ivyReadyScore: IvyReadyScore = {
-            total_score: scores.overall ?? scores.ivy_ready_score ?? 0,
+            total_score: totalScore,
             category_scores: {
               aptitude: scores.aptitude ?? 0,
               passion: scores.passion ?? 0,
