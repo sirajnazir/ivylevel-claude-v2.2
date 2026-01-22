@@ -1,0 +1,195 @@
+# IvyLevel Architecture (v10.0)
+
+**Last Updated:** January 21, 2026
+**Status:** Production MVP
+
+---
+
+## Overview
+
+IvyLevel is an AI-powered college coaching platform featuring:
+- **Assessment Engine** - 6 interactive frames for student profiling
+- **Game Plan Generation** - Personalized 4-year strategic roadmaps
+- **Execution Coaching** - Weekly plans, EDS tracking, Jenny voice
+- **Opportunity Matching** - Proactive awards, programs, EC recommendations
+
+---
+
+## Tech Stack
+
+### Backend (FastAPI)
+| Component | Technology | Location |
+|-----------|------------|----------|
+| Framework | FastAPI + Agno + LangChain | `/agents/` |
+| Database | Supabase (PostgreSQL + pgvector) | `/supabase/` |
+| Scheduler | APScheduler | `/agents/proactive/scheduler.py` |
+| Version | v15.0.0 | |
+
+### Frontend (Next.js)
+| Component | Technology | Location |
+|-----------|------------|----------|
+| Framework | Next.js 14 + React | `/` (root) |
+| State | Zustand | `/lib/store/` |
+| Styling | Tailwind + shadcn/ui | `/components/ui/` |
+| Frames | Frame-based SDK | `/components/frames/` |
+
+---
+
+## Key Components
+
+### Active Agents (`/agents/agents/`)
+
+| Agent | File | Purpose | Status |
+|-------|------|---------|--------|
+| ExecutionChatAgent | `execution_chat.py` | Weekly coaching conversations | ✅ Active (v5.4) |
+| GamePlanAgent | `gameplan.py` | Strategic roadmap generation | ✅ Active |
+| AwardsAgent | `awards.py` | Award/scholarship matching | ✅ Active |
+| AssessmentAgent | `assessment.py` | Profile assessment processing | ✅ Active |
+| NarrativeSynthesis | `narrative.py` | Spike narrative generation | ✅ Active |
+| ProgramsAgent | `programs.py` | Summer program recommendations | ✅ Active |
+| ECAgent | `ec_agent.py` | Extracurricular coaching | ✅ Active |
+
+### Proactive System (`/agents/proactive/`)
+
+| Component | File | Purpose | Status |
+|-----------|------|---------|--------|
+| Config | `config.py` | Feature flags (PROACTIVE_ENABLED) | ✅ Active |
+| Scheduler | `scheduler.py` | APScheduler job registration | ✅ Active |
+| Opportunity Matcher | `opportunity_matcher.py` | Award/program matching | ✅ Active |
+| Deadline Monitor | `deadline_monitor.py` | Deadline alerts | ✅ Active |
+| Stall Detector | `stall_detector.py` | Project stall detection | ✅ Active |
+
+### API Routes (`/agents/api/routes/`)
+
+| Router | Prefix | Purpose |
+|--------|--------|---------|
+| execution.py | `/api/execution/` | Execution hub endpoints |
+| proactive.py | `/proactive/` | Opportunity matching API |
+| main.py routes | `/api/agents/` | Multi-agent orchestration |
+
+---
+
+## Database (Supabase)
+
+### Key Tables
+
+| Category | Tables |
+|----------|--------|
+| **Core** | `profiles`, `assessments`, `game_plans`, `projects` |
+| **Execution** | `weekly_plans`, `conversations`, `eds_data` |
+| **Proactive** | `nudge_queue`, `proactive_notifications`, `student_outcomes` |
+| **Resources** | `awards`, `opportunities`, `ecs`, `coaching_assets` |
+
+### Migration Status
+- Total migrations: 43
+- Latest: `043_proactive_autonomy_tables.sql`
+
+---
+
+## Feature Flags
+
+### Environment Variables (`.env`)
+
+```bash
+# Core
+PROACTIVE_ENABLED=true          # Master switch for proactive system
+
+# Proactive Features
+PROACTIVE_OPPORTUNITY_MATCH=true
+PROACTIVE_DEADLINE_ALERTS=true
+PROACTIVE_STALL_DETECTION=true
+PROACTIVE_INACTIVITY_CHECK=true
+
+# Dormant (not in MVP)
+LETTA_ENABLED=false             # Letta integration
+```
+
+---
+
+## Dormant/Future Code
+
+### Letta Integration (`/agents/letta/`)
+- **Status:** Code complete, feature-flagged OFF
+- **Purpose:** Advanced memory + A2A communication
+- **Enable when:** Post-MVP evaluation if needed
+- **Note:** Isolated with try/catch in main.py
+
+---
+
+## API Endpoints
+
+### Active Endpoints
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/health` | Health check |
+| POST | `/api/agents/game-plan/generate` | Generate game plan |
+| POST | `/api/agents/execution/chat` | Execution chat |
+| GET | `/api/execution/eds/{profile_id}` | Get EDS data |
+| GET | `/api/execution/weekly-plan/{profile_id}` | Get weekly plan |
+| GET | `/proactive/matches/{profile_id}` | Get opportunity matches |
+| GET | `/proactive/status` | Get proactive config |
+
+### Dormant Endpoints
+- `/api/letta/*` - Returns 503 when `LETTA_ENABLED=false`
+
+---
+
+## Directory Structure
+
+```
+/ivyquest-claude-v2.2/
+├── agents/                    # Backend (FastAPI)
+│   ├── agents/               # Active agents
+│   ├── proactive/            # Proactive system (v10.0)
+│   ├── api/routes/           # API routers
+│   ├── letta/                # Dormant Letta integration
+│   ├── specs/                # Current specifications
+│   └── main.py               # FastAPI app entry
+├── components/               # React components
+│   ├── frames/               # Assessment frames
+│   ├── ui/                   # shadcn/ui components
+│   └── dashboard/            # Dashboard tabs
+├── lib/                      # Utilities
+│   ├── store/                # Zustand stores
+│   ├── constants/            # Brand constants
+│   └── api/                  # API clients
+├── supabase/
+│   └── migrations/           # Database migrations
+├── docs/
+│   └── current/              # Current documentation
+├── _archive/                 # Archived old code/docs
+└── _future/                  # Planned features
+```
+
+---
+
+## Deployment
+
+### Development
+```bash
+# Backend
+cd agents && source venv/bin/activate
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+# Frontend
+npm run dev
+```
+
+### Production
+- Backend: Deployed via container
+- Frontend: Vercel
+- Database: Supabase Cloud
+
+---
+
+## Monitoring
+
+### Observability Stack
+- **LangSmith:** Agent tracing (LANGCHAIN_TRACING_V2=true)
+- **Langfuse:** (Optional) Metrics collection
+- **Structured Logging:** structlog with JSON output
+
+### Health Checks
+- `/health` - Basic health
+- `/proactive/status` - Proactive system status
