@@ -45,19 +45,20 @@ IvyLevel is an AI-powered college coaching platform featuring:
 | GamePlanAgent | `gameplan.py` | Strategic roadmap generation | ✅ Active |
 | AwardsAgent | `awards.py` | Award/scholarship matching | ✅ Active |
 | AssessmentAgent | `assessment.py` | Profile assessment processing | ✅ Active |
-| NarrativeSynthesis | `narrative.py` | Spike narrative generation | ✅ Active |
+| NarrativeSynthesis | `narrative_synthesis.py` | Spike narrative generation | ✅ Active |
 | ProgramsAgent | `programs.py` | Summer program recommendations | ✅ Active |
-| ECAgent | `ec_agent.py` | Extracurricular coaching | ✅ Active |
+| ExtracurricularsAgent | `extracurriculars.py` | Extracurricular coaching | ✅ Active |
+| OpportunityAgent | `opportunity.py` | Opportunity recommendations | ✅ Active |
 
 ### Proactive System (`/agents/proactive/`)
 
 | Component | File | Purpose | Status |
 |-----------|------|---------|--------|
 | Config | `config.py` | Feature flags (PROACTIVE_ENABLED) | ✅ Active |
-| Scheduler | `scheduler.py` | APScheduler job registration | ✅ Active |
+| Scheduler | `scheduler.py` | APScheduler job registration, all background jobs | ✅ Active |
 | Opportunity Matcher | `opportunity_matcher.py` | Award/program matching | ✅ Active |
-| Deadline Monitor | `deadline_monitor.py` | Deadline alerts | ✅ Active |
-| Stall Detector | `stall_detector.py` | Project stall detection | ✅ Active |
+
+**Note:** Deadline alerts, stall detection, and inactivity checks are implemented as jobs within `scheduler.py`, not as separate files.
 
 ### API Routes (`/agents/api/routes/`)
 

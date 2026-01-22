@@ -44,6 +44,18 @@
 
 ---
 
+## Version Reference
+
+| Type | Version | Meaning |
+|------|---------|---------|
+| **Product** | MVP v1.0 | User-facing release version |
+| **Backend** | 15.0.0 | Server health endpoint version |
+| **Feature** | v10.0 | Proactive Autonomy feature set |
+
+All refer to the same codebase state (tag: `ivylevel-mvp-v1.0`).
+
+---
+
 ## Documentation Structure
 
 ```

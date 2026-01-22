@@ -100,7 +100,7 @@ IvyLevel uses a multi-agent architecture where specialized agents handle differe
 
 ### NarrativeSynthesis
 
-**File:** `agents/narrative.py`
+**File:** `agents/narrative_synthesis.py`
 **Purpose:** Generate spike narratives and summaries
 
 **LLM:** Google Gemini (preferred) or OpenAI
@@ -108,9 +108,9 @@ IvyLevel uses a multi-agent architecture where specialized agents handle differe
 
 ---
 
-### ECAgent
+### ExtracurricularsAgent
 
-**File:** `agents/ec_agent.py`
+**File:** `agents/extracurriculars.py`
 **Purpose:** Extracurricular activity coaching
 
 **Capabilities:**
@@ -118,6 +118,18 @@ IvyLevel uses a multi-agent architecture where specialized agents handle differe
 - Impact assessment
 - Balance analysis
 - Leadership opportunities
+
+---
+
+### OpportunityAgent
+
+**File:** `agents/opportunity.py`
+**Purpose:** Opportunity recommendations and matching
+
+**Capabilities:**
+- Summer program matching
+- Research opportunity suggestions
+- Internship recommendations
 
 ---
 
