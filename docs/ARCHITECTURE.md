@@ -137,30 +137,38 @@ LETTA_ENABLED=false             # Letta integration
 
 ## Directory Structure
 
+**See [/STRUCTURE.md](/STRUCTURE.md) for complete project structure.**
+
 ```
 /ivyquest-claude-v2.2/
-├── agents/                    # Backend (FastAPI)
-│   ├── agents/               # Active agents
-│   ├── proactive/            # Proactive system (v10.0)
-│   ├── api/routes/           # API routers
-│   ├── letta/                # Dormant Letta integration
-│   ├── specs/                # Current specifications
-│   └── main.py               # FastAPI app entry
-├── components/               # React components
-│   ├── frames/               # Assessment frames
-│   ├── ui/                   # shadcn/ui components
-│   └── dashboard/            # Dashboard tabs
-├── lib/                      # Utilities
-│   ├── store/                # Zustand stores
-│   ├── constants/            # Brand constants
-│   └── api/                  # API clients
-├── supabase/
-│   └── migrations/           # Database migrations
-├── docs/
-│   └── current/              # Current documentation
-├── _archive/                 # Archived old code/docs
-└── _future/                  # Planned features
+│
+├── FRONTEND (Next.js at root)
+│   ├── app/                  # Next.js App Router
+│   ├── components/           # React components
+│   ├── hooks/                # React hooks
+│   ├── lib/                  # Utilities, stores
+│   └── types/                # TypeScript types
+│
+├── BACKEND (Python FastAPI)
+│   └── agents/               # Backend root
+│       ├── agents/           # Agent implementations (yes, nested)
+│       ├── api/routes/       # API routers
+│       ├── proactive/        # Proactive system (v10.0)
+│       └── main.py           # Entry point
+│
+├── DATABASE
+│   └── supabase/migrations/  # SQL migrations
+│
+├── DOCUMENTATION
+│   ├── docs/                 # Master docs
+│   ├── agents/docs/          # Backend docs
+│   └── app/docs/             # Frontend docs
+│
+└── ARCHIVE
+    └── _archive/             # Old code & docs
 ```
+
+**Note on `/agents/agents/`:** The outer `agents/` is the Python backend folder. The inner `agents/` contains the actual AI agent class implementations. This naming is historical - see STRUCTURE.md for details.
 
 ---
 

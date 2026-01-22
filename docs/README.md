@@ -10,11 +10,37 @@
 
 | Document | Description |
 |----------|-------------|
+| [/STRUCTURE.md](/STRUCTURE.md) | **START HERE** - Complete project structure |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture, tech stack, components |
 | [DATABASE.md](./DATABASE.md) | Database schema, tables, migrations |
 | [API.md](./API.md) | API endpoints reference |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Deployment and environment setup |
 | [CHANGELOG.md](./CHANGELOG.md) | Version history and release notes |
+
+---
+
+## Project Structure (Quick Reference)
+
+```
+/                            # FRONTEND (Next.js)
+├── app/                     # Next.js pages & routes
+├── components/              # React components
+├── lib/                     # Utilities & stores
+├── hooks/                   # React hooks
+└── types/                   # TypeScript types
+
+/agents/                     # BACKEND (Python FastAPI)
+├── agents/                  # Agent implementations
+├── api/routes/              # API endpoints
+├── proactive/               # Proactive system
+└── main.py                  # Entry point
+
+/supabase/migrations/        # DATABASE
+
+/docs/                       # DOCUMENTATION (you are here)
+```
+
+**Full details:** See [/STRUCTURE.md](/STRUCTURE.md)
 
 ---
 
