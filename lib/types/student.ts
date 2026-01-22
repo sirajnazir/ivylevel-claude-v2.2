@@ -103,6 +103,11 @@ export interface PassionAttributes {
   // NLP Extraction
   brag_text: string | null;
   brag_nlp_extracted: Record<string, any> | null;
+
+  // 🆕 NEW: WHY - The narrative behind the passion (added in 4-Pillar update)
+  why_passion?: string | null;                 // Why do you love this activity?
+  passion_origin?: 'created' | 'joined' | null; // Did you create it or join it?
+  passion_reason?: 'genuine' | 'grew' | 'parents' | 'resume' | null; // Honest reason
 }
 
 /**
@@ -124,6 +129,10 @@ export interface CommunityAttributes {
 
   // Description (0.10 weight)
   service_description?: string;
+
+  // 🆕 NEW: WHY - The narrative behind the service (added in 4-Pillar update)
+  why_service?: string | null;                 // Why does this cause matter to you?
+  service_personal_connection?: string | null; // Personal connection to the cause
 }
 
 // ============================================================================
@@ -339,6 +348,26 @@ export interface OperatingData {
   availableHoursPerWeek?: number; // 0-20
   homeworkHoursPerDay?: number; // 0-6
   burnoutRisk?: 'low' | 'moderate' | 'high';
+
+  // 🆕 NEW: Identity & Context (all optional, added in 4-Pillar update)
+  // Challenge & Adversity
+  challengeOvercome?: string | null;           // Free text: biggest obstacle
+  challengeImpact?: string | null;             // How it shaped you
+
+  // Educational Context
+  schoolResources?: 'limited' | 'adequate' | 'excellent';
+  collegeGuidanceAccess?: 'none' | 'some' | 'extensive';
+
+  // Language & Culture
+  languagesSpoken?: string[];                  // Array of languages
+  languagePrimary?: string;                    // Primary language at home
+
+  // Identity Comfort (for narrative synthesis)
+  comfortableDiscussingBackground?: boolean;   // Opt-in for identity-based narrative
+
+  // WHY fields (added from Frame 3)
+  whyThisMajor?: string | null;                // Why this intended major?
+  whyTheseSchools?: string | null;             // Why these target schools?
 }
 
 /**

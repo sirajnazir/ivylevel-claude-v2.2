@@ -45,8 +45,9 @@ import {
 } from '@/components/icons';
 import type { SpikeCategory, LeadershipLevel, ResearchLevel, ServiceLeadership, SaturationLevel } from '@/lib/types/student';
 import { HIGH_SCHOOL_SATURATION_DB } from '@/lib/data/nsc-saturation';
+import { Card10WhyPassion, Card11WhyService } from './building';
 
-const CARDS = ['spike', 'leadership', 'commitment', 'projects', 'bragText', 'research', 'ecAwards', 'community', 'highSchool'] as const;
+const CARDS = ['spike', 'leadership', 'commitment', 'projects', 'bragText', 'research', 'ecAwards', 'community', 'highSchool', 'whyPassion', 'whyService'] as const;
 type CardType = (typeof CARDS)[number];
 
 interface Frame3Props {
@@ -104,6 +105,24 @@ export function Frame3Building({ onComplete }: Frame3Props) {
           {CARDS[currentCard] === 'ecAwards' && <ECAwardsCard key="ecAwards" />}
           {CARDS[currentCard] === 'community' && <CommunityCard key="community" />}
           {CARDS[currentCard] === 'highSchool' && <HighSchoolCard key="highSchool" />}
+          {CARDS[currentCard] === 'whyPassion' && (
+            <Card10WhyPassion
+              key="whyPassion"
+              onNext={handleNext}
+              onPrev={handlePrev}
+              currentCard={currentCard}
+              totalCards={CARDS.length}
+            />
+          )}
+          {CARDS[currentCard] === 'whyService' && (
+            <Card11WhyService
+              key="whyService"
+              onNext={handleNext}
+              onPrev={handlePrev}
+              currentCard={currentCard}
+              totalCards={CARDS.length}
+            />
+          )}
         </AnimatePresence>
 
         <CardNavigation

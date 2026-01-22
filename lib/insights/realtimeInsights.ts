@@ -6,6 +6,7 @@
  */
 
 import type { StudentProfile } from '@/lib/types/student';
+import { IdentityInsightGenerator } from './identityInsights';
 
 export interface OutcomeDataItem {
   label: string;
@@ -476,7 +477,8 @@ export class RealtimeInsightGenerator {
    * First-gen insight
    */
   static generateFirstGenInsight(profile: StudentProfile): RealtimeInsight | null {
-    const firstGen = profile.demographics?.first_gen ?? false;
+    // Check both old (demographics) and new (operating) locations for first-gen status
+    const firstGen = profile.operating?.firstGeneration ?? profile.demographics?.first_gen ?? false;
 
     if (!firstGen) return null;
 
@@ -645,12 +647,30 @@ export class RealtimeInsightGenerator {
       case 'ib_diploma':
         return this.generateRigorInsight(profile);
       case 'first_gen':
+      case 'firstGeneration':
         return this.generateFirstGenInsight(profile);
       case 'project_impact':
         return this.generateProjectImpactInsight(profile);
       case 'research':
       case 'research_level':
         return this.generateResearchInsight(profile);
+      // 🆕 NEW: Identity attributes (Frame 4)
+      case 'workHours':
+        return IdentityInsightGenerator.generateWorkBalanceInsight(profile);
+      case 'schoolResources':
+        return IdentityInsightGenerator.generateResourceContextInsight(profile);
+      case 'challengeOvercome':
+      case 'challengeImpact':
+        return IdentityInsightGenerator.generateChallengeInsight(profile);
+      case 'languagesSpoken':
+        return IdentityInsightGenerator.generateLanguageInsight(profile);
+      case 'familyResponsibilities':
+        return IdentityInsightGenerator.generateFamilyResponsibilityInsight(profile);
+      case 'culturalBackground':
+      case 'comfortableDiscussingBackground':
+        return IdentityInsightGenerator.generateCulturalIdentityInsight(profile);
+      case 'transportation':
+        return IdentityInsightGenerator.generateAccessInsight(profile);
       default:
         return null;
     }

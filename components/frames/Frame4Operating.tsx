@@ -22,6 +22,9 @@ import {
   Card1Scenarios,
   Card2TimeEnergy,
   Card3HiddenCapabilities,
+  Card4Demographics,
+  Card5Context,
+  Card6Challenges,
 } from './operating';
 
 // ============================================================================
@@ -283,7 +286,7 @@ export function Frame4Operating({ onComplete }: Frame4Props) {
 
   // Initialize frame on mount
   useEffect(() => {
-    startFrame(4, 3);
+    startFrame(4, 6); // 🆕 Updated from 3 to 6 cards
   }, [startFrame]);
 
   // Track direction for animations
@@ -307,7 +310,19 @@ export function Frame4Operating({ onComplete }: Frame4Props) {
     nextFrame3Card();
   }, [nextFrame3Card]);
 
-  const handleCard3Complete = useCallback(() => {
+  const handleCard3Continue = useCallback(() => {
+    nextFrame3Card();
+  }, [nextFrame3Card]);
+
+  const handleCard4Continue = useCallback(() => {
+    nextFrame3Card();
+  }, [nextFrame3Card]);
+
+  const handleCard5Continue = useCallback(() => {
+    nextFrame3Card();
+  }, [nextFrame3Card]);
+
+  const handleCard6Complete = useCallback(() => {
     // Complete Frame 3 and save signals
     completeFrame3();
     completeFrame();
@@ -402,9 +417,36 @@ export function Frame4Operating({ onComplete }: Frame4Props) {
           <Card3HiddenCapabilities
             hiddenCapabilities={frame3Data.hiddenCapabilities}
             onCapabilityToggle={toggleHiddenCapability}
-            onComplete={handleCard3Complete}
+            onComplete={handleCard3Continue}
             onBack={handleBack}
             validation={frame3Validation.card3}
+          />
+        );
+      case 4:
+        return (
+          <Card4Demographics
+            onNext={handleCard4Continue}
+            onPrev={handleBack}
+            currentCard={3}
+            totalCards={6}
+          />
+        );
+      case 5:
+        return (
+          <Card5Context
+            onNext={handleCard5Continue}
+            onPrev={handleBack}
+            currentCard={4}
+            totalCards={6}
+          />
+        );
+      case 6:
+        return (
+          <Card6Challenges
+            onNext={handleCard6Complete}
+            onPrev={handleBack}
+            currentCard={5}
+            totalCards={6}
           />
         );
       default:
@@ -457,7 +499,7 @@ export function Frame4Operating({ onComplete }: Frame4Props) {
 
       {/* Card progress dots */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2">
-        {[1, 2, 3].map((card) => (
+        {[1, 2, 3, 4, 5, 6].map((card) => (
           <button
             key={card}
             type="button"

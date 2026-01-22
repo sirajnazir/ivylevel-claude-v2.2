@@ -10,11 +10,13 @@ import { ChevronLeft, Sparkles, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { BRAND_COLORS } from '@/lib/constants/brand';
 import { HighlightedText } from '@/components/ui/HighlightedText';
+import { PillarProgressMini } from '@/components/progress/PillarProgressMini';
 
 interface AssessmentLayoutProps {
   children: ReactNode;
   showProgress?: boolean;
   showXP?: boolean;
+  showPillarProgress?: boolean; // 🆕 NEW: Show mini pillar cards
   className?: string;
 }
 
@@ -22,6 +24,7 @@ export function AssessmentLayout({
   children,
   showProgress = true,
   showXP = true,
+  showPillarProgress = false, // 🆕 Default to false (original behavior)
   className,
 }: AssessmentLayoutProps) {
   const currentFrame = useSessionStore((s) => s.current_frame);
@@ -99,21 +102,31 @@ export function AssessmentLayout({
               <IvylevelLogo size="sm" />
             </div>
 
-            {/* Edge Counter */}
-            {showXP && (
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-full"
-                style={{
-                  backgroundColor: 'rgba(255, 74, 35, 0.1)',
-                  border: '1px solid rgba(255, 74, 35, 0.2)',
-                }}
-              >
-                <Zap className="w-4 h-4" style={{ color: '#FF4A23' }} />
-                <span className="font-semibold" style={{ color: '#FF4A23' }}>{totalXP} Edge</span>
-              </motion.div>
-            )}
+            {/* Right side: Edge Counter + Pillar Progress */}
+            <div className="flex items-center gap-4">
+              {/* Edge Counter */}
+              {showXP && (
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full"
+                  style={{
+                    backgroundColor: 'rgba(255, 74, 35, 0.1)',
+                    border: '1px solid rgba(255, 74, 35, 0.2)',
+                  }}
+                >
+                  <Zap className="w-4 h-4" style={{ color: '#FF4A23' }} />
+                  <span className="font-semibold" style={{ color: '#FF4A23' }}>{totalXP} Edge</span>
+                </motion.div>
+              )}
+
+              {/* 🆕 Pillar Progress (NEW - optional) */}
+              {showPillarProgress && (
+                <div className="hidden md:block">
+                  <PillarProgressMini variant="horizontal" />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Frame Progress */}

@@ -52,7 +52,7 @@ export interface LogoutOptions {
 }
 
 export interface StartFreshOptions {
-  /** Redirect path after reset. Defaults to '/quest/1' */
+  /** Redirect path after reset. Defaults to '/assessment' */
   redirectTo?: string;
 }
 
@@ -166,12 +166,12 @@ export function logout(options: LogoutOptions = {}): void {
  * import { startFreshAssessment } from '@/lib/session/sessionManager';
  *
  * const handleRetake = () => {
- *   startFreshAssessment({ redirectTo: '/quest/1' });
+ *   startFreshAssessment({ redirectTo: '/assessment' });
  * };
  * ```
  */
 export function startFreshAssessment(options: StartFreshOptions = {}): void {
-  const { redirectTo = '/quest/1' } = options;
+  const { redirectTo = '/assessment' } = options;
 
   console.log('[SessionManager] Starting fresh assessment...');
 

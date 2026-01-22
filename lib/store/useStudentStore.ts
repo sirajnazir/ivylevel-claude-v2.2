@@ -186,6 +186,7 @@ interface StudentStoreState {
 
   // Passion
   setPassion: (passion: Partial<PassionAttributes>) => void;
+  updatePassion: <K extends keyof PassionAttributes>(field: K, value: PassionAttributes[K]) => void;
   setSpikeCategory: (spike: SpikeCategory) => void;
   setLeadershipLevel: (level: LeadershipLevel) => void;
   setECCommitment: (years: number, hoursWeekly: number) => void;
@@ -337,6 +338,11 @@ export const useStudentStore = create<StudentStoreState>()(
         setPassion: (passion) =>
           set((state) => {
             Object.assign(state.profile.passion, passion);
+            state.isDirty = true;
+          }),
+        updatePassion: (field, value) =>
+          set((state) => {
+            (state.profile.passion as Record<string, unknown>)[field] = value;
             state.isDirty = true;
           }),
         setSpikeCategory: (spike) =>

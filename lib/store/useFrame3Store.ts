@@ -448,7 +448,7 @@ export const useFrame3Store = create<Frame3StoreState>()(
 
         // Navigation
         setFrame3Card: (card: number) => {
-          const clampedCard = Math.max(1, Math.min(3, card));
+          const clampedCard = Math.max(1, Math.min(6, card));
           set((state) => {
             state.frame3CurrentCard = clampedCard;
           });
@@ -456,7 +456,7 @@ export const useFrame3Store = create<Frame3StoreState>()(
 
         nextFrame3Card: () => {
           const current = get().frame3CurrentCard;
-          if (current < 3) {
+          if (current < 6) {
             get().setFrame3Card(current + 1);
           }
         },
