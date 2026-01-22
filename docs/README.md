@@ -1,7 +1,7 @@
 # IvyLevel Documentation
 
-**Version:** MVP 1.0.1
-**Last Updated:** January 21, 2026 @ 19:15 PST
+**Version:** MVP 1.0.2
+**Last Updated:** January 21, 2026 @ 19:45 PST
 **Status:** Production
 
 ---
@@ -11,6 +11,7 @@
 | Document | Description |
 |----------|-------------|
 | [/STRUCTURE.md](/STRUCTURE.md) | **START HERE** - Complete project structure |
+| [PRD.md](./PRD.md) | **MASTER SPEC** - Business + Product + UI/UX + Technical |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture, tech stack, components |
 | [DATABASE.md](./DATABASE.md) | Database schema, tables, migrations |
 | [API.md](./API.md) | API endpoints reference |
@@ -46,7 +47,7 @@
 
 ## Version Reference
 
-**Current:** MVP 1.0.1
+**Current:** MVP 1.0.2
 
 | Version | Type | When to Increment |
 |---------|------|-------------------|

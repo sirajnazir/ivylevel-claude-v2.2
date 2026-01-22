@@ -1,7 +1,29 @@
 # IvyLevel Changelog
 
-**Current Version:** MVP 1.0.1
-**Last Updated:** January 21, 2026 @ 19:15 PST
+**Current Version:** MVP 1.0.2
+**Last Updated:** January 21, 2026 @ 19:45 PST
+
+---
+
+## MVP 1.0.2 - Master PRD Specification (January 21, 2026 @ 19:45 PST)
+
+**Tag:** `ivylevel-mvp-1.0.2`
+
+### Changes
+- Added `/docs/PRD.md` - Canonical Master Specification (~2000 lines)
+  - Part 1: Executive Summary (Vision, North Star, Huda Validation)
+  - Part 2: Product Requirements Document (Problems, Solutions, Requirements)
+  - Part 3: User Journeys & Jobs-to-be-Done (6 Core Jobs)
+  - Part 4: UI/UX Specification (Frames, Dashboard, Interaction Patterns)
+  - Part 5: Technical Specification (Architecture, Agents, Proactive System)
+  - Part 6: Architecture Diagrams (System, Agent, Data Flow)
+  - Part 7: Implementation Status (What's Built vs Deferred)
+  - Part 8: Appendix (Glossary, Dependencies, References)
+  - Addendum A: Data-Backed Intelligence (Chetty, CDS, High School Data)
+- Updated `/docs/README.md` to include PRD as Master Spec
+
+### Purpose
+Syncs business/product requirements with technical implementation. This is the single source of truth for what IvyLevel is, what's built, and what's planned.
 
 ---
 

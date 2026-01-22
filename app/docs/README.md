@@ -1,7 +1,7 @@
 # IvyLevel Frontend
 
-**Version:** MVP 1.0.1
-**Last Updated:** January 21, 2026 @ 19:15 PST
+**Version:** MVP 1.0.2
+**Last Updated:** January 21, 2026 @ 19:45 PST
 **Framework:** Next.js 14 + React + Tailwind
 
 ---

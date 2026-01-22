@@ -1,7 +1,7 @@
 # IvyLevel Database Specification
 
-**Version:** MVP 1.0.1
-**Last Updated:** January 21, 2026 @ 19:15 PST
+**Version:** MVP 1.0.2
+**Last Updated:** January 21, 2026 @ 19:45 PST
 **Database:** Supabase (PostgreSQL + pgvector)
 
 ---
