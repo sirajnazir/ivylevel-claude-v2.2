@@ -1,0 +1,87 @@
+# IvyLevel Documentation
+
+**Version:** v10.0
+**Last Updated:** January 21, 2026
+**Status:** Production MVP
+
+---
+
+## Quick Links
+
+| Document | Description |
+|----------|-------------|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture, tech stack, components |
+| [DATABASE.md](./DATABASE.md) | Database schema, tables, migrations |
+| [API.md](./API.md) | API endpoints reference |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | Deployment and environment setup |
+| [CHANGELOG.md](./CHANGELOG.md) | Version history and release notes |
+
+---
+
+## Documentation Structure
+
+```
+/docs/                          # ← YOU ARE HERE (Master docs)
+├── README.md                   # This index
+├── ARCHITECTURE.md             # System architecture
+├── DATABASE.md                 # Database specification
+├── API.md                      # API reference
+├── DEPLOYMENT.md               # Deployment guide
+├── CHANGELOG.md                # Version history
+└── runbooks/                   # Operational guides
+    └── TROUBLESHOOTING.md
+
+/agents/docs/                   # Backend-specific docs
+├── README.md                   # Backend overview
+├── AGENTS.md                   # Agent catalog & details
+└── PROACTIVE.md                # Proactive system guide
+
+/app/docs/                      # Frontend-specific docs
+├── README.md                   # Frontend overview
+├── COMPONENTS.md               # Component library guide
+└── FRAMES.md                   # Assessment frames guide
+```
+
+---
+
+## Naming Conventions
+
+### For Canonical Docs (Current/Active)
+```
+UPPERCASE_NAME.md              # e.g., ARCHITECTURE.md, DATABASE.md
+```
+These are the **single source of truth**. Update in place.
+
+### For Dated Specs (Planning/Design)
+```
+SPEC_<topic>_YYYYMMDD.md       # e.g., SPEC_PAYMENTS_20260201.md
+```
+Use for new feature planning. Move to `_archive/` when implemented.
+
+### For Versioned Releases
+```
+Release notes go in CHANGELOG.md with version headers
+```
+
+---
+
+## Keeping Docs Updated
+
+1. **ARCHITECTURE.md** - Update when adding new components/services
+2. **DATABASE.md** - Update when adding migrations
+3. **API.md** - Update when adding/changing endpoints
+4. **CHANGELOG.md** - Update on every release
+
+---
+
+## Archive
+
+Old documentation, completed specs, and historical versions are in:
+```
+/_archive/docs/
+├── specs/        # Completed implementation specs
+├── analyses/     # Bug reports, audits, gap analyses
+└── iterations/   # Old version documents (v1-v9)
+```
+
+To find old docs: `ls _archive/docs/`
