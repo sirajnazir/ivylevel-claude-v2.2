@@ -1,128 +1,46 @@
-# IvyLevel Documentation
+# Ivylevel · Orchestrator (v2.2)
 
-**Version:** MVP 1.0.3
-**Last Updated:** January 21, 2026 @ 20:15 PST
-**Status:** Production
+**LLM orchestration layer · V2 reasoning core**
 
----
-
-## Quick Links
-
-| Document | Description |
-|----------|-------------|
-| [/STRUCTURE.md](/STRUCTURE.md) | **START HERE** - Complete project structure |
-| [PRD.md](./PRD.md) | **MASTER SPEC** - Business + Product + UI/UX + Technical |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture, tech stack, components |
-| [DATABASE.md](./DATABASE.md) | Database schema, tables, migrations |
-| [API.md](./API.md) | API endpoints reference |
-| [DEPLOYMENT.md](./DEPLOYMENT.md) | Deployment and environment setup |
-| [CHANGELOG.md](./CHANGELOG.md) | Version history and release notes |
+Part of [Ivylevel](https://github.com/IvyLevel) — adaptive outcome intelligence for the AI-era student.
 
 ---
 
-## Project Structure (Quick Reference)
+## What this is
 
-```
-/                            # FRONTEND (Next.js)
-├── app/                     # Next.js pages & routes
-├── components/              # React components
-├── lib/                     # Utilities & stores
-├── hooks/                   # React hooks
-└── types/                   # TypeScript types
+The orchestration layer in Ivylevel's V2 architecture.
 
-/agents/                     # BACKEND (Python FastAPI)
-├── agents/                  # Agent implementations
-├── api/routes/              # API endpoints
-├── proactive/               # Proactive system
-└── main.py                  # Entry point
-
-/supabase/migrations/        # DATABASE
-
-/docs/                       # DOCUMENTATION (you are here)
-```
-
-**Full details:** See [/STRUCTURE.md](/STRUCTURE.md)
+Responsible for:
+- Routing student context through reasoning workflows
+- Coordinating multi-agent task execution
+- Managing memory + state across longitudinal interactions
+- Surfacing high-confidence recommendations to the human-AI loop
 
 ---
 
-## Version Reference
+## Where it fits
 
-**Current:** MVP 1.0.3
+Ivylevel V2 architecture: **Decode · Design · Deliver — continuously, per student.**
 
-| Version | Type | When to Increment |
-|---------|------|-------------------|
-| MVP **X**.0.0 | Major | Breaking changes, major features |
-| MVP 1.**Y**.0 | Feature | New features, enhancements |
-| MVP 1.0.**Z** | Patch | Bug fixes, doc updates |
+This repo is the orchestration substrate that connects:
 
-See [CHANGELOG.md](./CHANGELOG.md) for full history.
+- **Decode** → student signal interpretation
+- **Design** → adaptive pathway + portfolio optimization
+- **Deliver** → execution choreography + outcome verification
 
 ---
 
-## Documentation Structure
+## Status
 
-```
-/docs/                          # ← YOU ARE HERE (Master docs)
-├── README.md                   # This index
-├── ARCHITECTURE.md             # System architecture
-├── DATABASE.md                 # Database specification
-├── API.md                      # API reference
-├── DEPLOYMENT.md               # Deployment guide
-├── CHANGELOG.md                # Version history
-└── runbooks/                   # Operational guides
-    └── TROUBLESHOOTING.md
-
-/agents/docs/                   # Backend-specific docs
-├── README.md                   # Backend overview
-├── AGENTS.md                   # Agent catalog & details
-└── PROACTIVE.md                # Proactive system guide
-
-/app/docs/                      # Frontend-specific docs
-├── README.md                   # Frontend overview
-├── COMPONENTS.md               # Component library guide
-└── FRAMES.md                   # Assessment frames guide
-```
+- Active development
+- MVP 1.0.3 · Production
+- Part of the V2 substrate · stealth
 
 ---
 
-## Naming Conventions
+## Note
 
-### For Canonical Docs (Current/Active)
-```
-UPPERCASE_NAME.md              # e.g., ARCHITECTURE.md, DATABASE.md
-```
-These are the **single source of truth**. Update in place.
+Public surface for architecture visibility. Implementation details, prompts, and proprietary substrate stay private.
 
-### For Dated Specs (Planning/Design)
-```
-SPEC_<topic>_YYYYMMDD.md       # e.g., SPEC_PAYMENTS_20260201.md
-```
-Use for new feature planning. Move to `_archive/` when implemented.
+For more: [@sirajnazir](https://github.com/sirajnazir) · siraj@ivymentors.co
 
-### For Versioned Releases
-```
-Release notes go in CHANGELOG.md with version headers
-```
-
----
-
-## Keeping Docs Updated
-
-1. **ARCHITECTURE.md** - Update when adding new components/services
-2. **DATABASE.md** - Update when adding migrations
-3. **API.md** - Update when adding/changing endpoints
-4. **CHANGELOG.md** - Update on every release
-
----
-
-## Archive
-
-Old documentation, completed specs, and historical versions are in:
-```
-/_archive/docs/
-├── specs/        # Completed implementation specs
-├── analyses/     # Bug reports, audits, gap analyses
-└── iterations/   # Old version documents (v1-v9)
-```
-
-To find old docs: `ls _archive/docs/`
